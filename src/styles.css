@@ -503,6 +503,10 @@ app-resource-card.expanded {
   color: var(--color-success);
   background: color-mix(in srgb, var(--color-success) 12%, transparent);
 }
+.resource-card .status.integrating {
+  color: #a78bfa;
+  background: color-mix(in srgb, #7c3aed 12%, transparent);
+}
 .resource-card .status.error {
   color: var(--color-error);
   background: color-mix(in srgb, var(--color-error) 12%, transparent);

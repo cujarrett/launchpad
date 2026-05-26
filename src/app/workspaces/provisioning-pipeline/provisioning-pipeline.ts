@@ -15,6 +15,7 @@ const NODES: PipelineNode[] = [
   { icon: "📦", label: "GitHub", sub: "Committed" },
   { icon: "🔄", label: "GitOps", sub: "Syncing" },
   { icon: "⚙️", label: "Control Plane", sub: "Provisioning" },
+  { icon: "🔌", label: "Services", sub: "Connecting" },
   { icon: "✨", label: "Live", sub: "Ready!" },
 ]
 
@@ -272,32 +273,33 @@ export class ProvisioningPipeline {
     return "provisioning"
   })
 
-  // Node states: You(0) GitHub(1) ArgoCD(2) Crossplane(3) Live(4)
-  protected readonly nodeStates = computed<NodeState[]>(() => {
+  // Which node index is active per stage (-1 = all done / idle)
+  // You(0) GitHub(1) GitOps(2) ControlPlane(3) Services(4) Live(5)
+  private readonly activeNodeIndex = computed(() => {
     switch (this.stage()) {
       case "syncing":
-        return ["done", "done", "active", "pending", "pending"]
+        return 2
       case "provisioning":
-        return ["done", "done", "done", "active", "pending"]
+        return 3
       case "integrating":
-        return ["done", "done", "done", "done", "active"]
+        return 4
       default:
-        return ["done", "done", "done", "done", "done"]
+        return -1
     }
   })
 
-  // Connector states: [0]=You→GitHub [1]=GitHub→ArgoCD [2]=ArgoCD→Crossplane [3]=Crossplane→Live
+  protected readonly nodeStates = computed<NodeState[]>(() => {
+    const active = this.activeNodeIndex()
+    return NODES.map((_, i): NodeState => (i < active ? "done" : i === active ? "active" : "pending"))
+  })
+
+  // Connectors sit between nodes, so connector[i] leads into node[i+1].
+  // It's "active" when its destination node is active, "done" when past it.
   protected readonly connectorStates = computed<NodeState[]>(() => {
-    switch (this.stage()) {
-      case "syncing":
-        return ["done", "active", "pending", "pending"]
-      case "provisioning":
-        return ["done", "done", "active", "pending"]
-      case "integrating":
-        return ["done", "done", "done", "active"]
-      default:
-        return ["done", "done", "done", "done"]
-    }
+    const active = this.activeNodeIndex()
+    return NODES.slice(0, -1).map((_, i): NodeState =>
+      i + 1 < active ? "done" : i + 1 === active ? "active" : "pending",
+    )
   })
 
   protected readonly stageTitle = computed(() => {

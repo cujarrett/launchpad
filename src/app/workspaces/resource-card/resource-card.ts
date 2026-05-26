@@ -45,7 +45,8 @@ import { DynamicForm } from "../../create/dynamic-form/dynamic-form"
         <span class="name" [title]="resource().name">{{ resource().name }}</span>
         <span
           class="status"
-          [class.ready]="status()?.ready ?? false"
+          [class.ready]="(status()?.ready ?? false) && !isIntegrating()"
+          [class.integrating]="isIntegrating()"
           [class.error]="status() != null && !status()!.synced"
           [class.unknown]="status() == null"
           [title]="statusTitle()"
@@ -53,11 +54,13 @@ import { DynamicForm } from "../../create/dynamic-form/dynamic-form"
           {{
             status() == null
               ? "SYNCING"
-              : status()!.ready
-                ? "READY"
-                : !status()!.synced
-                  ? "ERROR"
-                  : "PROVISIONING"
+              : isIntegrating()
+                ? "INTEGRATING"
+                : status()!.ready
+                  ? "READY"
+                  : !status()!.synced
+                    ? "ERROR"
+                    : "PROVISIONING"
           }}
         </span>
         @if (statusMessage()) {
@@ -165,6 +168,9 @@ export class ResourceCard {
   protected readonly pendingRefs = signal<{ withSql: boolean; withCache: boolean } | null>(null)
   protected readonly connectionsSaving = signal(false)
   protected readonly previewVisible = signal(false)
+  protected readonly isIntegrating = computed(
+    () => (this.status()?.ready ?? false) && !!this.probeUrl() && !this.previewVisible(),
+  )
   private probeInterval: ReturnType<typeof setInterval> | null = null
 
   private readonly workspaceService = inject(WorkspaceService)
