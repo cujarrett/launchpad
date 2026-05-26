@@ -9,7 +9,8 @@
     "test": "ng test",
     "format": "prettier --write \"src/**/*.{ts,html,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,html,css}\"",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "ci": "npm run format:check && npm run lint && npm test"
   },
   "private": true,
   "packageManager": "npm@11.15.0",

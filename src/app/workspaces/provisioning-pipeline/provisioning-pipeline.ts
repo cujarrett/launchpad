@@ -302,9 +302,12 @@ export class ProvisioningPipeline {
 
   protected readonly stageTitle = computed(() => {
     switch (this.stage()) {
-      case "syncing": return "Syncing to the cluster"
-      case "integrating": return "Wiring up your preview"
-      default: return "Assembling your resources"
+      case "syncing":
+        return "Syncing to the cluster"
+      case "integrating":
+        return "Wiring up your preview"
+      default:
+        return "Assembling your resources"
     }
   })
 

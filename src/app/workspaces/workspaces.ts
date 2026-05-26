@@ -179,10 +179,7 @@ function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): str
           <p class="section-label">🧪 Sandboxes</p>
           <div class="card-grid">
             @for (workspace of guestWorkspaces(); track workspace.name) {
-              <a
-                class="workspace-tile guest-tile"
-                [routerLink]="['/workspaces', workspace.name]"
-              >
+              <a class="workspace-tile guest-tile" [routerLink]="['/workspaces', workspace.name]">
                 <span class="guest-badge">🧪 sandbox</span>
                 {{ workspace.name.replace("guest-", "") }}
                 @if (workspace.expiresAt) {

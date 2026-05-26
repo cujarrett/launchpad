@@ -51,7 +51,14 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
 
 @Component({
   selector: "app-workspace-detail",
-  imports: [ResourceCard, CreateResource, WorkspaceArch, GuestCreate, ProvisioningPipeline, RouterLink],
+  imports: [
+    ResourceCard,
+    CreateResource,
+    WorkspaceArch,
+    GuestCreate,
+    ProvisioningPipeline,
+    RouterLink,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // allPreviewsReady: true once every XApi/XSpa with a host has confirmed /healthz
   template: `
@@ -171,10 +178,18 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
       @if (loading()) {
         <p class="muted">Loading...</p>
       } @else if (viewMode() === "arch") {
-        <app-provisioning-pipeline [resources]="resources()" [statusMap]="statusMap()" [allPreviewsReady]="allPreviewsReady()" />
+        <app-provisioning-pipeline
+          [resources]="resources()"
+          [statusMap]="statusMap()"
+          [allPreviewsReady]="allPreviewsReady()"
+        />
         <app-workspace-arch [resources]="resources()" [statusMap]="statusMap()" />
       } @else {
-        <app-provisioning-pipeline [resources]="resources()" [statusMap]="statusMap()" [allPreviewsReady]="allPreviewsReady()" />
+        <app-provisioning-pipeline
+          [resources]="resources()"
+          [statusMap]="statusMap()"
+          [allPreviewsReady]="allPreviewsReady()"
+        />
         <div class="card-grid">
           @for (resource of resources(); track resource.name) {
             <app-resource-card
