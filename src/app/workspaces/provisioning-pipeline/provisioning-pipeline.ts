@@ -290,15 +290,17 @@ export class ProvisioningPipeline {
 
   protected readonly nodeStates = computed<NodeState[]>(() => {
     const active = this.activeNodeIndex()
-    return NODES.map((_, i): NodeState => (i < active ? "done" : i === active ? "active" : "pending"))
+    return NODES.map(
+      (_, i): NodeState => (i < active ? "done" : i === active ? "active" : "pending"),
+    )
   })
 
   // Connectors sit between nodes, so connector[i] leads into node[i+1].
   // It's "active" when its destination node is active, "done" when past it.
   protected readonly connectorStates = computed<NodeState[]>(() => {
     const active = this.activeNodeIndex()
-    return NODES.slice(0, -1).map((_, i): NodeState =>
-      i + 1 < active ? "done" : i + 1 === active ? "active" : "pending",
+    return NODES.slice(0, -1).map(
+      (_, i): NodeState => (i + 1 < active ? "done" : i + 1 === active ? "active" : "pending"),
     )
   })
 
