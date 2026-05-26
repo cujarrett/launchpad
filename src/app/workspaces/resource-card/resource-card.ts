@@ -158,6 +158,7 @@ export class ResourceCard {
   readonly deleted = output<string>()
   readonly saved = output<void>()
   readonly createKind = output<ResourceKind>()
+  readonly previewReady = output<string>()
 
   protected readonly confirming = signal(false)
   protected readonly connectionsUpdateError = signal<string | null>(null)
@@ -202,6 +203,7 @@ export class ResourceCard {
         const res = await fetch(url, { cache: "no-store" })
         if (res.ok) {
           this.previewVisible.set(true)
+          this.previewReady.emit(this.resource().name)
           this.stopProbing()
         }
       } catch {

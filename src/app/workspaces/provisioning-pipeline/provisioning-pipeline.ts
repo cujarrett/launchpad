@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from "@angular/co
 import { Resource, ResourceStatus } from "../../core/models/workspace.model"
 
 type NodeState = "done" | "active" | "pending"
-type Stage = "syncing" | "provisioning" | "idle"
+type Stage = "syncing" | "provisioning" | "integrating" | "idle"
 
 interface PipelineNode {
   icon: string
@@ -257,6 +257,7 @@ const NODES: PipelineNode[] = [
 export class ProvisioningPipeline {
   readonly resources = input.required<Resource[]>()
   readonly statusMap = input.required<Partial<Record<string, ResourceStatus>>>()
+  readonly allPreviewsReady = input.required<boolean>()
 
   protected readonly nodes = NODES
 
@@ -264,7 +265,9 @@ export class ProvisioningPipeline {
     const resources = this.resources()
     const statusMap = this.statusMap()
     if (resources.length === 0) return "idle"
-    if (resources.every((r) => statusMap[r.name]?.ready === true)) return "idle"
+    if (resources.every((r) => statusMap[r.name]?.ready === true)) {
+      return this.allPreviewsReady() ? "idle" : "integrating"
+    }
     if (resources.some((r) => !statusMap[r.name])) return "syncing"
     return "provisioning"
   })
@@ -276,6 +279,8 @@ export class ProvisioningPipeline {
         return ["done", "done", "active", "pending", "pending"]
       case "provisioning":
         return ["done", "done", "done", "active", "pending"]
+      case "integrating":
+        return ["done", "done", "done", "done", "active"]
       default:
         return ["done", "done", "done", "done", "done"]
     }
@@ -288,18 +293,29 @@ export class ProvisioningPipeline {
         return ["done", "active", "pending", "pending"]
       case "provisioning":
         return ["done", "done", "active", "pending"]
+      case "integrating":
+        return ["done", "done", "done", "active"]
       default:
         return ["done", "done", "done", "done"]
     }
   })
 
-  protected readonly stageTitle = computed(() =>
-    this.stage() === "syncing" ? "Syncing to the cluster" : "Assembling your resources",
-  )
+  protected readonly stageTitle = computed(() => {
+    switch (this.stage()) {
+      case "syncing": return "Syncing to the cluster"
+      case "integrating": return "Wiring up your preview"
+      default: return "Assembling your resources"
+    }
+  })
 
-  protected readonly stageMessage = computed(() =>
-    this.stage() === "syncing"
-      ? "ArgoCD watches the Git repo for changes and applies them to the cluster automatically. This usually takes a couple of minutes."
-      : "Crossplane is composing your infrastructure — databases, caches, and service bindings are being wired together automatically.",
-  )
+  protected readonly stageMessage = computed(() => {
+    switch (this.stage()) {
+      case "syncing":
+        return "ArgoCD watches the Git repo for changes and applies them to the cluster automatically. This usually takes a couple of minutes."
+      case "integrating":
+        return "Resources are provisioned — waiting for the app to come online and the tunnel to route traffic."
+      default:
+        return "Crossplane is composing your infrastructure — databases, caches, and service bindings are being wired together automatically."
+    }
+  })
 }
