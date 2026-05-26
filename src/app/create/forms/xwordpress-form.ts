@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core'
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms'
+import { ChangeDetectionStrategy, Component, inject, input, output } from "@angular/core"
+import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
 
 @Component({
-  selector: 'app-xwordpress-form',
+  selector: "app-xwordpress-form",
   imports: [ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -11,7 +11,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms'
       <label>Host <input formControlName="host" /></label>
       <label>Storage Size <input formControlName="storageSize" /></label>
       <label>DB Storage Size <input formControlName="dbStorageSize" /></label>
-      <label>Data Retention
+      <label
+        >Data Retention
         <select formControlName="dataRetention">
           <option value="retain">retain</option>
           <option value="delete">delete</option>
@@ -31,20 +32,25 @@ export class XWordPressForm {
   readonly cancelled = output<void>()
 
   form = this.fb.nonNullable.group({
-    name: ['', Validators.required],
-    host: ['', Validators.required],
-    storageSize: ['10Gi'],
-    dbStorageSize: ['5Gi'],
-    dataRetention: ['retain'],
+    name: ["", Validators.required],
+    host: ["", Validators.required],
+    storageSize: ["10Gi"],
+    dbStorageSize: ["5Gi"],
+    dataRetention: ["retain"],
   })
 
   submit() {
     if (this.form.invalid) return
     const v = this.form.getRawValue()
     this.submitted.emit({
-      kind: 'XWordpress',
+      kind: "XWordpress",
       name: v.name,
-      params: { host: v.host, storageSize: v.storageSize, dbStorageSize: v.dbStorageSize, dataRetention: v.dataRetention },
+      params: {
+        host: v.host,
+        storageSize: v.storageSize,
+        dbStorageSize: v.dbStorageSize,
+        dataRetention: v.dataRetention,
+      },
     })
   }
 }

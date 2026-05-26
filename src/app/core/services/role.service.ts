@@ -1,10 +1,10 @@
-import { computed, inject, Injectable, OnDestroy, signal } from '@angular/core'
-import { MsalBroadcastService, MsalService } from '@azure/msal-angular'
-import { AccountInfo, AuthenticationResult, EventType } from '@azure/msal-browser'
-import { Subscription } from 'rxjs'
-import { filter } from 'rxjs/operators'
+import { computed, inject, Injectable, OnDestroy, signal } from "@angular/core"
+import { MsalBroadcastService, MsalService } from "@azure/msal-angular"
+import { AccountInfo, AuthenticationResult, EventType } from "@azure/msal-browser"
+import { Subscription } from "rxjs"
+import { filter } from "rxjs/operators"
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class RoleService implements OnDestroy {
   private readonly msal = inject(MsalService)
   private readonly broadcast = inject(MsalBroadcastService)
@@ -16,8 +16,8 @@ export class RoleService implements OnDestroy {
   readonly isAuthenticated = computed(() => !!this.account())
 
   // Read roles directly from idTokenClaims (typed on TokenClaims).
-  readonly isContributor = computed(() =>
-    this.account()?.idTokenClaims?.roles?.includes('Contributor') ?? false,
+  readonly isContributor = computed(
+    () => this.account()?.idTokenClaims?.roles?.includes("Contributor") ?? false,
   )
 
   readonly userName = computed(() => this.account()?.name ?? null)

@@ -4,21 +4,21 @@ import {
   importProvidersFrom,
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
-} from '@angular/core'
-import { provideRouter } from '@angular/router'
-import { provideHttpClient, withInterceptors } from '@angular/common/http'
-import { MSAL_BROADCAST_CONFIG, MsalModule, MsalService } from '@azure/msal-angular'
-import { InteractionType, PublicClientApplication } from '@azure/msal-browser'
-import { tap } from 'rxjs'
+} from "@angular/core"
+import { provideRouter } from "@angular/router"
+import { provideHttpClient, withInterceptors } from "@angular/common/http"
+import { MSAL_BROADCAST_CONFIG, MsalModule, MsalService } from "@azure/msal-angular"
+import { InteractionType, PublicClientApplication } from "@azure/msal-browser"
+import { tap } from "rxjs"
 
-import { routes } from './app.routes'
-import { environment } from '../environments/environment'
-import { authInterceptor } from './core/interceptors/auth.interceptor'
+import { routes } from "./app.routes"
+import { environment } from "../environments/environment"
+import { authInterceptor } from "./core/interceptors/auth.interceptor"
 
 if (!environment.msalTenantId || !environment.msalClientId || !environment.msalApiScope) {
   throw new Error(
-    'MSAL config missing. Ensure NG_APP_MSAL_TENANT_ID, NG_APP_MSAL_CLIENT_ID, and NG_APP_MSAL_API_SCOPE are set.\n' +
-    'Run: source ~/.secrets && npm start',
+    "MSAL config missing. Ensure NG_APP_MSAL_TENANT_ID, NG_APP_MSAL_CLIENT_ID, and NG_APP_MSAL_API_SCOPE are set.\n" +
+      "Run: source ~/.secrets && npm start",
   )
 }
 
@@ -28,7 +28,7 @@ const msalInstance = new PublicClientApplication({
     authority: `https://login.microsoftonline.com/${environment.msalTenantId}`,
     redirectUri: window.location.origin,
   },
-  cache: { cacheLocation: 'sessionStorage' },
+  cache: { cacheLocation: "sessionStorage" },
 })
 
 export const appConfig: ApplicationConfig = {

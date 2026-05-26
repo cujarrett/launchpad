@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core'
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms'
+import { ChangeDetectionStrategy, Component, inject, input, output } from "@angular/core"
+import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
 
 @Component({
-  selector: 'app-xspa-form',
+  selector: "app-xspa-form",
   imports: [ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -10,7 +10,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms'
       <label>Name <input formControlName="name" /></label>
       <label>Image <input formControlName="image" /></label>
       <label>Host <input formControlName="host" /></label>
-      <label>TLS Issuer
+      <label
+        >TLS Issuer
         <select formControlName="tlsIssuer">
           <option value="letsencrypt-prod">letsencrypt-prod</option>
           <option value="letsencrypt-staging">letsencrypt-staging</option>
@@ -32,10 +33,10 @@ export class XSpaForm {
   readonly cancelled = output<void>()
 
   form = this.fb.nonNullable.group({
-    name: ['', Validators.required],
-    image: ['', Validators.required],
-    host: ['', Validators.required],
-    tlsIssuer: ['letsencrypt-prod'],
+    name: ["", Validators.required],
+    image: ["", Validators.required],
+    host: ["", Validators.required],
+    tlsIssuer: ["letsencrypt-prod"],
     replicas: [1],
   })
 
@@ -43,7 +44,7 @@ export class XSpaForm {
     if (this.form.invalid) return
     const v = this.form.getRawValue()
     this.submitted.emit({
-      kind: 'XSpa',
+      kind: "XSpa",
       name: v.name,
       params: { image: v.image, host: v.host, tlsIssuer: v.tlsIssuer, replicas: v.replicas },
     })

@@ -6,41 +6,81 @@ import {
   OnDestroy,
   OnInit,
   signal,
-} from '@angular/core'
-import { HttpErrorResponse } from '@angular/common/http'
-import { Router, RouterLink } from '@angular/router'
-import { FormsModule } from '@angular/forms'
-import { firstValueFrom } from 'rxjs'
-import { WorkspaceService } from '../core/services/workspace.service'
-import { RoleService } from '../core/services/role.service'
-import { Workspace } from '../core/models/workspace.model'
+} from "@angular/core"
+import { HttpErrorResponse } from "@angular/common/http"
+import { Router, RouterLink } from "@angular/router"
+import { FormsModule } from "@angular/forms"
+import { firstValueFrom } from "rxjs"
+import { WorkspaceService } from "../core/services/workspace.service"
+import { RoleService } from "../core/services/role.service"
+import { Workspace } from "../core/models/workspace.model"
 
 const GUEST_MAX = 5
 
 // Mirror of the backend word lists — 25 × 25 = 625 possible combinations.
 const GUEST_WORDS_1 = [
-  'atomic', 'banana', 'blazing', 'chrome', 'cosmic',
-  'disco', 'electric', 'exploding', 'frozen', 'fuzzy',
-  'golden', 'haunted', 'jazzy', 'laser', 'magic',
-  'midnight', 'neon', 'phantom', 'quantum', 'rubber',
-  'shadow', 'silver', 'turbo', 'velvet', 'wandering',
+  "atomic",
+  "banana",
+  "blazing",
+  "chrome",
+  "cosmic",
+  "disco",
+  "electric",
+  "exploding",
+  "frozen",
+  "fuzzy",
+  "golden",
+  "haunted",
+  "jazzy",
+  "laser",
+  "magic",
+  "midnight",
+  "neon",
+  "phantom",
+  "quantum",
+  "rubber",
+  "shadow",
+  "silver",
+  "turbo",
+  "velvet",
+  "wandering",
 ]
 
 const GUEST_WORDS_2 = [
-  'anvil', 'burrito', 'cactus', 'cannon', 'cassette',
-  'catapult', 'factory', 'hamster', 'jellybean', 'llama',
-  'napkin', 'penguin', 'pickle', 'pirate', 'pretzel',
-  'rocket', 'spatula', 'spreadsheet', 'submarine', 'taco',
-  'toaster', 'tornado', 'volcano', 'waffle', 'wizard',
+  "anvil",
+  "burrito",
+  "cactus",
+  "cannon",
+  "cassette",
+  "catapult",
+  "factory",
+  "hamster",
+  "jellybean",
+  "llama",
+  "napkin",
+  "penguin",
+  "pickle",
+  "pirate",
+  "pretzel",
+  "rocket",
+  "spatula",
+  "spreadsheet",
+  "submarine",
+  "taco",
+  "toaster",
+  "tornado",
+  "volcano",
+  "waffle",
+  "wizard",
 ]
 
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
-function pickGuestName(used: Set<string>, avoidWord1 = '', avoidWord2 = ''): string {
-  const words1 = avoidWord1 ? GUEST_WORDS_1.filter(w => w !== avoidWord1) : GUEST_WORDS_1
-  const words2 = avoidWord2 ? GUEST_WORDS_2.filter(w => w !== avoidWord2) : GUEST_WORDS_2
+function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): string {
+  const words1 = avoidWord1 ? GUEST_WORDS_1.filter((w) => w !== avoidWord1) : GUEST_WORDS_1
+  const words2 = avoidWord2 ? GUEST_WORDS_2.filter((w) => w !== avoidWord2) : GUEST_WORDS_2
   for (let i = 0; i < 100; i++) {
     const name = `${pickRandom(words1)}-${pickRandom(words2)}`
     if (!used.has(name)) return name
@@ -49,7 +89,7 @@ function pickGuestName(used: Set<string>, avoidWord1 = '', avoidWord2 = ''): str
 }
 
 @Component({
-  selector: 'app-workspaces',
+  selector: "app-workspaces",
   imports: [RouterLink, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -68,9 +108,7 @@ function pickGuestName(used: Set<string>, avoidWord1 = '', avoidWord2 = ''): str
                 {{ sandboxFullMessage() }}
               </span>
             } @else if (!pickingGuestName()) {
-              <button class="secondary" (click)="startGuestNamePicker()">
-                🧪 Try the Demo
-              </button>
+              <button class="secondary" (click)="startGuestNamePicker()">🧪 Try the Demo</button>
             }
           }
         </div>
@@ -96,7 +134,7 @@ function pickGuestName(used: Set<string>, avoidWord1 = '', avoidWord2 = ''): str
           }
           <div class="form-actions">
             <button type="submit" [disabled]="savingWorkspace() || !newWorkspaceName()">
-              {{ savingWorkspace() ? 'Creating…' : 'Create' }}
+              {{ savingWorkspace() ? "Creating…" : "Create" }}
             </button>
             <button type="button" class="secondary" (click)="cancelNewWorkspace()">Cancel</button>
           </div>
@@ -109,15 +147,21 @@ function pickGuestName(used: Set<string>, avoidWord1 = '', avoidWord2 = ''): str
           <div class="name-badge-wrap">
             <div class="name-badge">{{ guestNameSuggestion() }}</div>
             @if (!savingGuestWorkspace()) {
-              <button type="button" class="reroll-btn" (click)="rerollGuestName()">🎲 try another</button>
+              <button type="button" class="reroll-btn" (click)="rerollGuestName()">
+                🎲 try another
+              </button>
             }
           </div>
           @if (createGuestError()) {
             <p class="field-error">{{ createGuestError() }}</p>
           }
           <div class="form-actions" style="justify-content:center">
-            <button type="button" [disabled]="savingGuestWorkspace()" (click)="launchGuestWorkspace()">
-              {{ savingGuestWorkspace() ? 'Creating Demo Workspace…' : 'Launch!' }}
+            <button
+              type="button"
+              [disabled]="savingGuestWorkspace()"
+              (click)="launchGuestWorkspace()"
+            >
+              {{ savingGuestWorkspace() ? "Creating Demo Workspace…" : "Launch!" }}
             </button>
             <button type="button" class="secondary" (click)="cancelGuestPicker()">Cancel</button>
           </div>
@@ -139,7 +183,7 @@ function pickGuestName(used: Set<string>, avoidWord1 = '', avoidWord2 = ''): str
               @if (workspace.isGuest) {
                 <span class="guest-badge">🧪 sandbox</span>
               }
-              {{ workspace.isGuest ? workspace.name.replace('guest-', '') : workspace.name }}
+              {{ workspace.isGuest ? workspace.name.replace("guest-", "") : workspace.name }}
               @if (workspace.isGuest && workspace.expiresAt) {
                 <span class="guest-ttl" [class.expiring]="isExpiringSoon(workspace.expiresAt)">
                   ⏱ {{ countdown(workspace.expiresAt) }}
@@ -153,51 +197,83 @@ function pickGuestName(used: Set<string>, avoidWord1 = '', avoidWord2 = ''): str
       }
     </div>
   `,
-  styles: [`
-    .guest-tile {
-      background: linear-gradient(135deg, rgba(139,92,246,0.12) 0%, rgba(59,130,246,0.08) 100%);
-      border: 1px dashed #7c3aed;
-      position: relative;
-    }
-    .guest-badge {
-      display: block;
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #7c3aed;
-      font-weight: 700;
-      margin-bottom: 0.2rem;
-    }
-    .guest-ttl { display:block; font-size:0.75rem; margin-top:0.25rem; opacity:0.75; }
-    .guest-ttl.expiring { color: #f59e0b; font-weight:600; }
-    .guest-picker { border: 1px dashed #7c3aed; background: rgba(139,92,246,0.06); }
-    .picker-label { margin: 0 0 0.75rem; font-size: 0.9rem; opacity: 0.8; }
-    .name-badge-wrap { text-align: center; margin-bottom: 1.25rem; }
-    .name-badge {
-      display: inline-block;
-      font-size: 1.5rem;
-      font-weight: 700;
-      padding: 0.5rem 1.5rem;
-      border: 2px solid #7c3aed;
-      border-radius: 8px;
-      background: rgba(124,58,237,0.12);
-      letter-spacing: 0.02em;
-      margin-bottom: 0.5rem;
-    }
-    .reroll-btn {
-      display: block;
-      margin: 0 auto;
-      background: none;
-      border: none;
-      color: #a78bfa;
-      font-size: 0.85rem;
-      cursor: pointer;
-      text-decoration: underline;
-      padding: 0;
-    }
-    .reroll-btn:hover { color: #c4b5fd; }
-    .icon-btn { padding: 0.2rem 0.4rem; font-size: 1rem; background: none; border: none; cursor: pointer; }
-  `],
+  styles: [
+    `
+      .guest-tile {
+        background: linear-gradient(
+          135deg,
+          rgba(139, 92, 246, 0.12) 0%,
+          rgba(59, 130, 246, 0.08) 100%
+        );
+        border: 1px dashed #7c3aed;
+        position: relative;
+      }
+      .guest-badge {
+        display: block;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #7c3aed;
+        font-weight: 700;
+        margin-bottom: 0.2rem;
+      }
+      .guest-ttl {
+        display: block;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+        opacity: 0.75;
+      }
+      .guest-ttl.expiring {
+        color: #f59e0b;
+        font-weight: 600;
+      }
+      .guest-picker {
+        border: 1px dashed #7c3aed;
+        background: rgba(139, 92, 246, 0.06);
+      }
+      .picker-label {
+        margin: 0 0 0.75rem;
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
+      .name-badge-wrap {
+        text-align: center;
+        margin-bottom: 1.25rem;
+      }
+      .name-badge {
+        display: inline-block;
+        font-size: 1.5rem;
+        font-weight: 700;
+        padding: 0.5rem 1.5rem;
+        border: 2px solid #7c3aed;
+        border-radius: 8px;
+        background: rgba(124, 58, 237, 0.12);
+        letter-spacing: 0.02em;
+        margin-bottom: 0.5rem;
+      }
+      .reroll-btn {
+        display: block;
+        margin: 0 auto;
+        background: none;
+        border: none;
+        color: #a78bfa;
+        font-size: 0.85rem;
+        cursor: pointer;
+        text-decoration: underline;
+        padding: 0;
+      }
+      .reroll-btn:hover {
+        color: #c4b5fd;
+      }
+      .icon-btn {
+        padding: 0.2rem 0.4rem;
+        font-size: 1rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+      }
+    `,
+  ],
 })
 export class Workspaces implements OnInit, OnDestroy {
   private readonly workspaceService = inject(WorkspaceService)
@@ -210,13 +286,13 @@ export class Workspaces implements OnInit, OnDestroy {
 
   // Contributor workspace creation
   protected readonly creatingWorkspace = signal(false)
-  protected readonly newWorkspaceName = signal('')
+  protected readonly newWorkspaceName = signal("")
   protected readonly savingWorkspace = signal(false)
   protected readonly createWorkspaceError = signal<string | null>(null)
 
   // Guest workspace creation
   protected readonly pickingGuestName = signal(false)
-  protected readonly guestNameSuggestion = signal('')
+  protected readonly guestNameSuggestion = signal("")
   protected readonly savingGuestWorkspace = signal(false)
   protected readonly createGuestError = signal<string | null>(null)
 
@@ -225,11 +301,9 @@ export class Workspaces implements OnInit, OnDestroy {
   private tickInterval?: ReturnType<typeof setInterval>
 
   protected readonly guestMax = GUEST_MAX
-  protected readonly guestCount = computed(
-    () => this.workspaces().filter((w) => w.isGuest).length,
-  )
+  protected readonly guestCount = computed(() => this.workspaces().filter((w) => w.isGuest).length)
   protected readonly sandboxFullMessage = computed(() => {
-    return 'All 5 demo slots are in use — try again in a few minutes'
+    return "All 5 demo slots are in use — try again in a few minutes"
   })
 
   async ngOnInit() {
@@ -237,7 +311,7 @@ export class Workspaces implements OnInit, OnDestroy {
     try {
       this.workspaces.set(await firstValueFrom(this.workspaceService.getWorkspaces()))
     } catch {
-      this.error.set('Could not load workspaces — check API connectivity and reload.')
+      this.error.set("Could not load workspaces — check API connectivity and reload.")
     } finally {
       this.loading.set(false)
     }
@@ -250,10 +324,10 @@ export class Workspaces implements OnInit, OnDestroy {
   protected countdown(expiresAt: string): string {
     this.tick() // reactive dependency — re-runs every tick
     const remaining = new Date(expiresAt).getTime() - Date.now()
-    if (remaining <= 0) return 'Expired'
+    if (remaining <= 0) return "Expired"
     const m = Math.floor(remaining / 60_000)
     const s = Math.floor((remaining % 60_000) / 1000)
-    return `${m}:${s.toString().padStart(2, '0')}`
+    return `${m}:${s.toString().padStart(2, "0")}`
   }
 
   protected isExpiringSoon(expiresAt: string): boolean {
@@ -265,7 +339,7 @@ export class Workspaces implements OnInit, OnDestroy {
 
   cancelNewWorkspace() {
     this.creatingWorkspace.set(false)
-    this.newWorkspaceName.set('')
+    this.newWorkspaceName.set("")
     this.createWorkspaceError.set(null)
   }
 
@@ -282,12 +356,12 @@ export class Workspaces implements OnInit, OnDestroy {
     } catch (err: unknown) {
       const msg =
         err instanceof HttpErrorResponse
-          ? typeof err.error === 'string' && err.error.trim()
+          ? typeof err.error === "string" && err.error.trim()
             ? err.error.trim()
             : `HTTP ${err.status}`
           : err instanceof Error
             ? err.message
-            : 'Failed to create workspace'
+            : "Failed to create workspace"
       this.createWorkspaceError.set(msg)
     } finally {
       this.savingWorkspace.set(false)
@@ -300,7 +374,7 @@ export class Workspaces implements OnInit, OnDestroy {
     return new Set(
       this.workspaces()
         .filter((w) => w.isGuest)
-        .map((w) => w.name.replace('guest-', '')),
+        .map((w) => w.name.replace("guest-", "")),
     )
   }
 
@@ -311,7 +385,7 @@ export class Workspaces implements OnInit, OnDestroy {
   }
 
   rerollGuestName() {
-    const [w1, w2] = this.guestNameSuggestion().split('-')
+    const [w1, w2] = this.guestNameSuggestion().split("-")
     this.guestNameSuggestion.set(pickGuestName(this.usedGuestNames(), w1, w2))
   }
 
@@ -325,26 +399,28 @@ export class Workspaces implements OnInit, OnDestroy {
     this.createGuestError.set(null)
     try {
       const result = await firstValueFrom(
-        this.workspaceService.createGuestWorkspace(this.guestNameSuggestion())
+        this.workspaceService.createGuestWorkspace(this.guestNameSuggestion()),
       )
-      this.router.navigate(['/workspaces', result.name])
+      this.router.navigate(["/workspaces", result.name])
     } catch (err: unknown) {
       if (err instanceof HttpErrorResponse && err.status === 409) {
         // Name was just taken — reload workspace list so the filter is fresh, then reroll.
         try {
           this.workspaces.set(await firstValueFrom(this.workspaceService.getWorkspaces()))
-        } catch { /* ignore reload errors */ }
+        } catch {
+          /* ignore reload errors */
+        }
         this.rerollGuestName()
-        this.createGuestError.set('That name was just taken — try another one!')
+        this.createGuestError.set("That name was just taken — try another one!")
       } else {
         const msg =
           err instanceof HttpErrorResponse
-            ? typeof err.error === 'string' && err.error.trim()
+            ? typeof err.error === "string" && err.error.trim()
               ? err.error.trim()
               : `HTTP ${err.status}`
             : err instanceof Error
               ? err.message
-              : 'Failed to create sandbox workspace'
+              : "Failed to create sandbox workspace"
         this.createGuestError.set(msg)
       }
     } finally {

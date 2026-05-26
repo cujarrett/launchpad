@@ -1,22 +1,24 @@
-import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core'
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms'
+import { ChangeDetectionStrategy, Component, inject, input, output } from "@angular/core"
+import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
 
 @Component({
-  selector: 'app-xnosql-form',
+  selector: "app-xnosql-form",
   imports: [ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()">
       <label>Name <input formControlName="name" /></label>
       <label>Partition Key <input formControlName="partitionKey" /></label>
-      <label>Partition Key Type
+      <label
+        >Partition Key Type
         <select formControlName="partitionKeyType">
           <option value="S">S (String)</option>
           <option value="N">N (Number)</option>
           <option value="B">B (Binary)</option>
         </select>
       </label>
-      <label>Data Retention
+      <label
+        >Data Retention
         <select formControlName="dataRetention">
           <option value="delete">delete</option>
           <option value="retain">retain</option>
@@ -36,19 +38,23 @@ export class XNoSqlForm {
   readonly cancelled = output<void>()
 
   form = this.fb.nonNullable.group({
-    name: ['', Validators.required],
-    partitionKey: ['id'],
-    partitionKeyType: ['S'],
-    dataRetention: ['delete'],
+    name: ["", Validators.required],
+    partitionKey: ["id"],
+    partitionKeyType: ["S"],
+    dataRetention: ["delete"],
   })
 
   submit() {
     if (this.form.invalid) return
     const v = this.form.getRawValue()
     this.submitted.emit({
-      kind: 'XNoSql',
+      kind: "XNoSql",
       name: v.name,
-      params: { partitionKey: v.partitionKey, partitionKeyType: v.partitionKeyType, dataRetention: v.dataRetention },
+      params: {
+        partitionKey: v.partitionKey,
+        partitionKeyType: v.partitionKeyType,
+        dataRetention: v.dataRetention,
+      },
     })
   }
 }

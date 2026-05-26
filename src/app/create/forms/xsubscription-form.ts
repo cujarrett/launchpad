@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core'
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms'
+import { ChangeDetectionStrategy, Component, inject, input, output } from "@angular/core"
+import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
 
 @Component({
-  selector: 'app-xsubscription-form',
+  selector: "app-xsubscription-form",
   imports: [ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -10,7 +10,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms'
       <label>Name <input formControlName="name" /></label>
       <label>Topic Ref (XTopic name) <input formControlName="topicRef" /></label>
       <label>Filter Subject <input formControlName="filterSubject" placeholder=">" /></label>
-      <label>Deliver Policy
+      <label
+        >Deliver Policy
         <select formControlName="deliverPolicy">
           <option value="all">all</option>
           <option value="new">new</option>
@@ -32,19 +33,23 @@ export class XSubscriptionForm {
   readonly cancelled = output<void>()
 
   form = this.fb.nonNullable.group({
-    name: ['', Validators.required],
-    topicRef: ['', Validators.required],
-    filterSubject: ['>'],
-    deliverPolicy: ['all'],
+    name: ["", Validators.required],
+    topicRef: ["", Validators.required],
+    filterSubject: [">"],
+    deliverPolicy: ["all"],
   })
 
   submit() {
     if (this.form.invalid) return
     const v = this.form.getRawValue()
     this.submitted.emit({
-      kind: 'XSubscription',
+      kind: "XSubscription",
       name: v.name,
-      params: { topicRef: v.topicRef, filterSubject: v.filterSubject, deliverPolicy: v.deliverPolicy },
+      params: {
+        topicRef: v.topicRef,
+        filterSubject: v.filterSubject,
+        deliverPolicy: v.deliverPolicy,
+      },
     })
   }
 }

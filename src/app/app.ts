@@ -1,25 +1,34 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, signal } from '@angular/core'
-import { RouterLink, RouterOutlet } from '@angular/router'
-import { MsalService } from '@azure/msal-angular'
-import { RoleService } from './core/services/role.service'
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnDestroy,
+  signal,
+} from "@angular/core"
+import { RouterLink, RouterOutlet } from "@angular/router"
+import { MsalService } from "@azure/msal-angular"
+import { RoleService } from "./core/services/role.service"
 
 const TAGLINES = [
-  'Mission Statement: Wow',
-  'Ship solutions, not toil',
-  'Enterprise features, bookshelf homelab',
-  'No sprints were harmed',
-  'Boring infra. Exciting outcomes.',
+  "Mission Statement: Wow",
+  "Ship solutions, not toil",
+  "Enterprise features, bookshelf homelab",
+  "No sprints were harmed",
+  "Boring infra. Exciting outcomes.",
 ]
 
 @Component({
-  selector: 'app-root',
+  selector: "app-root",
   imports: [RouterOutlet, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="app-nav">
       <a class="app-nav-logo" routerLink="/">
         <span>🚀 Launchpad</span>
-        <span class="app-nav-tagline" [style.opacity]="taglineVisible() ? 1 : 0">{{ tagline() }}</span>
+        <span class="app-nav-tagline" [style.opacity]="taglineVisible() ? 1 : 0">{{
+          tagline()
+        }}</span>
       </a>
       <div class="app-nav-user">
         @if (roleService.isAuthenticated()) {
@@ -34,7 +43,9 @@ const TAGLINES = [
     </header>
     <router-outlet />
     <footer class="app-footer">
-      Made by <a href="https://mattjarrett.dev" target="_blank" rel="noopener noreferrer">Matt Jarrett</a> with ♥ and Kubernetes
+      Made by
+      <a href="https://mattjarrett.dev" target="_blank" rel="noopener noreferrer">Matt Jarrett</a>
+      with ♥ and Kubernetes
     </footer>
   `,
 })
@@ -51,7 +62,7 @@ export class App implements OnDestroy {
   private readonly taglineTimer = setInterval(() => {
     this.taglineVisible.set(false)
     this.fadeTimeout = setTimeout(() => {
-      this.taglineIndex.update(i => (i + 1) % TAGLINES.length)
+      this.taglineIndex.update((i) => (i + 1) % TAGLINES.length)
       this.taglineVisible.set(true)
     }, 400)
   }, 60_000)
@@ -62,7 +73,7 @@ export class App implements OnDestroy {
   }
 
   signOut() {
-    this.msal.logoutRedirect({ postLogoutRedirectUri: '/signed-out' })
+    this.msal.logoutRedirect({ postLogoutRedirectUri: "/signed-out" })
   }
 
   signIn() {

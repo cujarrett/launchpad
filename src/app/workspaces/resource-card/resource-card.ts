@@ -7,52 +7,100 @@ import {
   input,
   output,
   signal,
-} from '@angular/core'
-import { firstValueFrom } from 'rxjs'
-import { Resource, ResourceKind, ResourceStatus, RESOURCE_KIND_LABELS, RESOURCE_KIND_COLORS, RESOURCE_KIND_ICONS } from '../../core/models/workspace.model'
-import { WorkspaceService } from '../../core/services/workspace.service'
-import { DynamicForm } from '../../create/dynamic-form/dynamic-form'
+} from "@angular/core"
+import { firstValueFrom } from "rxjs"
+import {
+  Resource,
+  ResourceKind,
+  ResourceStatus,
+  RESOURCE_KIND_LABELS,
+  RESOURCE_KIND_COLORS,
+  RESOURCE_KIND_ICONS,
+} from "../../core/models/workspace.model"
+import { WorkspaceService } from "../../core/services/workspace.service"
+import { DynamicForm } from "../../create/dynamic-form/dynamic-form"
 
 @Component({
-  selector: 'app-resource-card',
+  selector: "app-resource-card",
   imports: [DynamicForm],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.expanded]': 'expanded()' },
+  host: { "[class.expanded]": "expanded()" },
   template: `
-    <div class="resource-card" [class.expanded]="expanded()"
-         [style.border-left-color]="kindColor(resource().kind)">
+    <div
+      class="resource-card"
+      [class.expanded]="expanded()"
+      [style.border-left-color]="kindColor(resource().kind)"
+    >
       <div class="resource-card-row" (click)="confirming.set(false); toggled.emit()">
-        <span class="kind"
-              [style.color]="kindColor(resource().kind)"
-              [style.background-color]="kindBgColor(resource().kind)">
-          <span class="kind-icon">{{ kindIcon(resource().kind) }}</span>{{ kindLabel(resource().kind) }}</span>
+        <span
+          class="kind"
+          [style.color]="kindColor(resource().kind)"
+          [style.background-color]="kindBgColor(resource().kind)"
+        >
+          <span class="kind-icon">{{ kindIcon(resource().kind) }}</span
+          >{{ kindLabel(resource().kind) }}</span
+        >
         <span class="name" [title]="resource().name">{{ resource().name }}</span>
-        <span class="status"
-              [class.ready]="status()?.ready ?? false"
-              [class.error]="status() != null && !status()!.synced"
-              [class.unknown]="status() == null"
-              [title]="status() == null ? 'Waiting for cluster sync' : (status()?.message ?? '')">
-          {{ status() == null ? 'QUEUED' : status()!.ready ? 'READY' : !status()!.synced ? 'ERROR' : 'PENDING' }}
+        <span
+          class="status"
+          [class.ready]="status()?.ready ?? false"
+          [class.error]="status() != null && !status()!.synced"
+          [class.unknown]="status() == null"
+          [title]="status() == null ? 'Waiting for cluster sync' : (status()?.message ?? '')"
+        >
+          {{
+            status() == null
+              ? "QUEUED"
+              : status()!.ready
+                ? "READY"
+                : !status()!.synced
+                  ? "ERROR"
+                  : "PENDING"
+          }}
         </span>
         @if (statusMessage()) {
-          <span class="status-message" [class.status-message-error]="status() != null && !status()!.synced">{{ statusMessage() }}</span>
+          <span
+            class="status-message"
+            [class.status-message-error]="status() != null && !status()!.synced"
+            >{{ statusMessage() }}</span
+          >
         }
         @if (previewUrl()) {
-          <a class="preview-link" [href]="previewUrl()" target="_blank" rel="noopener noreferrer"
-             (click)="$event.stopPropagation()" title="Open preview">↗ Preview</a>
+          <a
+            class="preview-link"
+            [href]="previewUrl()"
+            target="_blank"
+            rel="noopener noreferrer"
+            (click)="$event.stopPropagation()"
+            title="Open preview"
+            >↗ Preview</a
+          >
         }
         @if (canEdit()) {
           @if (confirming()) {
             <span class="delete-confirm">
               Delete?
-              <button class="danger-sm" (click)="confirmDelete(); $event.stopPropagation()">Yes</button>
-              <button class="secondary-sm" (click)="confirming.set(false); $event.stopPropagation()">No</button>
+              <button class="danger-sm" (click)="confirmDelete(); $event.stopPropagation()">
+                Yes
+              </button>
+              <button
+                class="secondary-sm"
+                (click)="confirming.set(false); $event.stopPropagation()"
+              >
+                No
+              </button>
             </span>
           } @else {
-            <button class="delete-btn" title="Delete" (click)="confirming.set(true); $event.stopPropagation()">Delete</button>
+            <button
+              class="delete-btn"
+              title="Delete"
+              (click)="confirming.set(true); $event.stopPropagation()"
+            >
+              Delete
+            </button>
           }
         }
-        <span class="expand-icon">{{ expanded() ? '▲' : '▼' }}</span>
+        <span class="expand-icon">{{ expanded() ? "▲" : "▼" }}</span>
       </div>
 
       @if (expanded()) {
@@ -82,7 +130,7 @@ import { DynamicForm } from '../../create/dynamic-form/dynamic-form'
         @if (pendingRefs() !== null) {
           <div style="padding: 0.5rem 1rem 0; display: flex; align-items: center; gap: 0.5rem">
             <button (click)="saveConnections()" [disabled]="connectionsSaving()">
-              {{ connectionsSaving() ? 'Saving\u2026' : 'Save integrations' }}
+              {{ connectionsSaving() ? "Saving…" : "Save integrations" }}
             </button>
             @if (connectionsUpdateError()) {
               <span class="field-error" style="margin: 0">{{ connectionsUpdateError() }}</span>
@@ -118,10 +166,10 @@ export class ResourceCard {
   // Show the condition message inline when the resource is not ready and
   // there's something actionable to display (not just the default "Creating" noise).
   protected readonly previewUrl = computed(() => {
-    const host = this.resource().spec['host'] as string | undefined
+    const host = this.resource().spec["host"] as string | undefined
     if (!host) return null
     const kind = this.resource().kind
-    if (kind !== 'XSpa' && kind !== 'XApi') return null
+    if (kind !== "XSpa" && kind !== "XApi") return null
     return `https://${host}`
   })
 
@@ -131,31 +179,35 @@ export class ResourceCard {
     const msg = s.message?.trim()
     if (!msg) return null
     // Filter out generic transient messages that aren't actionable.
-    if (msg === 'Creating' || msg === 'Deleting') return null
+    if (msg === "Creating" || msg === "Deleting") return null
     return msg
   })
 
-  @HostListener('document:keydown.escape')
+  @HostListener("document:keydown.escape")
   onEscape() {
     if (this.confirming()) {
       this.confirming.set(false)
     }
   }
 
-  kindLabel = (kind: string) => RESOURCE_KIND_LABELS[kind as keyof typeof RESOURCE_KIND_LABELS] ?? kind
-  kindColor = (kind: string) => RESOURCE_KIND_COLORS[kind as keyof typeof RESOURCE_KIND_COLORS] ?? '#6366f1'
-  kindBgColor = (kind: string) => (RESOURCE_KIND_COLORS[kind as keyof typeof RESOURCE_KIND_COLORS] ?? '#6366f1') + '20'
-  kindIcon = (kind: string) => RESOURCE_KIND_ICONS[kind as keyof typeof RESOURCE_KIND_ICONS] ?? ''
+  kindLabel = (kind: string) =>
+    RESOURCE_KIND_LABELS[kind as keyof typeof RESOURCE_KIND_LABELS] ?? kind
+  kindColor = (kind: string) =>
+    RESOURCE_KIND_COLORS[kind as keyof typeof RESOURCE_KIND_COLORS] ?? "#6366f1"
+  kindBgColor = (kind: string) =>
+    (RESOURCE_KIND_COLORS[kind as keyof typeof RESOURCE_KIND_COLORS] ?? "#6366f1") + "20"
+  kindIcon = (kind: string) => RESOURCE_KIND_ICONS[kind as keyof typeof RESOURCE_KIND_ICONS] ?? ""
 
   integrationChips(): string[] {
     const spec = this.resource().spec
     const chips: string[] = []
-    if ((spec['cache'] as Record<string, unknown> | undefined)?.['enabled'] === true) chips.push('Cache')
-    if (spec['sqlRef']) chips.push('SQL')
-    if (spec['nosqlRef']) chips.push('NoSQL')
-    if (spec['objectStorageRef']) chips.push('Object Storage')
-    if (spec['topicRef']) chips.push('Topic')
-    if (spec['subscriptionRef']) chips.push('Subscription')
+    if ((spec["cache"] as Record<string, unknown> | undefined)?.["enabled"] === true)
+      chips.push("Cache")
+    if (spec["sqlRef"]) chips.push("SQL")
+    if (spec["nosqlRef"]) chips.push("NoSQL")
+    if (spec["objectStorageRef"]) chips.push("Object Storage")
+    if (spec["topicRef"]) chips.push("Topic")
+    if (spec["subscriptionRef"]) chips.push("Subscription")
     return chips
   }
 
@@ -170,12 +222,12 @@ export class ResourceCard {
     this.connectionsSaving.set(true)
     this.connectionsUpdateError.set(null)
     try {
-      await firstValueFrom(this.workspaceService.patchGuestResourceRefs(
-        this.workspace(), this.resource().name, refs
-      ))
+      await firstValueFrom(
+        this.workspaceService.patchGuestResourceRefs(this.workspace(), this.resource().name, refs),
+      )
       this.pendingRefs.set(null)
     } catch {
-      this.connectionsUpdateError.set('Failed to save connection changes.')
+      this.connectionsUpdateError.set("Failed to save connection changes.")
     } finally {
       this.connectionsSaving.set(false)
     }
@@ -185,5 +237,4 @@ export class ResourceCard {
     this.confirming.set(false)
     this.deleted.emit(this.resource().name)
   }
-
 }

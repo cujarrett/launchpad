@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core'
-import { ResourceKind, RESOURCE_KIND_LABELS } from '../core/models/workspace.model'
-import { DynamicForm } from './dynamic-form/dynamic-form'
+import { ChangeDetectionStrategy, Component, input, output } from "@angular/core"
+import { ResourceKind, RESOURCE_KIND_LABELS } from "../core/models/workspace.model"
+import { DynamicForm } from "./dynamic-form/dynamic-form"
 
 @Component({
-  selector: 'app-create-resource',
+  selector: "app-create-resource",
   imports: [DynamicForm],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -26,4 +26,3 @@ export class CreateResource {
 
   readonly labels = RESOURCE_KIND_LABELS
 }
-

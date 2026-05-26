@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core'
-import { MsalService } from '@azure/msal-angular'
+import { ChangeDetectionStrategy, Component, inject } from "@angular/core"
+import { MsalService } from "@azure/msal-angular"
 
 @Component({
-  selector: 'app-signed-out',
+  selector: "app-signed-out",
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page" style="text-align: center; padding-top: 6rem;">

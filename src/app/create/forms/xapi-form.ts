@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core'
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms'
+import { ChangeDetectionStrategy, Component, inject, input, output } from "@angular/core"
+import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
 
 @Component({
-  selector: 'app-xapi-form',
+  selector: "app-xapi-form",
   imports: [ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -39,16 +39,16 @@ export class XApiForm {
   readonly cancelled = output<void>()
 
   form = this.fb.nonNullable.group({
-    name: ['', Validators.required],
-    image: ['', Validators.required],
-    host: [''],
+    name: ["", Validators.required],
+    image: ["", Validators.required],
+    host: [""],
     port: [8080],
     replicas: [1],
-    sqlRef: [''],
-    nosqlRef: [''],
-    objectStorageRef: [''],
-    topicRef: [''],
-    subscriptionRef: [''],
+    sqlRef: [""],
+    nosqlRef: [""],
+    objectStorageRef: [""],
+    topicRef: [""],
+    subscriptionRef: [""],
     cache: [false],
   })
 
@@ -60,13 +60,13 @@ export class XApiForm {
       port: v.port,
       replicas: v.replicas,
     }
-    if (v.host) params['host'] = v.host
-    if (v.sqlRef) params['sqlRef'] = v.sqlRef
-    if (v.nosqlRef) params['nosqlRef'] = v.nosqlRef
-    if (v.objectStorageRef) params['objectStorageRef'] = v.objectStorageRef
-    if (v.topicRef) params['topicRef'] = v.topicRef
-    if (v.subscriptionRef) params['subscriptionRef'] = v.subscriptionRef
-    if (v.cache) params['cache'] = true
-    this.submitted.emit({ kind: 'XApi', name: v.name, params })
+    if (v.host) params["host"] = v.host
+    if (v.sqlRef) params["sqlRef"] = v.sqlRef
+    if (v.nosqlRef) params["nosqlRef"] = v.nosqlRef
+    if (v.objectStorageRef) params["objectStorageRef"] = v.objectStorageRef
+    if (v.topicRef) params["topicRef"] = v.topicRef
+    if (v.subscriptionRef) params["subscriptionRef"] = v.subscriptionRef
+    if (v.cache) params["cache"] = true
+    this.submitted.emit({ kind: "XApi", name: v.name, params })
   }
 }

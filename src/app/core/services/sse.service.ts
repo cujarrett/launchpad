@@ -1,11 +1,11 @@
-import { Injectable, inject } from '@angular/core'
-import { Observable, from, switchMap, timer } from 'rxjs'
-import { retry } from 'rxjs/operators'
-import { MsalService } from '@azure/msal-angular'
-import { ResourceStatus } from '../models/workspace.model'
-import { environment } from '../../../environments/environment'
+import { Injectable, inject } from "@angular/core"
+import { Observable, from, switchMap, timer } from "rxjs"
+import { retry } from "rxjs/operators"
+import { MsalService } from "@azure/msal-angular"
+import { ResourceStatus } from "../models/workspace.model"
+import { environment } from "../../../environments/environment"
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class SseService {
   private readonly msal = inject(MsalService)
 
@@ -21,8 +21,7 @@ export class SseService {
   }
 
   private async acquireToken(): Promise<string | null> {
-    const account =
-      this.msal.instance.getActiveAccount() ?? this.msal.instance.getAllAccounts()[0]
+    const account = this.msal.instance.getActiveAccount() ?? this.msal.instance.getAllAccounts()[0]
     if (!account) return null
     return this.msal.instance
       .acquireTokenSilent({ scopes: [environment.msalApiScope], account })
@@ -43,7 +42,7 @@ export class SseService {
       }
 
       source.onerror = (err) => {
-        console.error('[SseService] EventSource error, will retry', err)
+        console.error("[SseService] EventSource error, will retry", err)
         source.close()
         observer.error(err)
       }

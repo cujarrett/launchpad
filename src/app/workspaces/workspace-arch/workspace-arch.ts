@@ -7,21 +7,33 @@ import {
   input,
   signal,
   ViewChild,
-} from '@angular/core'
-import { Resource, ResourceKind, ResourceStatus, RESOURCE_KIND_LABELS, RESOURCE_KIND_ICONS, RESOURCE_KIND_COLORS } from '../../core/models/workspace.model'
+} from "@angular/core"
+import {
+  Resource,
+  ResourceKind,
+  ResourceStatus,
+  RESOURCE_KIND_LABELS,
+  RESOURCE_KIND_ICONS,
+  RESOURCE_KIND_COLORS,
+} from "../../core/models/workspace.model"
 
-interface ArchEdge { from: string; to: string }
-interface RenderedEdge { d: string }
+interface ArchEdge {
+  from: string
+  to: string
+}
+interface RenderedEdge {
+  d: string
+}
 
 const COLUMNS: { label: string; kinds: ResourceKind[] }[] = [
-  { label: 'Frontend',  kinds: ['XSpa'] },
-  { label: 'API',       kinds: ['XApi'] },
-  { label: 'Messaging', kinds: ['XTopic', 'XSubscription'] },
-  { label: 'Data',      kinds: ['XSql', 'XNoSql', 'XObjectStorage'] },
+  { label: "Frontend", kinds: ["XSpa"] },
+  { label: "API", kinds: ["XApi"] },
+  { label: "Messaging", kinds: ["XTopic", "XSubscription"] },
+  { label: "Data", kinds: ["XSql", "XNoSql", "XObjectStorage"] },
 ]
 
 @Component({
-  selector: 'app-workspace-arch',
+  selector: "app-workspace-arch",
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="arch-wrap" #archWrap>
@@ -47,13 +59,17 @@ const COLUMNS: { label: string; kinds: ResourceKind[] }[] = [
                 }
               </div>
               <span class="arch-node-name">{{ node.name }}</span>
-              @if (node.spec['host']) {
-                <span class="arch-cms-host">{{ node.spec['host'] }}</span>
+              @if (node.spec["host"]) {
+                <span class="arch-cms-host">{{ node.spec["host"] }}</span>
               }
               @if (status !== null) {
                 <div class="arch-node-status">
-                  <span class="arch-node-status-pill arch-node-status-pill--{{ status.synced && status.ready ? 'ok' : 'warn' }}">
-                    {{ status.synced && status.ready ? 'Ready' : (status.message || 'Not ready') }}
+                  <span
+                    class="arch-node-status-pill arch-node-status-pill--{{
+                      status.synced && status.ready ? 'ok' : 'warn'
+                    }}"
+                  >
+                    {{ status.synced && status.ready ? "Ready" : status.message || "Not ready" }}
                   </span>
                 </div>
               }
@@ -71,7 +87,9 @@ const COLUMNS: { label: string; kinds: ResourceKind[] }[] = [
                   <div
                     class="arch-node arch-node--{{ kindSlug(node.kind) }}"
                     [class.arch-node--synced]="status?.synced === true && status?.ready === true"
-                    [class.arch-node--unsynced]="status !== null && (!status.synced || !status.ready)"
+                    [class.arch-node--unsynced]="
+                      status !== null && (!status.synced || !status.ready)
+                    "
                     [attr.data-arch-name]="node.name"
                     [style.--node-color]="kindColor(node.kind)"
                   >
@@ -89,8 +107,14 @@ const COLUMNS: { label: string; kinds: ResourceKind[] }[] = [
                     <span class="arch-node-name">{{ node.name }}</span>
                     @if (status !== null) {
                       <div class="arch-node-status">
-                        <span class="arch-node-status-pill arch-node-status-pill--{{ status.synced && status.ready ? 'ok' : 'warn' }}">
-                          {{ status.synced && status.ready ? 'Ready' : (status.message || 'Not ready') }}
+                        <span
+                          class="arch-node-status-pill arch-node-status-pill--{{
+                            status.synced && status.ready ? 'ok' : 'warn'
+                          }}"
+                        >
+                          {{
+                            status.synced && status.ready ? "Ready" : status.message || "Not ready"
+                          }}
                         </span>
                       </div>
                     }
@@ -115,8 +139,10 @@ const COLUMNS: { label: string; kinds: ResourceKind[] }[] = [
             <marker
               id="arch-arrow"
               viewBox="0 0 10 10"
-              refX="9" refY="5"
-              markerWidth="5" markerHeight="5"
+              refX="9"
+              refY="5"
+              markerWidth="5"
+              markerHeight="5"
               orient="auto-start-reverse"
             >
               <path d="M 0 0 L 10 5 L 0 10 z" class="arch-arrow-head" />
@@ -131,41 +157,45 @@ const COLUMNS: { label: string; kinds: ResourceKind[] }[] = [
   `,
 })
 export class WorkspaceArch {
-  readonly resources  = input.required<Resource[]>()
-  readonly statusMap   = input<Partial<Record<string, ResourceStatus>>>({})
+  readonly resources = input.required<Resource[]>()
+  readonly statusMap = input<Partial<Record<string, ResourceStatus>>>({})
 
-  @ViewChild('archWrap') private wrapRef!: ElementRef<HTMLElement>
-  @ViewChild('archSvg')  private svgRef!: ElementRef<SVGElement>
+  @ViewChild("archWrap") private wrapRef!: ElementRef<HTMLElement>
+  @ViewChild("archSvg") private svgRef!: ElementRef<SVGElement>
 
   protected readonly renderedEdges = signal<RenderedEdge[]>([])
   protected readonly svgW = signal(0)
   protected readonly svgH = signal(0)
 
-  protected readonly isCms = computed(() =>
-    this.resources().some(r => r.kind === 'XWordpress')
-  )
+  protected readonly isCms = computed(() => this.resources().some((r) => r.kind === "XWordpress"))
 
   protected readonly cmsResources = computed(() =>
-    this.resources().filter(r => r.kind === 'XWordpress')
+    this.resources().filter((r) => r.kind === "XWordpress"),
   )
 
   protected readonly layout = computed(() =>
-    COLUMNS.map(col => ({
+    COLUMNS.map((col) => ({
       label: col.label,
       nodes: this.resources()
-        .filter(r => col.kinds.includes(r.kind))
-        .map(r => ({ name: r.name, kind: r.kind })),
-    }))
+        .filter((r) => col.kinds.includes(r.kind))
+        .map((r) => ({ name: r.name, kind: r.kind })),
+    })),
   )
 
   private readonly edges = computed<ArchEdge[]>(() => {
     const resources = this.resources()
     const edges: ArchEdge[] = []
-    const hasResource = (name: string) => resources.some(r => r.name === name)
+    const hasResource = (name: string) => resources.some((r) => r.name === name)
 
     for (const r of resources) {
-      if (r.kind === 'XApi') {
-        for (const key of ['sqlRef', 'nosqlRef', 'objectStorageRef', 'topicRef', 'subscriptionRef']) {
+      if (r.kind === "XApi") {
+        for (const key of [
+          "sqlRef",
+          "nosqlRef",
+          "objectStorageRef",
+          "topicRef",
+          "subscriptionRef",
+        ]) {
           const ref = r.spec[key] as { name?: string } | undefined
           if (ref?.name && hasResource(ref.name)) {
             edges.push({ from: r.name, to: ref.name })
@@ -173,20 +203,19 @@ export class WorkspaceArch {
         }
       }
 
-      if (r.kind === 'XSpa') {
-        const proxy = r.spec['apiProxy'] as { enabled?: boolean; upstream?: string } | undefined
+      if (r.kind === "XSpa") {
+        const proxy = r.spec["apiProxy"] as { enabled?: boolean; upstream?: string } | undefined
         if (proxy?.enabled) {
-          const upstream = proxy.upstream ?? ''
-          const apis = resources.filter(x => x.kind === 'XApi')
+          const upstream = proxy.upstream ?? ""
+          const apis = resources.filter((x) => x.kind === "XApi")
           const target =
-            apis.find(a => upstream.includes(a.name)) ??
-            (apis.length === 1 ? apis[0] : undefined)
+            apis.find((a) => upstream.includes(a.name)) ?? (apis.length === 1 ? apis[0] : undefined)
           if (target) edges.push({ from: r.name, to: target.name })
         }
       }
 
-      if (r.kind === 'XSubscription') {
-        const ref = r.spec['topicRef'] as { name?: string } | undefined
+      if (r.kind === "XSubscription") {
+        const ref = r.spec["topicRef"] as { name?: string } | undefined
         if (ref?.name && hasResource(ref.name)) {
           edges.push({ from: r.name, to: ref.name })
         }
@@ -205,18 +234,18 @@ export class WorkspaceArch {
   }
 
   protected kindSlug(kind: ResourceKind): string {
-    if (kind === 'XSpa') return 'spa'
-    if (kind === 'XApi') return 'api'
-    if (kind === 'XTopic' || kind === 'XSubscription') return 'messaging'
-    return 'data'
+    if (kind === "XSpa") return "spa"
+    if (kind === "XApi") return "api"
+    if (kind === "XTopic" || kind === "XSubscription") return "messaging"
+    return "data"
   }
 
   protected kindColor(kind: ResourceKind): string {
-    return RESOURCE_KIND_COLORS[kind] ?? '#888'
+    return RESOURCE_KIND_COLORS[kind] ?? "#888"
   }
 
   protected kindIcon(kind: ResourceKind): string {
-    return RESOURCE_KIND_ICONS[kind] ?? ''
+    return RESOURCE_KIND_ICONS[kind] ?? ""
   }
 
   protected nodeStatus(name: string): ResourceStatus | null {
@@ -225,7 +254,7 @@ export class WorkspaceArch {
 
   private draw() {
     const wrap = this.wrapRef?.nativeElement
-    const svg  = this.svgRef?.nativeElement
+    const svg = this.svgRef?.nativeElement
     if (!wrap || !svg) return
 
     const containerRect = wrap.getBoundingClientRect()
@@ -233,18 +262,18 @@ export class WorkspaceArch {
     this.svgH.set(containerRect.height)
 
     const positions = new Map<string, DOMRect>()
-    wrap.querySelectorAll<HTMLElement>('[data-arch-name]').forEach(el => {
-      positions.set(el.dataset['archName']!, el.getBoundingClientRect())
+    wrap.querySelectorAll<HTMLElement>("[data-arch-name]").forEach((el) => {
+      positions.set(el.dataset["archName"]!, el.getBoundingClientRect())
     })
 
-    const rendered = this.edges().flatMap(edge => {
+    const rendered = this.edges().flatMap((edge) => {
       const from = positions.get(edge.from)
-      const to   = positions.get(edge.to)
+      const to = positions.get(edge.to)
       if (!from || !to) return []
 
-      const x1 = from.right  - containerRect.left
+      const x1 = from.right - containerRect.left
       const y1 = from.top + from.height / 2 - containerRect.top
-      const x2 = to.left     - containerRect.left
+      const x2 = to.left - containerRect.left
       const y2 = to.top + to.height / 2 - containerRect.top
 
       // Intra-column edges (same x range): arc above the column

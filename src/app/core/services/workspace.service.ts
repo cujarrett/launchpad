@@ -1,10 +1,10 @@
-import { inject, Injectable } from '@angular/core'
-import { HttpClient } from '@angular/common/http'
-import { Observable } from 'rxjs'
-import { environment } from '../../../environments/environment'
-import { Resource, Workspace } from '../models/workspace.model'
+import { inject, Injectable } from "@angular/core"
+import { HttpClient } from "@angular/common/http"
+import { Observable } from "rxjs"
+import { environment } from "../../../environments/environment"
+import { Resource, Workspace } from "../models/workspace.model"
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class WorkspaceService {
   private readonly http = inject(HttpClient)
 
@@ -26,7 +26,7 @@ export class WorkspaceService {
 
   getResourceValues(tenant: string, name: string): Observable<Record<string, unknown>> {
     return this.http.get<Record<string, unknown>>(
-      `${environment.apiUrl}/workspaces/${tenant}/resources/${name}/values`
+      `${environment.apiUrl}/workspaces/${tenant}/resources/${name}/values`,
     )
   }
 
@@ -45,14 +45,26 @@ export class WorkspaceService {
     )
   }
 
-  createGuestResource(workspace: string, kind: string, withCache = false, withSql = false, params?: Record<string, unknown>): Observable<void> {
-    return this.http.post<void>(
-      `${environment.apiUrl}/guest/workspaces/${workspace}/resources`,
-      { kind, withCache, withSql, ...(params ? { params } : {}) },
-    )
+  createGuestResource(
+    workspace: string,
+    kind: string,
+    withCache = false,
+    withSql = false,
+    params?: Record<string, unknown>,
+  ): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/guest/workspaces/${workspace}/resources`, {
+      kind,
+      withCache,
+      withSql,
+      ...(params ? { params } : {}),
+    })
   }
 
-  patchGuestResourceRefs(workspace: string, resource: string, refs: { withSql: boolean; withCache: boolean }): Observable<void> {
+  patchGuestResourceRefs(
+    workspace: string,
+    resource: string,
+    refs: { withSql: boolean; withCache: boolean },
+  ): Observable<void> {
     return this.http.patch<void>(
       `${environment.apiUrl}/guest/workspaces/${workspace}/resources/${resource}`,
       refs,

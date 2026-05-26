@@ -8,30 +8,32 @@ import {
   OnInit,
   output,
   signal,
-} from '@angular/core'
-import { toSignal, toObservable } from '@angular/core/rxjs-interop'
-import { NgTemplateOutlet } from '@angular/common'
-import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms'
-import { firstValueFrom, switchMap, catchError, of, timeout } from 'rxjs'
-import { HttpErrorResponse } from '@angular/common/http'
-import { FieldDef, FieldKind } from '../../core/models/field.model'
-import { Resource, ResourceKind } from '../../core/models/workspace.model'
-import { SchemaService } from '../../core/services/schema.service'
-import { WorkspaceService } from '../../core/services/workspace.service'
+} from "@angular/core"
+import { toSignal, toObservable } from "@angular/core/rxjs-interop"
+import { NgTemplateOutlet } from "@angular/common"
+import { ReactiveFormsModule, FormGroup, FormControl, Validators } from "@angular/forms"
+import { firstValueFrom, switchMap, catchError, of, timeout } from "rxjs"
+import { HttpErrorResponse } from "@angular/common/http"
+import { FieldDef, FieldKind } from "../../core/models/field.model"
+import { Resource, ResourceKind } from "../../core/models/workspace.model"
+import { SchemaService } from "../../core/services/schema.service"
+import { WorkspaceService } from "../../core/services/workspace.service"
 
 @Component({
-  selector: 'app-dynamic-form',
+  selector: "app-dynamic-form",
   imports: [ReactiveFormsModule, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (loading()) {
       <p class="muted">Loading form…</p>
     } @else {
-      @if (valuesLoadError() && mode() === 'edit') {
-        <p class="field-error" style="margin-bottom:0.75rem">Could not load live values from cluster — form is showing last-committed defaults.</p>
+      @if (valuesLoadError() && mode() === "edit") {
+        <p class="field-error" style="margin-bottom:0.75rem">
+          Could not load live values from cluster — form is showing last-committed defaults.
+        </p>
       }
       <form [formGroup]="formSig()" (ngSubmit)="submit()">
-        @if (mode() !== 'edit') {
+        @if (mode() !== "edit") {
           <div class="field-group">
             <label>
               Name
@@ -46,8 +48,14 @@ import { WorkspaceService } from '../../core/services/workspace.service'
               <div class="ci-field">
                 <span class="ci-field-label">{{ field.label }}</span>
                 @if (formSig().get(field.key)?.value; as val) {
-                  @if (val.toString().startsWith('http')) {
-                    <a [href]="val" target="_blank" rel="noopener noreferrer" class="ci-field-link">{{ val }}</a>
+                  @if (val.toString().startsWith("http")) {
+                    <a
+                      [href]="val"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="ci-field-link"
+                      >{{ val }}</a
+                    >
                   } @else {
                     <code class="ci-field-code">{{ val }}</code>
                   }
@@ -60,72 +68,103 @@ import { WorkspaceService } from '../../core/services/workspace.service'
         }
 
         <div class="form-fields">
-        @for (field of editableFields(); track field.key) {
-          @if (field.kind === 'sub-object') {
-            <fieldset class="sub-group" [formGroupName]="field.key">
-              <legend>{{ field.label }}</legend>
-              @if (hasEnabledToggle(field)) {
-                <label class="toggle">
-                  <input type="checkbox" formControlName="enabled" />
-                  Enable {{ field.label }}
-                </label>
-              }
-              @if (!hasEnabledToggle(field) || isSubObjectEnabled(field.key)) {
-                @for (child of field.children ?? []; track child.key) {
-                  @if (child.key !== 'enabled') {
-                    <label>
-                      {{ child.label }}{{ child.required ? ' *' : '' }}
-                      @switch (child.kind) {
-                        @case ('select') {
-                          <select [formControlName]="child.key">
-                            @if (!child.required) { <option value="">— none —</option> }
-                            @for (opt of child.enum ?? []; track opt; let i = $index) {
-                              <option [value]="opt">{{ child.enumLabels?.[i] ?? opt }}</option>
-                            }
-                          </select>
+          @for (field of editableFields(); track field.key) {
+            @if (field.kind === "sub-object") {
+              <fieldset class="sub-group" [formGroupName]="field.key">
+                <legend>{{ field.label }}</legend>
+                @if (hasEnabledToggle(field)) {
+                  <label class="toggle">
+                    <input type="checkbox" formControlName="enabled" />
+                    Enable {{ field.label }}
+                  </label>
+                }
+                @if (!hasEnabledToggle(field) || isSubObjectEnabled(field.key)) {
+                  @for (child of field.children ?? []; track child.key) {
+                    @if (child.key !== "enabled") {
+                      <label>
+                        {{ child.label }}{{ child.required ? " *" : "" }}
+                        @switch (child.kind) {
+                          @case ("select") {
+                            <select [formControlName]="child.key">
+                              @if (!child.required) {
+                                <option value="">— none —</option>
+                              }
+                              @for (opt of child.enum ?? []; track opt; let i = $index) {
+                                <option [value]="opt">{{ child.enumLabels?.[i] ?? opt }}</option>
+                              }
+                            </select>
+                          }
+                          @case ("boolean") {
+                            <input type="checkbox" [formControlName]="child.key" />
+                          }
+                          @case ("number") {
+                            <input
+                              type="number"
+                              [min]="child.minimum ?? 0"
+                              [formControlName]="child.key"
+                              [placeholder]="child.default?.toString() ?? ''"
+                            />
+                          }
+                          @default {
+                            <input
+                              type="text"
+                              [formControlName]="child.key"
+                              [placeholder]="child.default?.toString() ?? ''"
+                            />
+                          }
                         }
-                        @case ('boolean') {
-                          <input type="checkbox" [formControlName]="child.key" />
-                        }
-                        @case ('number') {
-                          <input type="number" [min]="child.minimum ?? 0" [formControlName]="child.key" [placeholder]="child.default?.toString() ?? ''" />
-                        }
-                        @default {
-                          <input type="text" [formControlName]="child.key" [placeholder]="child.default?.toString() ?? ''" />
-                        }
-                      }
-                    </label>
+                      </label>
+                    }
                   }
                 }
-              }
-            </fieldset>
-          } @else {
-            <div class="field-group">
-              <label>
-                <span class="field-label-row">
-                  {{ field.label }}{{ field.required ? ' *' : '' }}
-                  @if (field.description) {
-                    <span class="hint-icon" [title]="field.description">ⓘ</span>
-                  }
-                </span>
-                <ng-container [ngTemplateOutlet]="fieldInput" [ngTemplateOutletContext]="{ field: field, controlName: field.key, fullControlName: field.key }" />
-              </label>
-            </div>
+              </fieldset>
+            } @else {
+              <div class="field-group">
+                <label>
+                  <span class="field-label-row">
+                    {{ field.label }}{{ field.required ? " *" : "" }}
+                    @if (field.description) {
+                      <span class="hint-icon" [title]="field.description">ⓘ</span>
+                    }
+                  </span>
+                  <ng-container
+                    [ngTemplateOutlet]="fieldInput"
+                    [ngTemplateOutletContext]="{
+                      field: field,
+                      controlName: field.key,
+                      fullControlName: field.key,
+                    }"
+                  />
+                </label>
+              </div>
+            }
           }
-        }
         </div>
 
         @if (connectionFields().length > 0 && (!readonly() || shownConnectionFields().length > 0)) {
           <div class="connections-section">
             <div class="connections-header">
               <span class="connections-label">Resource Integrations</span>
-              @if (availableConnectionFields().length > 0 && (!readonly() || connectionsEditable())) {
+              @if (
+                availableConnectionFields().length > 0 && (!readonly() || connectionsEditable())
+              ) {
                 <div class="connection-add-row">
-                  <button type="button" class="btn-add-connection" (click)="showConnectionPicker.set(!showConnectionPicker()); $event.stopPropagation()" title="Add integration">+</button>
+                  <button
+                    type="button"
+                    class="btn-add-connection"
+                    (click)="
+                      showConnectionPicker.set(!showConnectionPicker()); $event.stopPropagation()
+                    "
+                    title="Add integration"
+                  >
+                    +
+                  </button>
                   @if (showConnectionPicker()) {
                     <div class="connection-picker" (click)="$event.stopPropagation()">
                       @for (f of availableConnectionFields(); track f.key) {
-                        <button type="button" class="picker-opt" (click)="addConnection(f.key)">{{ f.label }}</button>
+                        <button type="button" class="picker-opt" (click)="addConnection(f.key)">
+                          {{ f.label }}
+                        </button>
                       }
                     </div>
                   }
@@ -133,7 +172,7 @@ import { WorkspaceService } from '../../core/services/workspace.service'
               }
             </div>
             @for (field of shownConnectionFields(); track field.key) {
-              @if (field.kind === 'resource-ref') {
+              @if (field.kind === "resource-ref") {
                 <div class="connection-row">
                   <span class="connection-type">{{ field.label }}</span>
                   <select [formControlName]="field.key">
@@ -143,21 +182,34 @@ import { WorkspaceService } from '../../core/services/workspace.service'
                     }
                   </select>
                   @if (!readonly()) {
-                    <button type="button" class="btn-new-ref" (click)="requestCreate.emit(field.refKind!)">+ New</button>
+                    <button
+                      type="button"
+                      class="btn-new-ref"
+                      (click)="requestCreate.emit(field.refKind!)"
+                    >
+                      + New
+                    </button>
                   }
                   @if (!readonly() || connectionsEditable()) {
-                    <button type="button" class="btn-remove-conn" (click)="removeConnection(field.key)" title="Remove">×</button>
+                    <button
+                      type="button"
+                      class="btn-remove-conn"
+                      (click)="removeConnection(field.key)"
+                      title="Remove"
+                    >
+                      ×
+                    </button>
                   }
                 </div>
-              } @else if (field.kind === 'sub-object') {
+              } @else if (field.kind === "sub-object") {
                 <div class="connection-row sub-object-conn" [formGroupName]="field.key">
                   <span class="connection-type">{{ field.label }}</span>
                   <div class="connection-sub-controls">
                     @for (child of field.children ?? []; track child.key) {
-                      @if (child.key !== 'enabled') {
+                      @if (child.key !== "enabled") {
                         <label class="inline-label">
                           {{ child.label }}
-                          @if (child.kind === 'select') {
+                          @if (child.kind === "select") {
                             <select [formControlName]="child.key">
                               @for (opt of child.enum ?? []; track opt; let i = $index) {
                                 <option [value]="opt">{{ child.enumLabels?.[i] ?? opt }}</option>
@@ -171,7 +223,14 @@ import { WorkspaceService } from '../../core/services/workspace.service'
                     }
                   </div>
                   @if (!readonly() || connectionsEditable()) {
-                    <button type="button" class="btn-remove-conn" (click)="removeConnection(field.key)" title="Remove">×</button>
+                    <button
+                      type="button"
+                      class="btn-remove-conn"
+                      (click)="removeConnection(field.key)"
+                      title="Remove"
+                    >
+                      ×
+                    </button>
                   }
                 </div>
               }
@@ -183,19 +242,26 @@ import { WorkspaceService } from '../../core/services/workspace.service'
           <details class="advanced-fields">
             <summary>Advanced</summary>
             <div class="form-fields">
-            @for (field of advancedFields(); track field.key) {
-              <div class="field-group">
-                <label>
-                  <span class="field-label-row">
-                    {{ field.label }}{{ field.required ? ' *' : '' }}
-                    @if (field.description) {
-                      <span class="hint-icon" [title]="field.description">ⓘ</span>
-                    }
-                  </span>
-                  <ng-container [ngTemplateOutlet]="fieldInput" [ngTemplateOutletContext]="{ field: field, controlName: field.key, fullControlName: field.key }" />
-                </label>
-              </div>
-            }
+              @for (field of advancedFields(); track field.key) {
+                <div class="field-group">
+                  <label>
+                    <span class="field-label-row">
+                      {{ field.label }}{{ field.required ? " *" : "" }}
+                      @if (field.description) {
+                        <span class="hint-icon" [title]="field.description">ⓘ</span>
+                      }
+                    </span>
+                    <ng-container
+                      [ngTemplateOutlet]="fieldInput"
+                      [ngTemplateOutletContext]="{
+                        field: field,
+                        controlName: field.key,
+                        fullControlName: field.key,
+                      }"
+                    />
+                  </label>
+                </div>
+              }
             </div>
           </details>
         }
@@ -203,52 +269,83 @@ import { WorkspaceService } from '../../core/services/workspace.service'
         <div class="form-actions">
           @if (!readonly()) {
             <button type="submit" [disabled]="formSig().invalid || submitting()">
-              {{ submitting() ? (mode() === 'edit' ? 'Saving…' : 'Creating…') : (mode() === 'edit' ? 'Save' : 'Create') }}
+              {{
+                submitting()
+                  ? mode() === "edit"
+                    ? "Saving…"
+                    : "Creating…"
+                  : mode() === "edit"
+                    ? "Save"
+                    : "Create"
+              }}
             </button>
           }
           <button type="button" class="secondary" (click)="cancelled.emit()">
-            {{ readonly() ? 'Close' : 'Cancel' }}
+            {{ readonly() ? "Close" : "Cancel" }}
           </button>
         </div>
         @if (saveError()) {
           <p class="field-error" style="margin-top: 0.5rem">{{ saveError() }}</p>
         }
 
-        <ng-template #fieldInput let-field="field" let-controlName="controlName" let-fullControlName="fullControlName">
-      @switch (field.kind) {
-        @case ('select') {
-          <select [formControlName]="controlName">
-            @if (!field.required) { <option value="">— none —</option> }
-            @for (opt of field.enum ?? []; track opt; let i = $index) {
-              <option [value]="opt">{{ field.enumLabels?.[i] ?? opt }}</option>
+        <ng-template
+          #fieldInput
+          let-field="field"
+          let-controlName="controlName"
+          let-fullControlName="fullControlName"
+        >
+          @switch (field.kind) {
+            @case ("select") {
+              <select [formControlName]="controlName">
+                @if (!field.required) {
+                  <option value="">— none —</option>
+                }
+                @for (opt of field.enum ?? []; track opt; let i = $index) {
+                  <option [value]="opt">{{ field.enumLabels?.[i] ?? opt }}</option>
+                }
+              </select>
             }
-          </select>
-        }
-        @case ('boolean') {
-          <input type="checkbox" [formControlName]="controlName" />
-        }
-        @case ('number') {
-          <input type="number" [min]="field.minimum ?? 0" [formControlName]="controlName" [placeholder]="field.default?.toString() ?? ''" />
-        }
-        @case ('array') {
-          <textarea [formControlName]="controlName" rows="3" placeholder="One entry per line"></textarea>
-        }
-        @case ('resource-ref') {
-          <select [formControlName]="controlName">
-            <option value="">— select —</option>
-            @for (r of refsFor(field.refKind!); track r.name) {
-              <option [value]="r.name">{{ r.name }}</option>
+            @case ("boolean") {
+              <input type="checkbox" [formControlName]="controlName" />
             }
-          </select>
-        }
-        @default {
-          <input type="text" [formControlName]="controlName" [placeholder]="field.default?.toString() ?? ''" />
-          @if (formSig().get(fullControlName)?.hasError('pattern') && formSig().get(fullControlName)?.touched) {
-            <span class="field-error">Invalid format — e.g. {{ field.default }}</span>
+            @case ("number") {
+              <input
+                type="number"
+                [min]="field.minimum ?? 0"
+                [formControlName]="controlName"
+                [placeholder]="field.default?.toString() ?? ''"
+              />
+            }
+            @case ("array") {
+              <textarea
+                [formControlName]="controlName"
+                rows="3"
+                placeholder="One entry per line"
+              ></textarea>
+            }
+            @case ("resource-ref") {
+              <select [formControlName]="controlName">
+                <option value="">— select —</option>
+                @for (r of refsFor(field.refKind!); track r.name) {
+                  <option [value]="r.name">{{ r.name }}</option>
+                }
+              </select>
+            }
+            @default {
+              <input
+                type="text"
+                [formControlName]="controlName"
+                [placeholder]="field.default?.toString() ?? ''"
+              />
+              @if (
+                formSig().get(fullControlName)?.hasError("pattern") &&
+                formSig().get(fullControlName)?.touched
+              ) {
+                <span class="field-error">Invalid format — e.g. {{ field.default }}</span>
+              }
+            }
           }
-        }
-      }
-    </ng-template>
+        </ng-template>
       </form>
     }
   `,
@@ -257,7 +354,7 @@ export class DynamicForm implements OnInit {
   readonly workspace = input.required<string>()
   readonly kind = input.required<ResourceKind>()
   /** 'edit' pre-populates the form and locks the name field. */
-  readonly mode = input<'create' | 'edit'>('create')
+  readonly mode = input<"create" | "edit">("create")
   /** When true, the form is view-only: save button is hidden and the form cannot be submitted. */
   readonly readonly = input<boolean>(false)
   /** When true, the connections section remains editable even in readonly mode (guest sandbox). */
@@ -280,23 +377,37 @@ export class DynamicForm implements OnInit {
   // Schema fields loaded via toSignal — properly integrated with Angular's zoneless scheduler
   protected readonly fields = toSignal(
     toObservable(this.kind).pipe(
-      switchMap(kind => this.schemaService.getFields(kind).pipe(
-        timeout(8000),
-        catchError(() => of([] as FieldDef[]))
-      ))
-    )
+      switchMap((kind) =>
+        this.schemaService.getFields(kind).pipe(
+          timeout(8000),
+          catchError(() => of([] as FieldDef[])),
+        ),
+      ),
+    ),
   )
 
-  protected readonly normalFields = computed(() => (this.fields() ?? []).filter(f => !f.advanced && !f.connection))
-  protected readonly ciFields = computed(() => this.normalFields().filter(f => f.kind === 'display'))
-  protected readonly editableFields = computed(() => this.normalFields().filter(f => f.kind !== 'display'))
-  protected readonly advancedFields = computed(() => (this.fields() ?? []).filter(f => f.advanced))
+  protected readonly normalFields = computed(() =>
+    (this.fields() ?? []).filter((f) => !f.advanced && !f.connection),
+  )
+  protected readonly ciFields = computed(() =>
+    this.normalFields().filter((f) => f.kind === "display"),
+  )
+  protected readonly editableFields = computed(() =>
+    this.normalFields().filter((f) => f.kind !== "display"),
+  )
+  protected readonly advancedFields = computed(() =>
+    (this.fields() ?? []).filter((f) => f.advanced),
+  )
 
-  protected readonly connectionFields = computed(() => (this.fields() ?? []).filter(f => !!f.connection))
+  protected readonly connectionFields = computed(() =>
+    (this.fields() ?? []).filter((f) => !!f.connection),
+  )
   protected readonly showConnectionPicker = signal(false)
 
-  @HostListener('document:click')
-  closeConnectionPicker() { this.showConnectionPicker.set(false) }
+  @HostListener("document:click")
+  closeConnectionPicker() {
+    this.showConnectionPicker.set(false)
+  }
 
   private readonly extraKeys = signal<Set<string>>(new Set())
   private readonly hiddenKeys = signal<Set<string>>(new Set())
@@ -308,9 +419,10 @@ export class DynamicForm implements OnInit {
     const s = new Set<string>()
     for (const f of fields) {
       if (!f.connection) continue
-      if (f.kind === 'resource-ref' && values[f.key]) s.add(f.key)
-      if (f.kind === 'sub-object') {
-        if ((values[f.key] as Record<string, unknown> | undefined)?.['enabled'] === true) s.add(f.key)
+      if (f.kind === "resource-ref" && values[f.key]) s.add(f.key)
+      if (f.kind === "sub-object") {
+        if ((values[f.key] as Record<string, unknown> | undefined)?.["enabled"] === true)
+          s.add(f.key)
       }
     }
     return s
@@ -320,15 +432,17 @@ export class DynamicForm implements OnInit {
     const extra = this.extraKeys()
     const hidden = this.hiddenKeys()
     const pre = this.prePopulatedKeys()
-    return this.connectionFields().filter(f => !hidden.has(f.key) && (pre.has(f.key) || extra.has(f.key)))
+    return this.connectionFields().filter(
+      (f) => !hidden.has(f.key) && (pre.has(f.key) || extra.has(f.key)),
+    )
   })
 
   protected readonly availableConnectionFields = computed(() => {
-    const shown = new Set(this.shownConnectionFields().map(f => f.key))
+    const shown = new Set(this.shownConnectionFields().map((f) => f.key))
     const existing = this.existingResources()
-    return this.connectionFields().filter(f => {
+    return this.connectionFields().filter((f) => {
       if (shown.has(f.key)) return false
-      if (f.kind === 'resource-ref') return existing.some(r => r.kind === f.refKind)
+      if (f.kind === "resource-ref") return existing.some((r) => r.kind === f.refKind)
       return true
     })
   })
@@ -343,7 +457,7 @@ export class DynamicForm implements OnInit {
 
   // loading until both schema AND values are ready
   protected readonly loading = computed(
-    () => this.fields() === undefined || this.loadedValues() === null
+    () => this.fields() === undefined || this.loadedValues() === null,
   )
 
   // FormGroup derived from fields + values; memoized by computed so it's only rebuilt once
@@ -351,13 +465,13 @@ export class DynamicForm implements OnInit {
     const fields = this.fields()
     const values = this.loadedValues()
     if (!fields?.length || values === null) {
-      return new FormGroup({ __name: new FormControl('', Validators.required) })
+      return new FormGroup({ __name: new FormControl("", Validators.required) })
     }
     const form = buildForm(fields, values, this.resourceName())
     if (this.readonly()) {
       form.disable()
       if (this.connectionsEditable()) {
-        for (const f of fields.filter(field => !!field.connection)) {
+        for (const f of fields.filter((field) => !!field.connection)) {
           form.get(f.key)?.enable()
         }
       }
@@ -367,16 +481,19 @@ export class DynamicForm implements OnInit {
 
   async ngOnInit() {
     const valuesPromise: Promise<Record<string, unknown>> =
-      this.mode() === 'edit' && this.resourceName() && !this.skipLiveValues()
-        ? firstValueFrom(this.workspaceService.getResourceValues(this.workspace(), this.resourceName()!))
-            .catch((): Record<string, unknown> => {
-              this.valuesLoadError.set(true)
-              return {}
-            })
+      this.mode() === "edit" && this.resourceName() && !this.skipLiveValues()
+        ? firstValueFrom(
+            this.workspaceService.getResourceValues(this.workspace(), this.resourceName()!),
+          ).catch((): Record<string, unknown> => {
+            this.valuesLoadError.set(true)
+            return {}
+          })
         : Promise.resolve(this.initialValues() ?? {})
 
     const [resources, values] = await Promise.all([
-      firstValueFrom(this.workspaceService.getResources(this.workspace()).pipe(timeout(8000))).catch((): Resource[] => []),
+      firstValueFrom(
+        this.workspaceService.getResources(this.workspace()).pipe(timeout(8000)),
+      ).catch((): Resource[] => []),
       valuesPromise,
     ])
 
@@ -385,14 +502,14 @@ export class DynamicForm implements OnInit {
   }
 
   protected hasEnabledToggle(field: FieldDef): boolean {
-    return field.children?.some((c) => c.key === 'enabled' && c.kind === 'boolean') ?? false
+    return field.children?.some((c) => c.key === "enabled" && c.kind === "boolean") ?? false
   }
 
   protected isSubObjectEnabled(key: string): boolean {
     if (this.formSig().get(`${key}.enabled`)?.value === true) return true
     // In edit mode, if the API failed to return values, fall back to showing
     // all sub-object fields so the user isn't silently shown stale defaults.
-    if (this.mode() === 'edit' && this.valuesLoadError()) return true
+    if (this.mode() === "edit" && this.valuesLoadError()) return true
     return false
   }
 
@@ -401,33 +518,41 @@ export class DynamicForm implements OnInit {
   }
 
   protected addConnection(key: string) {
-    const field = this.connectionFields().find(f => f.key === key)!
-    if (field.kind === 'sub-object') {
+    const field = this.connectionFields().find((f) => f.key === key)!
+    if (field.kind === "sub-object") {
       this.formSig().get(`${key}.enabled`)?.setValue(true)
     }
-    this.extraKeys.update(s => new Set([...s, key]))
-    this.hiddenKeys.update(s => { const n = new Set(s); n.delete(key); return n })
+    this.extraKeys.update((s) => new Set([...s, key]))
+    this.hiddenKeys.update((s) => {
+      const n = new Set(s)
+      n.delete(key)
+      return n
+    })
     this.showConnectionPicker.set(false)
     if (this.connectionsEditable()) this.emitConnectionsChanged()
   }
 
   protected removeConnection(key: string) {
-    const field = this.connectionFields().find(f => f.key === key)!
-    if (field.kind === 'sub-object') {
+    const field = this.connectionFields().find((f) => f.key === key)!
+    if (field.kind === "sub-object") {
       this.formSig().get(`${key}.enabled`)?.setValue(false)
     } else {
-      this.formSig().get(key)?.setValue('')
+      this.formSig().get(key)?.setValue("")
     }
-    this.hiddenKeys.update(s => new Set([...s, key]))
-    this.extraKeys.update(s => { const n = new Set(s); n.delete(key); return n })
+    this.hiddenKeys.update((s) => new Set([...s, key]))
+    this.extraKeys.update((s) => {
+      const n = new Set(s)
+      n.delete(key)
+      return n
+    })
     if (this.connectionsEditable()) this.emitConnectionsChanged()
   }
 
   private emitConnectionsChanged() {
-    const shown = new Set(this.shownConnectionFields().map(f => f.key))
+    const shown = new Set(this.shownConnectionFields().map((f) => f.key))
     this.connectionsChanged.emit({
-      withSql: shown.has('sqlRef'),
-      withCache: shown.has('cache'),
+      withSql: shown.has("sqlRef"),
+      withCache: shown.has("cache"),
     })
   }
 
@@ -437,17 +562,24 @@ export class DynamicForm implements OnInit {
     this.saveError.set(null)
     try {
       const raw = this.formSig().getRawValue() as Record<string, unknown>
-      const name = raw['__name'] as string
+      const name = raw["__name"] as string
       const params = buildParams(raw, this.fields() ?? [])
       await firstValueFrom(
-        this.workspaceService.createResource(this.workspace(), { kind: this.kind(), name, params })
+        this.workspaceService.createResource(this.workspace(), { kind: this.kind(), name, params }),
       )
       this.created.emit()
     } catch (err: unknown) {
-      const detail = err instanceof HttpErrorResponse
-        ? (typeof err.error === 'string' && err.error.trim() ? err.error.trim() : `HTTP ${err.status}`)
-        : err instanceof Error ? err.message : ''
-      this.saveError.set(detail ? `Save failed: ${detail}` : 'Save failed. Check your inputs and try again.')
+      const detail =
+        err instanceof HttpErrorResponse
+          ? typeof err.error === "string" && err.error.trim()
+            ? err.error.trim()
+            : `HTTP ${err.status}`
+          : err instanceof Error
+            ? err.message
+            : ""
+      this.saveError.set(
+        detail ? `Save failed: ${detail}` : "Save failed. Check your inputs and try again.",
+      )
     } finally {
       this.submitting.set(false)
     }
@@ -462,20 +594,20 @@ function buildForm(
 ): FormGroup {
   const nameCtrl = name
     ? new FormControl({ value: name, disabled: true }, Validators.required)
-    : new FormControl('', Validators.required)
+    : new FormControl("", Validators.required)
 
   const controls: Record<string, FormControl | FormGroup> = { __name: nameCtrl }
 
   for (const field of fields) {
-    if (field.kind === 'sub-object') {
+    if (field.kind === "sub-object") {
       const subInitial = (initial[field.key] ?? {}) as Record<string, unknown>
       const sub: Record<string, FormControl> = {}
       for (const child of field.children ?? []) {
         sub[child.key] = makeControl(child, subInitial[child.key])
       }
       controls[field.key] = new FormGroup(sub)
-    } else if (field.kind === 'display') {
-      controls[field.key] = new FormControl({ value: initial[field.key] ?? '', disabled: true })
+    } else if (field.kind === "display") {
+      controls[field.key] = new FormControl({ value: initial[field.key] ?? "", disabled: true })
     } else {
       controls[field.key] = makeControl(field, initial[field.key])
     }
@@ -487,18 +619,18 @@ function buildForm(
 function makeControl(field: FieldDef, initialValue?: unknown): FormControl {
   let v: unknown
   if (initialValue !== undefined && initialValue !== null) {
-    if (field.kind === 'array' && Array.isArray(initialValue)) {
-      v = initialValue.join('\n')
-    } else if (field.kind === 'resource-ref' && typeof initialValue === 'object') {
-      v = (initialValue as Record<string, unknown>)['name'] ?? ''
+    if (field.kind === "array" && Array.isArray(initialValue)) {
+      v = initialValue.join("\n")
+    } else if (field.kind === "resource-ref" && typeof initialValue === "object") {
+      v = (initialValue as Record<string, unknown>)["name"] ?? ""
     } else {
       v = initialValue
     }
   } else {
-    v = field.default ?? (field.kind === 'boolean' ? false : '')
+    v = field.default ?? (field.kind === "boolean" ? false : "")
   }
   const validators = [
-    ...(field.required && field.kind !== 'boolean' ? [Validators.required] : []),
+    ...(field.required && field.kind !== "boolean" ? [Validators.required] : []),
     ...(field.pattern ? [Validators.pattern(field.pattern)] : []),
   ]
   return new FormControl(v, validators)
@@ -510,23 +642,26 @@ function buildParams(raw: Record<string, unknown>, fields: FieldDef[]): Record<s
 
   for (const field of fields) {
     const val = raw[field.key]
-    if (val === '' || val === null || val === undefined) continue
+    if (val === "" || val === null || val === undefined) continue
 
-    if (field.kind === 'resource-ref') {
+    if (field.kind === "resource-ref") {
       // render templates expect the string name directly: `name: {{ .Params.sqlRef }}`
       params[field.key] = val
-    } else if (field.kind === 'sub-object') {
+    } else if (field.kind === "sub-object") {
       const subRaw = val as Record<string, unknown>
-      const hasEnabled = field.children?.some(c => c.key === 'enabled')
-      if (hasEnabled && subRaw['enabled'] !== true) continue
+      const hasEnabled = field.children?.some((c) => c.key === "enabled")
+      if (hasEnabled && subRaw["enabled"] !== true) continue
       const sub: Record<string, unknown> = {}
       for (const child of field.children ?? []) {
         const cv = subRaw[child.key]
-        if (cv !== '' && cv !== null && cv !== undefined) sub[child.key] = cv
+        if (cv !== "" && cv !== null && cv !== undefined) sub[child.key] = cv
       }
       if (Object.keys(sub).length > 0) params[field.key] = sub
-    } else if (field.kind === 'array') {
-      const lines = (val as string).split('\n').map((s) => s.trim()).filter(Boolean)
+    } else if (field.kind === "array") {
+      const lines = (val as string)
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean)
       if (lines.length > 0) params[field.key] = lines
     } else {
       params[field.key] = val
