@@ -22,6 +22,7 @@ import { ResourceCard } from "../resource-card/resource-card"
 import { CreateResource } from "../../create/create-resource"
 import { WorkspaceArch } from "../workspace-arch/workspace-arch"
 import { GuestCreate } from "../guest-create/guest-create"
+import { ProvisioningPipeline } from "../provisioning-pipeline/provisioning-pipeline"
 import { SseService } from "../../core/services/sse.service"
 import { environment } from "../../../environments/environment"
 
@@ -49,7 +50,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
 
 @Component({
   selector: "app-workspace-detail",
-  imports: [ResourceCard, CreateResource, WorkspaceArch, GuestCreate, RouterLink],
+  imports: [ResourceCard, CreateResource, WorkspaceArch, GuestCreate, ProvisioningPipeline, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -168,8 +169,10 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
       @if (loading()) {
         <p class="muted">Loading...</p>
       } @else if (viewMode() === "arch") {
+        <app-provisioning-pipeline [resources]="resources()" [statusMap]="statusMap()" />
         <app-workspace-arch [resources]="resources()" [statusMap]="statusMap()" />
       } @else {
+        <app-provisioning-pipeline [resources]="resources()" [statusMap]="statusMap()" />
         <div class="card-grid">
           @for (resource of resources(); track resource.name) {
             <app-resource-card

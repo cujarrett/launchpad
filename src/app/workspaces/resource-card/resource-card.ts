@@ -1,8 +1,10 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   HostListener,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -46,16 +48,16 @@ import { DynamicForm } from "../../create/dynamic-form/dynamic-form"
           [class.ready]="status()?.ready ?? false"
           [class.error]="status() != null && !status()!.synced"
           [class.unknown]="status() == null"
-          [title]="status() == null ? 'Waiting for cluster sync' : (status()?.message ?? '')"
+          [title]="statusTitle()"
         >
           {{
             status() == null
-              ? "QUEUED"
+              ? "SYNCING"
               : status()!.ready
                 ? "READY"
                 : !status()!.synced
                   ? "ERROR"
-                  : "PENDING"
+                  : "PROVISIONING"
           }}
         </span>
         @if (statusMessage()) {
@@ -68,12 +70,13 @@ import { DynamicForm } from "../../create/dynamic-form/dynamic-form"
         @if (previewUrl()) {
           <a
             class="preview-link"
+            [class.preview-link--ready]="previewVisible()"
             [href]="previewUrl()"
             target="_blank"
             rel="noopener noreferrer"
             (click)="$event.stopPropagation()"
             title="Open preview"
-            >↗ Preview</a
+            >↗ Open</a
           >
         }
         @if (canEdit()) {
@@ -160,17 +163,79 @@ export class ResourceCard {
   protected readonly connectionsUpdateError = signal<string | null>(null)
   protected readonly pendingRefs = signal<{ withSql: boolean; withCache: boolean } | null>(null)
   protected readonly connectionsSaving = signal(false)
+  protected readonly previewVisible = signal(false)
+  private probeInterval: ReturnType<typeof setInterval> | null = null
 
   private readonly workspaceService = inject(WorkspaceService)
+  private readonly destroyRef = inject(DestroyRef)
+
+  constructor() {
+    effect(() => {
+      const ready = this.status()?.ready ?? false
+      const probeUrl = this.probeUrl()
+      if (ready && probeUrl && !this.previewVisible()) {
+        this.startProbing(probeUrl)
+      } else if (!ready) {
+        this.stopProbing()
+        this.previewVisible.set(false)
+      }
+    })
+    this.destroyRef.onDestroy(() => this.stopProbing())
+  }
+
+  // Build the URL to probe — /healthz for both APIs and SPAs.
+  // Both have CORS on /healthz so we can use a real cors fetch and check
+  // response.ok. Cloudflare error pages (502/524) have no CORS header, so
+  // they throw rather than resolve — preventing dead links during provisioning.
+  private readonly probeUrl = computed(() => {
+    const host = this.resource().spec["host"] as string | undefined
+    if (!host) return null
+    const kind = this.resource().kind
+    if (kind !== "XSpa" && kind !== "XApi") return null
+    return `https://${host}/healthz`
+  })
+
+  private startProbing(url: string): void {
+    if (this.probeInterval) return // already running
+    const probe = async () => {
+      try {
+        const res = await fetch(url, { cache: "no-store" })
+        if (res.ok) {
+          this.previewVisible.set(true)
+          this.stopProbing()
+        }
+      } catch {
+        // server not yet reachable — keep polling
+      }
+    }
+    probe()
+    this.probeInterval = setInterval(probe, 3000)
+  }
+
+  private stopProbing(): void {
+    if (this.probeInterval) {
+      clearInterval(this.probeInterval)
+      this.probeInterval = null
+    }
+  }
 
   // Show the condition message inline when the resource is not ready and
   // there's something actionable to display (not just the default "Creating" noise).
   protected readonly previewUrl = computed(() => {
+    if (!this.previewVisible()) return null
     const host = this.resource().spec["host"] as string | undefined
     if (!host) return null
     const kind = this.resource().kind
     if (kind !== "XSpa" && kind !== "XApi") return null
     return `https://${host}`
+  })
+
+  protected readonly statusTitle = computed(() => {
+    const s = this.status()
+    if (!s) return "ArgoCD is syncing your changes to the cluster…"
+    if (s.ready) return "Up and running! 🚀"
+    if (!s.synced) return s.message || "Something went wrong"
+    return "Crossplane is wiring your resources together…"
   })
 
   protected readonly statusMessage = computed(() => {
