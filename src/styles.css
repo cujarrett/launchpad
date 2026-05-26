@@ -6,6 +6,7 @@
   --color-border: #2e3347;
   --color-text: #e2e8f0;
   --color-text-muted: #8492a6;
+  --color-muted: var(--color-text-muted);
   --color-accent: #6366f1;
   --color-accent-hover: #4f46e5;
   --color-success: #22c55e;

@@ -15,7 +15,9 @@ export class SseService {
       // passed as a query param as a workaround. The backend should treat it as
       // short-lived and validate strictly. Prefer cookie-based auth or a
       // fetch-based SSE proxy to avoid token exposure in server logs.
-      switchMap((token) => this.openEventSource(token ? `${url}?token=${token}` : url)),
+      switchMap((token) =>
+        this.openEventSource(token ? `${url}?token=${encodeURIComponent(token)}` : url),
+      ),
       retry({ delay: () => timer(5000) }),
     )
   }

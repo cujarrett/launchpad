@@ -4,9 +4,11 @@ import {
   Component,
   computed,
   ElementRef,
+  HostListener,
   input,
   signal,
   ViewChild,
+  effect,
 } from "@angular/core"
 import {
   Resource,
@@ -226,7 +228,16 @@ export class WorkspaceArch {
   })
 
   constructor() {
-    afterNextRender(() => this.draw())
+    effect(() => {
+      this.resources()
+      this.edges()
+      afterNextRender(() => this.draw())
+    })
+  }
+
+  @HostListener("window:resize")
+  protected onResize() {
+    this.draw()
   }
 
   protected kindLabel(kind: ResourceKind): string {
