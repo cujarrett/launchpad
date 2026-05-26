@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   OnDestroy,
   OnInit,
@@ -22,6 +23,7 @@ import { ResourceCard } from "../resource-card/resource-card"
 import { CreateResource } from "../../create/create-resource"
 import { WorkspaceArch } from "../workspace-arch/workspace-arch"
 import { GuestCreate } from "../guest-create/guest-create"
+import { ProvisioningPipeline } from "../provisioning-pipeline/provisioning-pipeline"
 import { SseService } from "../../core/services/sse.service"
 import { environment } from "../../../environments/environment"
 
@@ -49,8 +51,16 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
 
 @Component({
   selector: "app-workspace-detail",
-  imports: [ResourceCard, CreateResource, WorkspaceArch, GuestCreate, RouterLink],
+  imports: [
+    ResourceCard,
+    CreateResource,
+    WorkspaceArch,
+    GuestCreate,
+    ProvisioningPipeline,
+    RouterLink,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // allPreviewsReady: true once every XApi/XSpa with a host has confirmed /healthz
   template: `
     <div class="page">
       @if (isGuest()) {
@@ -168,8 +178,18 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
       @if (loading()) {
         <p class="muted">Loading...</p>
       } @else if (viewMode() === "arch") {
+        <app-provisioning-pipeline
+          [resources]="resources()"
+          [statusMap]="statusMap()"
+          [allPreviewsReady]="allPreviewsReady()"
+        />
         <app-workspace-arch [resources]="resources()" [statusMap]="statusMap()" />
       } @else {
+        <app-provisioning-pipeline
+          [resources]="resources()"
+          [statusMap]="statusMap()"
+          [allPreviewsReady]="allPreviewsReady()"
+        />
         <div class="card-grid">
           @for (resource of resources(); track resource.name) {
             <app-resource-card
@@ -185,6 +205,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
               (deleted)="handleDelete($event)"
               (saved)="expandedResource.set(null); loadResources()"
               (createKind)="startCreateForKind($event)"
+              (previewReady)="handlePreviewReady($event)"
             />
           } @empty {
             <p class="muted">
@@ -280,6 +301,15 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   protected readonly deletingWorkspace = signal(false)
   protected readonly deleteWorkspaceError = signal<string | null>(null)
   private readonly tick = signal(0)
+  private readonly confirmedPreviewSet = signal<ReadonlySet<string>>(new Set())
+  protected readonly allPreviewsReady = computed(() => {
+    const previewable = this.resources().filter(
+      (r) => (r.kind === "XApi" || r.kind === "XSpa") && r.spec["host"],
+    )
+    if (previewable.length === 0) return true
+    const confirmed = this.confirmedPreviewSet()
+    return previewable.every((r) => confirmed.has(r.name))
+  })
 
   readonly platformKinds = PLATFORM_KINDS
   readonly labels = RESOURCE_KIND_LABELS
@@ -386,6 +416,10 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   async handleDelete(name: string) {
     await firstValueFrom(this.workspaceService.deleteResource(this.name(), name))
     await this.loadResources()
+  }
+
+  handlePreviewReady(name: string) {
+    this.confirmedPreviewSet.update((s) => new Set([...s, name]))
   }
 
   async loadResources() {

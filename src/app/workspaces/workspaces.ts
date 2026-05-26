@@ -172,28 +172,35 @@ function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): str
         <p class="muted">Loading...</p>
       } @else if (error()) {
         <p class="field-error">{{ error() }}</p>
+      } @else if (myWorkspaces().length === 0 && guestWorkspaces().length === 0) {
+        <p class="muted">No workspaces found.</p>
       } @else {
-        <div class="card-grid">
-          @for (workspace of workspaces(); track workspace.name) {
-            <a
-              class="workspace-tile"
-              [class.guest-tile]="workspace.isGuest"
-              [routerLink]="['/workspaces', workspace.name]"
-            >
-              @if (workspace.isGuest) {
+        @if (guestWorkspaces().length > 0) {
+          <p class="section-label">🧪 Sandboxes</p>
+          <div class="card-grid">
+            @for (workspace of guestWorkspaces(); track workspace.name) {
+              <a class="workspace-tile guest-tile" [routerLink]="['/workspaces', workspace.name]">
                 <span class="guest-badge">🧪 sandbox</span>
-              }
-              {{ workspace.isGuest ? workspace.name.replace("guest-", "") : workspace.name }}
-              @if (workspace.isGuest && workspace.expiresAt) {
-                <span class="guest-ttl" [class.expiring]="isExpiringSoon(workspace.expiresAt)">
-                  ⏱ {{ countdown(workspace.expiresAt) }}
-                </span>
-              }
-            </a>
-          } @empty {
-            <p class="muted">No workspaces found.</p>
-          }
-        </div>
+                {{ workspace.name.replace("guest-", "") }}
+                @if (workspace.expiresAt) {
+                  <span class="guest-ttl" [class.expiring]="isExpiringSoon(workspace.expiresAt)">
+                    ⏱ {{ countdown(workspace.expiresAt) }}
+                  </span>
+                }
+              </a>
+            }
+          </div>
+        }
+        @if (myWorkspaces().length > 0) {
+          <p class="section-label">Matt's Apps</p>
+          <div class="card-grid">
+            @for (workspace of myWorkspaces(); track workspace.name) {
+              <a class="workspace-tile" [routerLink]="['/workspaces', workspace.name]">
+                {{ workspace.name }}
+              </a>
+            }
+          </div>
+        }
       }
     </div>
   `,
@@ -207,6 +214,17 @@ function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): str
         );
         border: 1px dashed #7c3aed;
         position: relative;
+      }
+      .section-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        opacity: 0.4;
+        font-weight: 600;
+        margin: 1.25rem 0 0.6rem;
+      }
+      .section-label:first-of-type {
+        margin-top: 0;
       }
       .guest-badge {
         display: block;
@@ -281,6 +299,8 @@ export class Workspaces implements OnInit, OnDestroy {
   protected readonly roleService = inject(RoleService)
 
   protected readonly workspaces = signal<Workspace[]>([])
+  protected readonly myWorkspaces = computed(() => this.workspaces().filter((w) => !w.isGuest))
+  protected readonly guestWorkspaces = computed(() => this.workspaces().filter((w) => w.isGuest))
   protected readonly loading = signal(true)
   protected readonly error = signal<string | null>(null)
 

@@ -11,7 +11,6 @@ import { MsalService } from "@azure/msal-angular"
 import { RoleService } from "./core/services/role.service"
 
 const TAGLINES = [
-  "Mission Statement: Wow",
   "Ship solutions, not toil",
   "Enterprise features, bookshelf homelab",
   "No sprints were harmed",
