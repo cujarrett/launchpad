@@ -49,6 +49,7 @@ app-root {
 
 app-root > router-outlet + * {
   flex: 1;
+  background: var(--color-surface);
 }
 
 a {
@@ -127,6 +128,7 @@ h3 {
   margin-top: auto;
   text-align: center;
   padding: 1.75rem 1.5rem;
+  background: var(--color-surface);
   font-size: 1rem;
   color: var(--color-text-muted);
   letter-spacing: 0.01em;
@@ -336,7 +338,7 @@ form {
 /* Workspace list tiles */
 .workspace-tile {
   display: block;
-  background: var(--color-surface);
+  background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 1.25rem 1.5rem;
@@ -348,7 +350,7 @@ form {
 }
 .workspace-tile:hover {
   border-color: var(--color-accent);
-  background: var(--color-surface-alt);
+  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface-alt));
   text-decoration: none;
 }
 .workspace-tile-wrap {
@@ -376,7 +378,7 @@ form {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  background: var(--color-surface);
+  background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 1.25rem 1.5rem;
@@ -424,7 +426,7 @@ form {
 .resource-card {
   display: flex;
   flex-direction: column;
-  background: var(--color-surface);
+  background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-left-width: 3px;
   border-radius: var(--radius-md);
@@ -978,7 +980,7 @@ details.advanced-fields .form-fields {
   top: calc(100% + 4px);
   left: 0;
   z-index: 50;
-  background: var(--color-surface);
+  background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 0.4rem;
@@ -1005,7 +1007,7 @@ details.advanced-fields .form-fields {
 
 /* ── Create panel ───────────────────────────────────────── */
 .create-panel {
-  background: var(--color-surface);
+  background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
@@ -1114,7 +1116,7 @@ details.advanced-fields .form-fields {
   border-left: 3px solid var(--node-color, var(--color-border));
   border-radius: var(--radius-md);
   padding: 0.5rem 0.75rem;
-  background: var(--color-surface);
+  background: var(--color-surface-alt);
   display: flex;
   flex-direction: column;
   gap: 0.25rem;

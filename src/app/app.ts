@@ -12,9 +12,8 @@ import { RoleService } from "./core/services/role.service"
 
 const TAGLINES = [
   "Ship solutions, not toil",
-  "Enterprise features, bookshelf homelab",
+  "Bookshelf K8s Platform",
   "No sprints were harmed",
-  "Boring infra. Exciting outcomes.",
 ]
 
 @Component({
