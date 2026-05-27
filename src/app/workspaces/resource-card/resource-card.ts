@@ -182,6 +182,11 @@ export class ResourceCard {
       const probeUrl = this.probeUrl()
       if (ready && probeUrl && !this.previewVisible()) {
         this.startProbing(probeUrl)
+      } else if (ready && !probeUrl && this.isInternalHost()) {
+        // Internal hosts use self-signed certs — browser can't probe them.
+        // Mark visible immediately once Crossplane says ready.
+        this.previewVisible.set(true)
+        this.previewReady.emit(this.resource().name)
       } else if (!ready) {
         this.stopProbing()
         this.previewVisible.set(false)
@@ -189,6 +194,13 @@ export class ResourceCard {
     })
     this.destroyRef.onDestroy(() => this.stopProbing())
   }
+
+  // Internal (.local.lab) hosts use self-signed certs that the browser can't
+  // verify, so a fetch-based probe will always throw. Skip it.
+  private readonly isInternalHost = computed(() => {
+    const host = this.resource().spec["host"] as string | undefined
+    return host?.endsWith(".local.lab") ?? false
+  })
 
   // Build the URL to probe — /healthz for both APIs and SPAs.
   // Both have CORS on /healthz so we can use a real cors fetch and check
@@ -199,6 +211,7 @@ export class ResourceCard {
     if (!host) return null
     const kind = this.resource().kind
     if (kind !== "XSpa" && kind !== "XApi") return null
+    if (host.endsWith(".local.lab")) return null
     return `https://${host}/healthz`
   })
 
@@ -236,7 +249,7 @@ export class ResourceCard {
     const kind = this.resource().kind
     if (kind !== "XSpa" && kind !== "XApi") return null
     const url = `https://${host}`
-    if (kind !== "XSpa") return url
+    if (kind !== "XSpa" || !this.workspace().startsWith("guest-")) return url
     const name = this.workspace().replace(/^guest-/, "")
     return `${url}?w=${encodeURIComponent(name)}`
   })
