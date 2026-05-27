@@ -248,6 +248,7 @@ export class ResourceCard {
     if (!host) return null
     const kind = this.resource().kind
     if (kind !== "XSpa" && kind !== "XApi") return null
+    if (host.endsWith(".local.lab")) return null
     const url = `https://${host}`
     if (kind !== "XSpa" || !this.workspace().startsWith("guest-")) return url
     const name = this.workspace().replace(/^guest-/, "")
