@@ -54,7 +54,7 @@ Three lazy-loaded routes. `/` → `WorkspacesComponent`. `/workspaces/:name` →
 
 ### `src/app/core/services/role.service.ts`
 
-The auth state source of truth. Listens to MSAL's `MsalBroadcastService` for `LOGIN_SUCCESS`, `LOGOUT_SUCCESS`, and `ACCOUNT_ADDED` events. On each event, re-reads all accounts from `MsalService` and refreshes four signals: `account`, `isAuthenticated`, `isContributor`, `userName`.
+The auth state source of truth. Listens to MSAL's `MsalBroadcastService` for `LOGIN_SUCCESS`, `LOGOUT_SUCCESS`, and `ACQUIRE_TOKEN_SUCCESS` events. On each event, re-reads all accounts from `MsalService` and refreshes four signals: `account`, `isAuthenticated`, `isContributor`, `userName`.
 
 `isContributor` inspects `idTokenClaims.roles` on the active account. If `'Contributor'` is present, write buttons appear. If not, the user sees the app read-only. No roles in the token means no mutation — the API will also reject the request with 403, but the UI doesn't even offer the action.
 
