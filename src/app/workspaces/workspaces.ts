@@ -192,7 +192,7 @@ function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): str
           </div>
         }
         @if (myWorkspaces().length > 0) {
-          <p class="section-label">Matt's Apps</p>
+          <p class="section-label">Matt's Workspaces</p>
           <div class="card-grid">
             @for (workspace of myWorkspaces(); track workspace.name) {
               <a class="workspace-tile" [routerLink]="['/workspaces', workspace.name]">
