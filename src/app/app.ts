@@ -10,11 +10,7 @@ import { RouterLink, RouterOutlet } from "@angular/router"
 import { MsalService } from "@azure/msal-angular"
 import { RoleService } from "./core/services/role.service"
 
-const TAGLINES = [
-  "Ship solutions, not toil",
-  "Bookshelf K8s Platform",
-  "No sprints were harmed",
-]
+const TAGLINES = ["Ship solutions, not toil", "Bookshelf K8s Platform", "No sprints were harmed"]
 
 @Component({
   selector: "app-root",
