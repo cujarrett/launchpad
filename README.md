@@ -17,11 +17,3 @@ npm start
 ```
 
 [launchpad-api](https://github.com/cujarrett/launchpad-api) needs to be running locally for any real functionality.
-
-## How it works
-
-Full request flow — auth, form generation, SSE status updates — is in [HOW_IT_WORKS.md](./HOW_IT_WORKS.md).
-
-## Deployment
-
-CI builds a multi-arch Docker image and pushes to GHCR. Deployed as an XSpa Crossplane XR in the cluster via ArgoCD.
