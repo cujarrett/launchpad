@@ -318,7 +318,7 @@ export class ProvisioningPipeline {
   protected readonly stageMessage = computed(() => {
     switch (this.stage()) {
       case "syncing":
-        return "ArgoCD watches the Git repo and applies changes to the cluster on a one-minute sync cycle — your resources should appear shortly."
+        return "ArgoCD is polling the Git repo for your changes and will apply them to the cluster."
       case "integrating":
         return "Resources are provisioned — waiting for the app to come online and the tunnel to route traffic."
       default:

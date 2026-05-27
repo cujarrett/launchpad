@@ -235,7 +235,10 @@ export class ResourceCard {
     if (!host) return null
     const kind = this.resource().kind
     if (kind !== "XSpa" && kind !== "XApi") return null
-    return `https://${host}`
+    const url = `https://${host}`
+    if (kind !== "XSpa") return url
+    const name = this.workspace().replace(/^guest-/, "")
+    return `${url}?w=${encodeURIComponent(name)}`
   })
 
   protected readonly statusTitle = computed(() => {
