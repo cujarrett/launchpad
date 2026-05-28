@@ -22,7 +22,7 @@ import {
 import { ResourceCard } from "../resource-card/resource-card"
 import { CreateResource } from "../../create/create-resource"
 import { WorkspaceArch } from "../workspace-arch/workspace-arch"
-import { GuestCreate } from "../guest-create/guest-create"
+import { GuestCreate, GUEST_KINDS } from "../guest-create/guest-create"
 import { ProvisioningPipeline } from "../provisioning-pipeline/provisioning-pipeline"
 import { SseService } from "../../core/services/sse.service"
 import { environment } from "../../../environments/environment"
@@ -131,7 +131,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
                 }
               }
               <button (click)="startCreate()">+ New Resource</button>
-            } @else if (isGuest() && !isExpired()) {
+            } @else if (isGuest() && !isExpired() && guestHasAvailableKinds()) {
               <button (click)="creating.set(true)">+ Add Resource</button>
             }
           }
@@ -191,7 +191,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
           [allPreviewsReady]="allPreviewsReady()"
         />
         <div class="card-grid">
-          @for (resource of resources(); track resource.name) {
+          @for (resource of sortedResources(); track resource.name) {
             <app-resource-card
               [resource]="resource"
               [workspace]="name()"
@@ -199,6 +199,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
               [expanded]="expandedResource() === resource.name"
               [canEdit]="roleService.isContributor()"
               [canEditConnections]="isGuest() && resource.kind === 'XApi'"
+              [dependencyReady]="resource.kind !== 'XSpa' || spaApiReady()"
               (toggled)="
                 expandedResource.set(expandedResource() === resource.name ? null : resource.name)
               "
@@ -302,6 +303,25 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   protected readonly deleteWorkspaceError = signal<string | null>(null)
   private readonly tick = signal(0)
   private readonly confirmedPreviewSet = signal<ReadonlySet<string>>(new Set())
+  protected readonly guestHasAvailableKinds = computed(() => {
+    const existing = new Set(this.resources().map((r) => r.kind))
+    return GUEST_KINDS.some((k) => !existing.has(k))
+  })
+
+  protected readonly sortedResources = computed(() =>
+    [...this.resources()].sort((a, b) => {
+      if (a.kind === "XSpa") return -1
+      if (b.kind === "XSpa") return 1
+      return 0
+    }),
+  )
+
+  protected readonly spaApiReady = computed(() => {
+    const api = this.resources().find((r) => r.kind === "XApi")
+    if (!api) return true
+    return this.statusMap()[api.name]?.ready ?? false
+  })
+
   protected readonly allPreviewsReady = computed(() => {
     const previewable = this.resources().filter(
       (r) => (r.kind === "XApi" || r.kind === "XSpa") && r.spec["host"],

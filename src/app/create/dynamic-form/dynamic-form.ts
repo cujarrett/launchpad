@@ -266,9 +266,84 @@ import { WorkspaceService } from "../../core/services/workspace.service"
           </details>
         }
 
+        @if (companionKind() !== null) {
+          <fieldset class="companion-section">
+            <legend>
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  [checked]="withCompanion()"
+                  (change)="withCompanion.set(!withCompanion())"
+                />
+                Also create a {{ companionKind() === "XSpa" ? "SPA" : "API" }}
+              </label>
+            </legend>
+            @if (withCompanion()) {
+              <div class="field-group">
+                <label>
+                  Name *
+                  <input
+                    #cName
+                    type="text"
+                    (input)="companionName.set(cName.value)"
+                    placeholder="e.g. my-app"
+                  />
+                </label>
+              </div>
+              <div class="field-group">
+                <label>
+                  Image *
+                  <input #cImage type="text" (input)="companionImage.set(cImage.value)" />
+                </label>
+              </div>
+              @if (companionKind() === "XSpa") {
+                <div class="field-group">
+                  <label>
+                    Host *
+                    <input #cHost type="text" (input)="companionHost.set(cHost.value)" />
+                  </label>
+                </div>
+                <div class="field-group">
+                  <label>
+                    TLS Issuer
+                    <select #cTls (change)="companionTlsIssuer.set(cTls.value)">
+                      <option value="letsencrypt-prod">letsencrypt-prod</option>
+                      <option value="letsencrypt-staging">letsencrypt-staging</option>
+                      <option value="local-lab-ca-issuer">local-lab-ca-issuer</option>
+                    </select>
+                  </label>
+                </div>
+              } @else {
+                <div class="field-group">
+                  <label>
+                    Port
+                    <input
+                      #cPort
+                      type="number"
+                      value="8080"
+                      (input)="companionPort.set(+cPort.value)"
+                    />
+                  </label>
+                </div>
+              }
+              <div class="field-group">
+                <label>
+                  Replicas
+                  <input
+                    #cReplicas
+                    type="number"
+                    value="1"
+                    (input)="companionReplicas.set(+cReplicas.value)"
+                  />
+                </label>
+              </div>
+            }
+          </fieldset>
+        }
+
         <div class="form-actions">
           @if (!readonly()) {
-            <button type="submit" [disabled]="formSig().invalid || submitting()">
+            <button type="submit" [disabled]="formSig().invalid || submitting() || !companionValid()">
               {{
                 submitting()
                   ? mode() === "edit"
@@ -455,6 +530,30 @@ export class DynamicForm implements OnInit {
   protected readonly submitting = signal(false)
   protected readonly saveError = signal<string | null>(null)
 
+  // Companion creation: XApi → also create XSpa, XSpa → also create XApi
+  protected readonly companionKind = computed<ResourceKind | null>(() => {
+    if (this.mode() !== "create") return null
+    const k = this.kind()
+    if (k === "XApi") return "XSpa"
+    if (k === "XSpa") return "XApi"
+    return null
+  })
+  protected readonly withCompanion = signal(false)
+  protected readonly companionName = signal("")
+  protected readonly companionImage = signal("")
+  protected readonly companionHost = signal("")
+  protected readonly companionTlsIssuer = signal("letsencrypt-prod")
+  protected readonly companionPort = signal(8080)
+  protected readonly companionReplicas = signal(1)
+  protected readonly companionValid = computed(() => {
+    if (!this.withCompanion()) return true
+    const ck = this.companionKind()
+    if (!ck) return true
+    if (!this.companionName().trim() || !this.companionImage().trim()) return false
+    if (ck === "XSpa" && !this.companionHost().trim()) return false
+    return true
+  })
+
   // loading until both schema AND values are ready
   protected readonly loading = computed(
     () => this.fields() === undefined || this.loadedValues() === null,
@@ -558,6 +657,7 @@ export class DynamicForm implements OnInit {
 
   async submit() {
     if (this.formSig().invalid) return
+    if (!this.companionValid()) return
     this.submitting.set(true)
     this.saveError.set(null)
     try {
@@ -567,6 +667,26 @@ export class DynamicForm implements OnInit {
       await firstValueFrom(
         this.workspaceService.createResource(this.workspace(), { kind: this.kind(), name, params }),
       )
+      if (this.withCompanion()) {
+        const ck = this.companionKind()!
+        const cparams: Record<string, unknown> = {
+          image: this.companionImage().trim(),
+          replicas: this.companionReplicas(),
+        }
+        if (ck === "XSpa") {
+          cparams["host"] = this.companionHost().trim()
+          cparams["tlsIssuer"] = this.companionTlsIssuer()
+        } else {
+          cparams["port"] = this.companionPort()
+        }
+        await firstValueFrom(
+          this.workspaceService.createResource(this.workspace(), {
+            kind: ck,
+            name: this.companionName().trim(),
+            params: cparams,
+          }),
+        )
+      }
       this.created.emit()
     } catch (err: unknown) {
       const detail =

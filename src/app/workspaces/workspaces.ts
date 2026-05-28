@@ -15,7 +15,7 @@ import { WorkspaceService } from "../core/services/workspace.service"
 import { RoleService } from "../core/services/role.service"
 import { Workspace } from "../core/models/workspace.model"
 
-const GUEST_MAX = 5
+const GUEST_MAX = 10
 
 // Mirror of the backend word lists — 25 × 25 = 625 possible combinations.
 const GUEST_WORDS_1 = [
@@ -108,7 +108,12 @@ function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): str
                 {{ sandboxFullMessage() }}
               </span>
             } @else if (!pickingGuestName()) {
-              <button class="secondary" (click)="startGuestNamePicker()">🧪 Try the Demo</button>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:0.2rem">
+                <button class="secondary" (click)="startGuestNamePicker()">🧪 Try the Demo</button>
+                @if (guestCount() > 0) {
+                  <span class="muted" style="font-size:0.72rem">{{ slotsRemaining() }}/{{ guestMax }} slots available</span>
+                }
+              </div>
             }
           }
         </div>
@@ -322,8 +327,9 @@ export class Workspaces implements OnInit, OnDestroy {
 
   protected readonly guestMax = GUEST_MAX
   protected readonly guestCount = computed(() => this.workspaces().filter((w) => w.isGuest).length)
+  protected readonly slotsRemaining = computed(() => this.guestMax - this.guestCount())
   protected readonly sandboxFullMessage = computed(() => {
-    return "All 5 demo slots are in use — try again in a few minutes"
+    return `All ${this.guestMax} demo slots are in use — try again in a few minutes`
   })
 
   async ngOnInit() {

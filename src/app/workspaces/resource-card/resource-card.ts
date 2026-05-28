@@ -45,7 +45,7 @@ import { DynamicForm } from "../../create/dynamic-form/dynamic-form"
         <span class="name" [title]="resource().name">{{ resource().name }}</span>
         <span
           class="status"
-          [class.ready]="(status()?.ready ?? false) && !isIntegrating()"
+          [class.ready]="effectiveReady() && !isIntegrating()"
           [class.integrating]="isIntegrating()"
           [class.error]="status() != null && !status()!.synced"
           [class.unknown]="status() == null"
@@ -156,6 +156,8 @@ export class ResourceCard {
   readonly canEdit = input<boolean>(true)
   /** When true, the Resource Integrations section is editable (guest sandbox XApi only). */
   readonly canEditConnections = input<boolean>(false)
+  /** False when a dependency (e.g. companion API for a SPA) is not yet ready. */
+  readonly dependencyReady = input<boolean>(true)
 
   readonly toggled = output<void>()
   readonly deleted = output<string>()
@@ -168,8 +170,17 @@ export class ResourceCard {
   protected readonly pendingRefs = signal<{ withSql: boolean; withCache: boolean } | null>(null)
   protected readonly connectionsSaving = signal(false)
   protected readonly previewVisible = signal(false)
+  // Set true after saving integrations — suppresses probe re-confirmation until
+  // status cycles through not-ready (pod restarted), then clears itself.
+  protected readonly awaitingRedeploy = signal(false)
+  protected readonly effectiveReady = computed(
+    () => (this.status()?.ready ?? false) && this.dependencyReady(),
+  )
   protected readonly isIntegrating = computed(
-    () => (this.status()?.ready ?? false) && !!this.probeUrl() && !this.previewVisible(),
+    () =>
+      this.effectiveReady() &&
+      !!this.probeUrl() &&
+      (!this.previewVisible() || this.awaitingRedeploy()),
   )
   private probeInterval: ReturnType<typeof setInterval> | null = null
 
@@ -178,11 +189,12 @@ export class ResourceCard {
 
   constructor() {
     effect(() => {
-      const ready = this.status()?.ready ?? false
+      const ready = this.effectiveReady()
       const probeUrl = this.probeUrl()
-      if (ready && probeUrl && !this.previewVisible()) {
+      const awaiting = this.awaitingRedeploy()
+      if (ready && probeUrl && !this.previewVisible() && !awaiting) {
         this.startProbing(probeUrl)
-      } else if (ready && !probeUrl && this.isInternalHost()) {
+      } else if (ready && !probeUrl && this.isInternalHost() && !awaiting) {
         // Internal hosts use self-signed certs — browser can't probe them.
         // Mark visible immediately once Crossplane says ready.
         this.previewVisible.set(true)
@@ -190,6 +202,7 @@ export class ResourceCard {
       } else if (!ready) {
         this.stopProbing()
         this.previewVisible.set(false)
+        this.awaitingRedeploy.set(false) // status cycled — allow probing on next ready
       }
     })
     this.destroyRef.onDestroy(() => this.stopProbing())
@@ -250,14 +263,13 @@ export class ResourceCard {
     if (kind !== "XSpa" && kind !== "XApi") return null
     if (host.endsWith(".local.lab")) return null
     const url = `https://${host}`
-    if (kind !== "XSpa" || !this.workspace().startsWith("guest-")) return url
-    const name = this.workspace().replace(/^guest-/, "")
-    return `${url}?w=${encodeURIComponent(name)}`
+    return url
   })
 
   protected readonly statusTitle = computed(() => {
     const s = this.status()
     if (!s) return "ArgoCD is syncing your changes to the cluster…"
+    if (s.ready && !this.dependencyReady()) return "Waiting for companion API to be ready…"
     if (s.ready) return "Up and running! 🚀"
     if (!s.synced) return s.message || "Something went wrong"
     return "Crossplane is wiring your resources together…"
@@ -316,6 +328,12 @@ export class ResourceCard {
         this.workspaceService.patchGuestResourceRefs(this.workspace(), this.resource().name, refs),
       )
       this.pendingRefs.set(null)
+      // Immediately drop the preview link — the pod is about to restart.
+      // awaitingRedeploy blocks the probe from re-confirming the old pod;
+      // it clears itself once status cycles through not-ready.
+      this.stopProbing()
+      this.previewVisible.set(false)
+      this.awaitingRedeploy.set(true)
     } catch {
       this.connectionsUpdateError.set("Failed to save connection changes.")
     } finally {
