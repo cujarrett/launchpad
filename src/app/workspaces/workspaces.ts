@@ -15,7 +15,7 @@ import { WorkspaceService } from "../core/services/workspace.service"
 import { RoleService } from "../core/services/role.service"
 import { Workspace } from "../core/models/workspace.model"
 
-const GUEST_MAX = 10
+const GUEST_MAX = 5
 
 // Mirror of the backend word lists — 25 × 25 = 625 possible combinations.
 const GUEST_WORDS_1 = [
