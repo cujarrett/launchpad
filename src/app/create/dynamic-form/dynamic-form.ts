@@ -343,7 +343,10 @@ import { WorkspaceService } from "../../core/services/workspace.service"
 
         <div class="form-actions">
           @if (!readonly()) {
-            <button type="submit" [disabled]="formSig().invalid || submitting() || !companionValid()">
+            <button
+              type="submit"
+              [disabled]="formSig().invalid || submitting() || !companionValid()"
+            >
               {{
                 submitting()
                   ? mode() === "edit"

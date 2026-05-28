@@ -73,64 +73,104 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
         <div class="options-section">
           <span class="options-label">Configure API</span>
           <div class="options-grid">
-          @if (showSqlToggle()) {
-            <button type="button" class="option-card" [class.active]="withSql()" (click)="withSql.set(!withSql())">
-              <span class="option-icon">🗄️</span>
+            @if (showSqlToggle()) {
+              <button
+                type="button"
+                class="option-card"
+                [class.active]="withSql()"
+                (click)="withSql.set(!withSql())"
+              >
+                <span class="option-icon">🗄️</span>
+                <div class="option-body">
+                  <span class="option-title">Connect to existing SQL database</span>
+                  <span class="option-desc"
+                    >Wire your API to the SQL database already in this workspace.</span
+                  >
+                </div>
+                <span class="option-toggle" [class.on]="withSql()"></span>
+              </button>
+            }
+            @if (offerSql()) {
+              <button
+                type="button"
+                class="option-card"
+                [class.active]="withSql()"
+                (click)="withSql.set(!withSql())"
+              >
+                <span class="option-icon">🗄️</span>
+                <div class="option-body">
+                  <span class="option-title">Also provision SQL database</span>
+                  <span class="option-desc"
+                    >Creates a relational database and wires it to your API.</span
+                  >
+                </div>
+                <span class="option-toggle" [class.on]="withSql()"></span>
+              </button>
+            }
+            @if (offerNoSql()) {
+              <button
+                type="button"
+                class="option-card"
+                [class.active]="withNoSql()"
+                (click)="withNoSql.set(!withNoSql())"
+              >
+                <span class="option-icon">📋</span>
+                <div class="option-body">
+                  <span class="option-title">Also provision NoSQL database</span>
+                  <span class="option-desc"
+                    >Creates a key-value store and wires it to your API.</span
+                  >
+                </div>
+                <span class="option-toggle" [class.on]="withNoSql()"></span>
+              </button>
+            }
+            @if (offerStorage()) {
+              <button
+                type="button"
+                class="option-card"
+                [class.active]="withStorage()"
+                (click)="withStorage.set(!withStorage())"
+              >
+                <span class="option-icon">🗂️</span>
+                <div class="option-body">
+                  <span class="option-title">Also provision object storage</span>
+                  <span class="option-desc"
+                    >A managed store for files and blobs, wired to your API.</span
+                  >
+                </div>
+                <span class="option-toggle" [class.on]="withStorage()"></span>
+              </button>
+            }
+            <button
+              type="button"
+              class="option-card"
+              [class.active]="withCache()"
+              (click)="withCache.set(!withCache())"
+            >
+              <span class="option-icon">⏩</span>
               <div class="option-body">
-                <span class="option-title">Connect to existing SQL database</span>
-                <span class="option-desc">Wire your API to the SQL database already in this workspace.</span>
+                <span class="option-title">Add in-cluster cache</span>
+                <span class="option-desc"
+                  >In-cluster Redis wired to your API via service binding.</span
+                >
               </div>
-              <span class="option-toggle" [class.on]="withSql()"></span>
+              <span class="option-toggle" [class.on]="withCache()"></span>
             </button>
-          }
-          @if (offerSql()) {
-            <button type="button" class="option-card" [class.active]="withSql()" (click)="withSql.set(!withSql())">
-              <span class="option-icon">🗄️</span>
-              <div class="option-body">
-                <span class="option-title">Also provision SQL database</span>
-                <span class="option-desc">Creates a relational database and wires it to your API.</span>
-              </div>
-              <span class="option-toggle" [class.on]="withSql()"></span>
-            </button>
-          }
-          @if (offerNoSql()) {
-            <button type="button" class="option-card" [class.active]="withNoSql()" (click)="withNoSql.set(!withNoSql())">
-              <span class="option-icon">📋</span>
-              <div class="option-body">
-                <span class="option-title">Also provision NoSQL database</span>
-                <span class="option-desc">Creates a key-value store and wires it to your API.</span>
-              </div>
-              <span class="option-toggle" [class.on]="withNoSql()"></span>
-            </button>
-          }
-          @if (offerStorage()) {
-            <button type="button" class="option-card" [class.active]="withStorage()" (click)="withStorage.set(!withStorage())">
-              <span class="option-icon">🗂️</span>
-              <div class="option-body">
-                <span class="option-title">Also provision object storage</span>
-                <span class="option-desc">A managed store for files and blobs, wired to your API.</span>
-              </div>
-              <span class="option-toggle" [class.on]="withStorage()"></span>
-            </button>
-          }
-          <button type="button" class="option-card" [class.active]="withCache()" (click)="withCache.set(!withCache())">
-            <span class="option-icon">⏩</span>
-            <div class="option-body">
-              <span class="option-title">Add in-cluster cache</span>
-              <span class="option-desc">In-cluster Redis wired to your API via service binding.</span>
-            </div>
-            <span class="option-toggle" [class.on]="withCache()"></span>
-          </button>
-          @if (offerSpa()) {
-            <button type="button" class="option-card" [class.active]="withSpa()" (click)="withSpa.set(!withSpa())">
-              <span class="option-icon">🌐</span>
-              <div class="option-body">
-                <span class="option-title">Also create a SPA</span>
-                <span class="option-desc">Provisions a static frontend wired to this API.</span>
-              </div>
-              <span class="option-toggle" [class.on]="withSpa()"></span>
-            </button>
-          }
+            @if (offerSpa()) {
+              <button
+                type="button"
+                class="option-card"
+                [class.active]="withSpa()"
+                (click)="withSpa.set(!withSpa())"
+              >
+                <span class="option-icon">🌐</span>
+                <div class="option-body">
+                  <span class="option-title">Also create a SPA</span>
+                  <span class="option-desc">Provisions a static frontend wired to this API.</span>
+                </div>
+                <span class="option-toggle" [class.on]="withSpa()"></span>
+              </button>
+            }
           </div>
         </div>
       }
@@ -142,8 +182,12 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
             <div class="option-card required">
               <span class="option-icon">⚡</span>
               <div class="option-body">
-                <span class="option-title">API backend <span class="required-badge">Required for this demo</span></span>
-                <span class="option-desc">Needed to serve your workspace name to the Demo SPA.</span>
+                <span class="option-title"
+                  >API backend <span class="required-badge">Required for this demo</span></span
+                >
+                <span class="option-desc"
+                  >Needed to serve your workspace name to the Demo SPA.</span
+                >
               </div>
             </div>
           </div>
@@ -333,7 +377,7 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
         transition: background 0.2s;
       }
       .option-toggle::after {
-        content: '';
+        content: "";
         position: absolute;
         top: 2px;
         left: 2px;

@@ -111,7 +111,9 @@ function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): str
               <div style="display:flex;flex-direction:column;align-items:center;gap:0.2rem">
                 <button class="secondary" (click)="startGuestNamePicker()">🧪 Try the Demo</button>
                 @if (guestCount() > 0) {
-                  <span class="muted" style="font-size:0.72rem">{{ slotsRemaining() }}/{{ guestMax }} slots available</span>
+                  <span class="muted" style="font-size:0.72rem"
+                    >{{ slotsRemaining() }}/{{ guestMax }} slots available</span
+                  >
                 }
               </div>
             }
