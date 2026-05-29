@@ -319,7 +319,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   protected readonly spaApiReady = computed(() => {
     const api = this.resources().find((r) => r.kind === "XApi")
     if (!api) return true
-    return this.statusMap()[api.name]?.ready ?? false
+    return this.confirmedPreviewSet().has(api.name)
   })
 
   protected readonly allPreviewsReady = computed(() => {
