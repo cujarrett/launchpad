@@ -37,8 +37,7 @@ const TAGLINES = ["Ship solutions, not toil", "Bookshelf K8s Platform", "No spri
     </header>
     <router-outlet />
     <footer class="app-footer">
-      Made by
-      <a href="https://mattjarrett.dev" target="_blank" rel="noopener noreferrer">Matt Jarrett</a>
+      <a href="https://blog.mattjarrett.dev/platform/" target="_blank" rel="noopener noreferrer">Made by Matt Jarrett</a>
       with ♥ and Kubernetes
     </footer>
   `,
