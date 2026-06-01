@@ -190,7 +190,7 @@ import { WorkspaceService } from "../../core/services/workspace.service"
                       + New
                     </button>
                   }
-                  @if (!readonly() || connectionsEditable()) {
+                  @if (!readonly()) {
                     <button
                       type="button"
                       class="btn-remove-conn"
