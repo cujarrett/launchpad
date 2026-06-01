@@ -134,7 +134,7 @@ import { DynamicForm } from "../../create/dynamic-form/dynamic-form"
           />
         </div>
         @if (pendingRefs() !== null) {
-          <div style="padding: 0.5rem 1rem 0; display: flex; align-items: center; gap: 0.5rem">
+          <div style="padding: 1rem 1rem 0.5rem; display: flex; align-items: center; gap: 0.5rem">
             <button (click)="saveConnections()" [disabled]="connectionsSaving()">
               {{ connectionsSaving() ? "Saving…" : "Save integrations" }}
             </button>

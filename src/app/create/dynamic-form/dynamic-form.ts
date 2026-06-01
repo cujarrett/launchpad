@@ -222,7 +222,7 @@ import { WorkspaceService } from "../../core/services/workspace.service"
                       }
                     }
                   </div>
-                  @if (!readonly() || connectionsEditable()) {
+                  @if (!readonly()) {
                     <button
                       type="button"
                       class="btn-remove-conn"
