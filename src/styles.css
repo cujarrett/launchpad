@@ -65,6 +65,12 @@ h1 {
   font-weight: 600;
   letter-spacing: -0.02em;
 }
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.25rem;
+  }
+}
 h2 {
   font-size: 1.25rem;
   font-weight: 600;
