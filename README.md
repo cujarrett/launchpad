@@ -1,6 +1,6 @@
 # Launchpad
 
-Self-service platform UI for the homelab cluster. Log in, describe the workload you want running, watch it go green. No kubectl, no YAML, no cluster access required.
+Self-service platform UI for my homelab cluster. Log in, describe the workload you want running, watch it go green. No kubectl, no YAML, no cluster access required.
 
 Built with Angular standalone components, zoneless change detection, and signals throughout. Auth is MSAL PKCE via Azure Entra ID. The only backend it talks to is [launchpad-api](https://github.com/cujarrett/launchpad-api).
 
