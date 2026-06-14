@@ -102,7 +102,9 @@ function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): str
             <button class="sandbox-btn" (click)="startGuestNamePicker()">🧪 Try the Sandbox</button>
             <p class="sandbox-tagline">Real infrastructure. Powered by Kubernetes and AWS.</p>
             @if (guestCount() > 0) {
-              <span class="muted" style="font-size:0.7rem">{{ slotsRemaining() }}/{{ guestMax }} slots available</span>
+              <span class="muted" style="font-size:0.7rem"
+                >{{ slotsRemaining() }}/{{ guestMax }} slots available</span
+              >
             }
           }
         </div>
@@ -317,18 +319,22 @@ function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): str
         transition: color 0.2s;
       }
       .sandbox-btn::before {
-        content: '';
+        content: "";
         position: absolute;
         inset: -2px;
         border-radius: inherit;
         padding: 2px;
         background: linear-gradient(90deg, #7c3aed, #a78bfa, #38bdf8, #7c3aed);
         background-size: 300% 100%;
-        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask:
+          linear-gradient(#fff 0 0) content-box,
+          linear-gradient(#fff 0 0);
         -webkit-mask-composite: xor;
         mask-composite: exclude;
         animation: border-run 2.8s linear infinite;
-        transition: inset 0.2s, padding 0.2s;
+        transition:
+          inset 0.2s,
+          padding 0.2s;
       }
       .sandbox-btn:hover::before {
         inset: -4px;
@@ -345,8 +351,12 @@ function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): str
         line-height: 1.55;
       }
       @keyframes border-run {
-        0% { background-position: 0% 50%; }
-        100% { background-position: 300% 50%; }
+        0% {
+          background-position: 0% 50%;
+        }
+        100% {
+          background-position: 300% 50%;
+        }
       }
     `,
   ],
