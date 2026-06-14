@@ -56,7 +56,7 @@ import { DynamicForm } from "../../create/dynamic-form/dynamic-form"
               ? "SYNCING"
               : isIntegrating()
                 ? "INTEGRATING"
-                : status()!.ready
+                : effectiveReady()
                   ? "READY"
                   : !status()!.synced
                     ? "ERROR"
