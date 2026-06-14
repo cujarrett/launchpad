@@ -25,7 +25,7 @@ export function authInterceptor(
   const account = msal.instance.getActiveAccount() ?? msal.instance.getAllAccounts()[0] ?? null
 
   if (!account) {
-    console.warn("[authInterceptor] no active account, sending unauthenticated")
+    console.debug("[authInterceptor] no active account, sending unauthenticated")
     return next(req)
   }
 
