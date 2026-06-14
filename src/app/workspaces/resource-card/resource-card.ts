@@ -194,10 +194,9 @@ export class ResourceCard {
       const awaiting = this.awaitingRedeploy()
       if (ready && probeUrl && !this.previewVisible() && !awaiting) {
         this.startProbing(probeUrl)
-      } else if (ready && !probeUrl && (this.isInternalHost() || !this.hasExternalHost()) && !awaiting) {
-        // Mark visible immediately for internal hosts (self-signed certs, can't probe)
-        // or resources with no host at all (nothing to verify).
-        // Do NOT fire for localhost-dev + external host — can't confirm the link is live.
+      } else if (ready && !probeUrl && this.isInternalHost() && !awaiting) {
+        // Internal hosts use self-signed certs — browser can't probe them.
+        // Mark visible immediately once Crossplane says ready.
         this.previewVisible.set(true)
         this.previewReady.emit(this.resource().name)
       } else if (!ready) {
@@ -216,27 +215,16 @@ export class ResourceCard {
     return host?.endsWith(".local.lab") ?? false
   })
 
-  // True when the resource has an external (non-.local.lab) host — i.e. a link
-  // that could be shown but needs probing to confirm it's live.
-  private readonly hasExternalHost = computed(() => {
-    const host = this.resource().spec["host"] as string | undefined
-    const kind = this.resource().kind
-    if (!host || (kind !== "XSpa" && kind !== "XApi")) return false
-    return !host.endsWith(".local.lab")
-  })
-
   // Build the URL to probe — /healthz for both APIs and SPAs.
   // Both have CORS on /healthz so we can use a real cors fetch and check
   // response.ok. Cloudflare error pages (502/524) have no CORS header, so
   // they throw rather than resolve — preventing dead links during provisioning.
-  // Returns null when probing isn't possible (internal host, localhost dev).
   private readonly probeUrl = computed(() => {
     const host = this.resource().spec["host"] as string | undefined
     if (!host) return null
     const kind = this.resource().kind
     if (kind !== "XSpa" && kind !== "XApi") return null
     if (host.endsWith(".local.lab")) return null
-    if (window.location.hostname === "localhost") return null
     return `https://${host}/healthz`
   })
 
