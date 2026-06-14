@@ -19,11 +19,12 @@ import {
 } from "../../core/models/workspace.model"
 
 // Kinds available to guests — XWordpress excluded (production data risk),
-// XSubscription excluded (requires existing topic), XSql locked to cluster backend.
-export const GUEST_KINDS: ResourceKind[] = ["XApi", "XSpa", "XSql", "XNoSql", "XObjectStorage"]
+// XSubscription excluded (requires existing topic).
+// XSql, XNoSql, XObjectStorage are only available as XApi add-ons, not as standalone options.
+export const GUEST_KINDS: ResourceKind[] = ["XApi", "XSpa"]
 
 const GUEST_KIND_DESC: Record<ResourceKind, string> = {
-  XApi: "REST API with HTTPS.",
+  XApi: "REST API with HTTPS, cache, and database add-ons.",
   XSpa: "Static frontend app served over HTTPS.",
   XSql: "Relational database.",
   XNoSql: "NoSQL key-value store. Fast lookups, flexible schemas.",
@@ -38,7 +39,7 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="guest-create-panel">
-      <h3>Add a resource</h3>
+      <h3>What do you want to build?</h3>
 
       @if (existingResources().length > 0) {
         <div class="existing-section">
@@ -257,6 +258,7 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
         border-radius: 8px;
         cursor: pointer;
         text-align: left;
+        position: relative;
         transition:
           border-color 0.15s,
           background 0.15s;
@@ -269,6 +271,7 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
         border-color: #7c3aed;
         background: rgba(124, 58, 237, 0.15);
       }
+
       .all-full {
         margin: 0 0 1rem;
         font-size: 0.875rem;
@@ -452,7 +455,12 @@ export class GuestCreate implements OnInit {
       this.selectedKind() === "XSpa" && !this.existingResources().some((r) => r.kind === "XApi"),
   )
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    // Auto-select XApi so the configure options are visible immediately.
+    if (this.availableKinds().includes("XApi")) {
+      this.selectedKind.set("XApi")
+    }
+  }
 
   protected async submit(): Promise<void> {
     const kind = this.selectedKind()

@@ -70,10 +70,12 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
           </div>
         } @else {
           <div class="guest-banner" [class.expiring]="isExpiringSoon()">
-            🧪 Sandbox workspace — auto-deletes in
-            <strong>{{ guestCountdown() }}</strong>
-            @if (isExpiringSoon()) {
-              &nbsp;⚠️
+            🧪 Sandbox workspace
+            @if (guestExpiresAt()) {
+              &nbsp;— auto-deletes in <strong>{{ guestCountdown() }}</strong>
+              @if (isExpiringSoon()) {
+                &nbsp;⚠️
+              }
             }
           </div>
         }

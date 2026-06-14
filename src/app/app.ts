@@ -20,9 +20,6 @@ const TAGLINES = ["Ship solutions, not toil", "Bookshelf K8s Platform", "No spri
     <header class="app-nav">
       <a class="app-nav-logo" routerLink="/">
         <span>🚀 Launchpad</span>
-        <span class="app-nav-tagline" [style.opacity]="taglineVisible() ? 1 : 0">{{
-          tagline()
-        }}</span>
       </a>
       <div class="app-nav-user">
         @if (roleService.isAuthenticated()) {

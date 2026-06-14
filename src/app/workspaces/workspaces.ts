@@ -94,6 +94,20 @@ function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): str
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
+      @if (!roleService.isContributor() && !pickingGuestName() && !savingGuestWorkspace()) {
+        <div class="sandbox-cta">
+          @if (guestCount() >= guestMax) {
+            <p class="muted" style="font-size:0.85rem">{{ sandboxFullMessage() }}</p>
+          } @else {
+            <button class="sandbox-btn" (click)="startGuestNamePicker()">🧪 Try the Sandbox</button>
+            <p class="sandbox-tagline">Real infrastructure. Powered by Kubernetes and AWS.</p>
+            @if (guestCount() > 0) {
+              <span class="muted" style="font-size:0.7rem">{{ slotsRemaining() }}/{{ guestMax }} slots available</span>
+            }
+          }
+        </div>
+      }
+
       <div class="page-header">
         <div>
           <h1>Workspaces</h1>
@@ -101,22 +115,6 @@ function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): str
         <div style="display:flex;gap:0.5rem">
           @if (roleService.isContributor() && !creatingWorkspace() && !savingGuestWorkspace()) {
             <button (click)="creatingWorkspace.set(true)">+ New Workspace</button>
-          }
-          @if (!roleService.isContributor() && !savingGuestWorkspace() && !creatingWorkspace()) {
-            @if (guestCount() >= guestMax) {
-              <span class="muted" style="align-self:center;font-size:0.85rem">
-                {{ sandboxFullMessage() }}
-              </span>
-            } @else if (!pickingGuestName()) {
-              <div style="display:flex;flex-direction:column;align-items:center;gap:0.2rem">
-                <button class="secondary" (click)="startGuestNamePicker()">🧪 Try the Demo</button>
-                @if (guestCount() > 0) {
-                  <span class="muted" style="font-size:0.72rem"
-                    >{{ slotsRemaining() }}/{{ guestMax }} slots available</span
-                  >
-                }
-              </div>
-            }
           }
         </div>
       </div>
@@ -183,7 +181,7 @@ function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): str
         <p class="muted">No workspaces found.</p>
       } @else {
         @if (guestWorkspaces().length > 0) {
-          <p class="section-label">🧪 Sandboxes</p>
+          <p class="section-label">🧪 Active sandboxes</p>
           <div class="card-grid">
             @for (workspace of guestWorkspaces(); track workspace.name) {
               <a class="workspace-tile guest-tile" [routerLink]="['/workspaces', workspace.name]">
@@ -226,7 +224,7 @@ function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): str
         font-size: 0.7rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        opacity: 0.4;
+        opacity: 0.55;
         font-weight: 600;
         margin: 1.25rem 0 0.6rem;
       }
@@ -296,6 +294,59 @@ function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): str
         background: none;
         border: none;
         cursor: pointer;
+      }
+      .sandbox-cta {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding: 2rem 0 1.75rem;
+        margin-bottom: 0.25rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        text-align: center;
+      }
+      .sandbox-btn {
+        font-size: 1.05rem;
+        font-weight: 700;
+        padding: 0.8rem 2.25rem;
+        background: transparent;
+        color: #e2e8f0;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+        position: relative;
+        transition: color 0.2s;
+      }
+      .sandbox-btn::before {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        padding: 2px;
+        background: linear-gradient(90deg, #7c3aed, #a78bfa, #38bdf8, #7c3aed);
+        background-size: 300% 100%;
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        animation: border-run 2.8s linear infinite;
+        transition: inset 0.2s, padding 0.2s;
+      }
+      .sandbox-btn:hover::before {
+        inset: -4px;
+        padding: 4px;
+      }
+      .sandbox-btn:hover {
+        color: #c4b5fd;
+      }
+      .sandbox-tagline {
+        font-size: 0.88rem;
+        opacity: 0.65;
+        margin: 0;
+        max-width: 560px;
+        line-height: 1.55;
+      }
+      @keyframes border-run {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 300% 50%; }
       }
     `,
   ],

@@ -1074,7 +1074,40 @@ details.advanced-fields .form-fields {
   min-height: 320px;
 }
 
+.arch-layout {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.arch-ingress-col {
+  width: 110px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-radius: var(--radius-md);
+  padding: 0.5rem;
+  background: rgba(148, 163, 184, 0.05);
+}
+
+.arch-node--ingress {
+  border-left-color: #94a3b8;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  min-height: 64px;
+}
+
+.arch-ingress-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
 .arch-cols {
+  flex: 1;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
@@ -1271,32 +1304,22 @@ details.advanced-fields .form-fields {
 
 .arch-edge {
   fill: none;
-  stroke: var(--color-accent);
-  stroke-width: 1.5;
-  opacity: 0.55;
-  stroke-dasharray: 7 13;
-  animation: arch-flow 2s linear infinite;
+  stroke-width: 2;
+  opacity: 0.9;
+  stroke-dasharray: 5 18;
+  animation: edge-flow 1.8s linear infinite;
 }
 
-.arch-edge:nth-child(2) {
-  animation-delay: -0.67s;
-}
-.arch-edge:nth-child(3) {
-  animation-delay: -1.33s;
-}
-.arch-edge:nth-child(4) {
-  animation-delay: -0.33s;
-}
-.arch-edge:nth-child(5) {
-  animation-delay: -1s;
-}
-.arch-edge:nth-child(6) {
-  animation-delay: -1.67s;
+.arch-edge-glow {
+  fill: none;
+  stroke-width: 7;
+  opacity: 0.12;
+  filter: url(#edge-glow);
 }
 
-@keyframes arch-flow {
+@keyframes edge-flow {
   to {
-    stroke-dashoffset: -20;
+    stroke-dashoffset: -23;
   }
 }
 
