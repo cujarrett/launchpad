@@ -230,6 +230,8 @@ export class ResourceCard {
 
   private startProbing(url: string): void {
     if (this.probeInterval) return // already running
+    // Skip probing from localhost — the prod API won't have CORS headers for it.
+    if (window.location.hostname === "localhost") return
     const probe = async () => {
       try {
         const res = await fetch(url, { cache: "no-store" })
