@@ -1,16 +1,11 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   inject,
-  OnDestroy,
-  signal,
 } from "@angular/core"
 import { RouterLink, RouterOutlet } from "@angular/router"
 import { MsalService } from "@azure/msal-angular"
 import { RoleService } from "./core/services/role.service"
-
-const TAGLINES = ["Ship solutions, not toil", "Bookshelf K8s Platform", "No sprints were harmed"]
 
 @Component({
   selector: "app-root",
@@ -41,28 +36,9 @@ const TAGLINES = ["Ship solutions, not toil", "Bookshelf K8s Platform", "No spri
     </footer>
   `,
 })
-export class App implements OnDestroy {
+export class App {
   private readonly msal = inject(MsalService)
   protected readonly roleService = inject(RoleService)
-
-  private readonly taglineIndex = signal(0)
-  protected readonly taglineVisible = signal(true)
-  protected readonly tagline = computed(() => TAGLINES[this.taglineIndex()])
-
-  // Every 60s: fade out (400ms), swap text, fade back in.
-  private fadeTimeout: ReturnType<typeof setTimeout> | undefined
-  private readonly taglineTimer = setInterval(() => {
-    this.taglineVisible.set(false)
-    this.fadeTimeout = setTimeout(() => {
-      this.taglineIndex.update((i) => (i + 1) % TAGLINES.length)
-      this.taglineVisible.set(true)
-    }, 400)
-  }, 60_000)
-
-  ngOnDestroy(): void {
-    clearInterval(this.taglineTimer)
-    clearTimeout(this.fadeTimeout)
-  }
 
   signOut() {
     this.msal.logoutRedirect({ postLogoutRedirectUri: "/signed-out" })

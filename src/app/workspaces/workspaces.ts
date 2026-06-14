@@ -392,7 +392,7 @@ export class Workspaces implements OnInit, OnDestroy {
   protected readonly guestCount = computed(() => this.workspaces().filter((w) => w.isGuest).length)
   protected readonly slotsRemaining = computed(() => this.guestMax - this.guestCount())
   protected readonly sandboxFullMessage = computed(() => {
-    return `All ${this.guestMax} demo slots are in use — try again in a few minutes`
+    return `All ${this.guestMax} sandbox slots are in use — try again in a few minutes`
   })
 
   async ngOnInit() {
