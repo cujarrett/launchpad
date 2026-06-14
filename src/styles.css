@@ -1304,6 +1304,7 @@ details.advanced-fields .form-fields {
 
 .arch-edge {
   fill: none;
+  stroke: var(--color-accent);
   stroke-width: 2;
   opacity: 0.9;
   stroke-dasharray: 5 18;
