@@ -150,10 +150,8 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
             >
               <span class="option-icon">⏩</span>
               <div class="option-body">
-                <span class="option-title">Add in-cluster cache</span>
-                <span class="option-desc"
-                  >In-cluster Redis wired to your API via service binding.</span
-                >
+                <span class="option-title">Add cache</span>
+                <span class="option-desc">Cache wired to your API via service binding.</span>
               </div>
               <span class="option-toggle" [class.on]="withCache()"></span>
             </button>

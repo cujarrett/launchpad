@@ -744,6 +744,8 @@ function makeControl(field: FieldDef, initialValue?: unknown): FormControl {
   if (initialValue !== undefined && initialValue !== null) {
     if (field.kind === "array" && Array.isArray(initialValue)) {
       v = initialValue.join("\n")
+    } else if (field.kind === "resource-ref" && Array.isArray(initialValue)) {
+      v = (initialValue[0] as Record<string, unknown> | undefined)?.["name"] ?? ""
     } else if (field.kind === "resource-ref" && typeof initialValue === "object") {
       v = (initialValue as Record<string, unknown>)["name"] ?? ""
     } else {

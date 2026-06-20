@@ -70,10 +70,13 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
           </div>
         } @else {
           <div class="guest-banner" [class.expiring]="isExpiringSoon()">
-            🧪 Sandbox workspace — auto-deletes in
-            <strong>{{ guestCountdown() }}</strong>
-            @if (isExpiringSoon()) {
-              &nbsp;⚠️
+            🧪 Sandbox workspace
+            @if (guestExpiresAt()) {
+              — auto-deletes in
+              <strong>{{ guestCountdown() }}</strong>
+              @if (isExpiringSoon()) {
+                &nbsp;⚠️
+              }
             }
           </div>
         }
@@ -426,11 +429,11 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
 
   async onCreated() {
     this.cancelCreate()
-    await this.loadResources()
+    await this.loadResources(true)
     // GitHub Contents API can return a stale directory listing right after
     // sequential commits (e.g. XSql + XApi). Reload once after a short delay
     // to catch any propagation lag.
-    setTimeout(() => this.loadResources(), 1500)
+    setTimeout(() => this.loadResources(true), 1500)
   }
 
   async handleDelete(name: string) {
@@ -442,11 +445,11 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     this.confirmedPreviewSet.update((s) => new Set([...s, name]))
   }
 
-  async loadResources() {
+  async loadResources(suppressAutoCreate = false) {
     this.loading.set(true)
     const resources = await firstValueFrom(this.workspaceService.getResources(this.name()))
     this.resources.set(resources)
-    if (resources.length === 0) this.creating.set(true)
+    if (!suppressAutoCreate && resources.length === 0) this.creating.set(true)
     this.loading.set(false)
   }
 

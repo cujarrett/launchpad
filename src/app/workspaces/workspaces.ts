@@ -368,7 +368,15 @@ export class Workspaces implements OnInit, OnDestroy {
 
   protected readonly workspaces = signal<Workspace[]>([])
   protected readonly myWorkspaces = computed(() => this.workspaces().filter((w) => !w.isGuest))
-  protected readonly guestWorkspaces = computed(() => this.workspaces().filter((w) => w.isGuest))
+  protected readonly guestWorkspaces = computed(() =>
+    this.workspaces()
+      .filter((w) => w.isGuest)
+      .sort((a, b) => {
+        const at = a.expiresAt ? new Date(a.expiresAt).getTime() : 0
+        const bt = b.expiresAt ? new Date(b.expiresAt).getTime() : 0
+        return bt - at
+      }),
+  )
   protected readonly loading = signal(true)
   protected readonly error = signal<string | null>(null)
 

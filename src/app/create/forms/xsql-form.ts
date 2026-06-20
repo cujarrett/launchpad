@@ -11,8 +11,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
       <label
         >Environment
         <select formControlName="environment">
-          <option value="cluster">cluster (in-cluster Postgres)</option>
-          <option value="cloud">cloud (AWS RDS)</option>
+          <option value="private-cloud">cluster (in-cluster Postgres)</option>
+          <option value="public-cloud">cloud (AWS RDS)</option>
         </select>
       </label>
       <label

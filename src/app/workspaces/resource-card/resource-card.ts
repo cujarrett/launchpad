@@ -307,7 +307,7 @@ export class ResourceCard {
       chips.push("Cache")
     if (spec["sqlRef"]) chips.push("SQL")
     if (spec["nosqlRef"]) chips.push("NoSQL")
-    if (spec["objectStorageRef"]) chips.push("Object Storage")
+    if (spec["objectStorageRefs"] || spec["objectStorageRef"]) chips.push("Object Storage")
     if (spec["topicRef"]) chips.push("Topic")
     if (spec["subscriptionRef"]) chips.push("Subscription")
     return chips

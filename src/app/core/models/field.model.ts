@@ -29,10 +29,12 @@ export interface FieldDef {
 }
 
 // Maps *Ref field names → the ResourceKind they reference.
+// objectStorageRefs is an array in the XRD but the UI treats it as a single
+// connection (first element) so it can render as a resource-ref dropdown.
 export const REF_KIND: Record<string, ResourceKind> = {
   sqlRef: "XSql",
   nosqlRef: "XNoSql",
-  objectStorageRef: "XObjectStorage",
+  objectStorageRefs: "XObjectStorage",
   topicRef: "XTopic",
   subscriptionRef: "XSubscription",
 }
@@ -85,7 +87,7 @@ function classifyField(key: string, schema: Record<string, unknown>, required: b
     return { ...base, kind: "display" }
   }
 
-  if (schema["type"] === "object" && key in REF_KIND) {
+  if ((schema["type"] === "object" || schema["type"] === "array") && key in REF_KIND) {
     return { ...base, kind: "resource-ref", refKind: REF_KIND[key], connection: true }
   }
 
@@ -146,7 +148,7 @@ const ACRONYMS = new Set([
 const LABEL_OVERRIDES: Record<string, string> = {
   nosqlRef: "NoSQL Database",
   sqlRef: "SQL Database",
-  objectStorageRef: "Object Storage",
+  objectStorageRefs: "Object Storage",
   topicRef: "Topic",
   subscriptionRef: "Subscription",
   secretRef: "Secret",
