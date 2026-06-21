@@ -215,17 +215,17 @@ export class ResourceCard {
     return host?.endsWith(".local.lab") ?? false
   })
 
-  // Build the URL to probe — /healthz for both APIs and SPAs.
-  // Both have CORS on /healthz so we can use a real cors fetch and check
-  // response.ok. Cloudflare error pages (502/524) have no CORS header, so
-  // they throw rather than resolve — preventing dead links during provisioning.
+  // Probe /readyz for XApi (returns 503 until all integrations are connected)
+  // and /healthz for XSpa (nginx liveness only — API readiness is handled by
+  // dependencyReady). Cloudflare error pages have no CORS header so they throw
+  // rather than resolve, preventing dead links while TLS is still provisioning.
   private readonly probeUrl = computed(() => {
     const host = this.resource().spec["host"] as string | undefined
     if (!host) return null
     const kind = this.resource().kind
     if (kind !== "XSpa" && kind !== "XApi") return null
     if (host.endsWith(".local.lab")) return null
-    return `https://${host}/healthz`
+    return `https://${host}/${kind === "XApi" ? "readyz" : "healthz"}`
   })
 
   private startProbing(url: string): void {
