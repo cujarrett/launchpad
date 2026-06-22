@@ -25,7 +25,6 @@ const GUEST_WORDS_1 = [
   "cosmic",
   "disco",
   "electric",
-  "exploding",
   "frozen",
   "fuzzy",
   "golden",
@@ -42,7 +41,6 @@ const GUEST_WORDS_1 = [
   "silver",
   "turbo",
   "velvet",
-  "wandering",
 ]
 
 const GUEST_WORDS_2 = [
@@ -50,8 +48,6 @@ const GUEST_WORDS_2 = [
   "burrito",
   "cactus",
   "cannon",
-  "cassette",
-  "catapult",
   "factory",
   "hamster",
   "jelly",
@@ -63,8 +59,6 @@ const GUEST_WORDS_2 = [
   "pretzel",
   "rocket",
   "spatula",
-  "spreadsheet",
-  "submarine",
   "taco",
   "toaster",
   "tornado",
@@ -77,14 +71,24 @@ function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
+// Max combined word length keeps generated Kubernetes resource names within AWS (64 char)
+// and Kubernetes (63 char) limits. The tightest constraint is the init container name:
+// wait-for-object-storage-xobjectstorage-{w1}-{w2}-binding (48 fixed chars → w1+w2 <= 15).
+const GUEST_NAME_MAX_WORD_LENGTH = 15
+
 function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): string {
   const words1 = avoidWord1 ? GUEST_WORDS_1.filter((w) => w !== avoidWord1) : GUEST_WORDS_1
   const words2 = avoidWord2 ? GUEST_WORDS_2.filter((w) => w !== avoidWord2) : GUEST_WORDS_2
   for (let i = 0; i < 100; i++) {
-    const name = `${pickRandom(words1)}-${pickRandom(words2)}`
-    if (!used.has(name)) return name
+    const w1 = pickRandom(words1)
+    const w2 = pickRandom(words2)
+    if (!used.has(`${w1}-${w2}`) && w1.length + w2.length <= GUEST_NAME_MAX_WORD_LENGTH) return `${w1}-${w2}`
   }
-  return `${pickRandom(words1)}-${pickRandom(words2)}`
+  // Fallback: filter to valid-length pairs and pick from those
+  const validPairs = words1.flatMap((w1) =>
+    words2.filter((w2) => w1.length + w2.length <= GUEST_NAME_MAX_WORD_LENGTH).map((w2) => `${w1}-${w2}`),
+  )
+  return pickRandom(validPairs.filter((n) => !used.has(n)) || validPairs)
 }
 
 @Component({
