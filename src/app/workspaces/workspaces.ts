@@ -82,11 +82,14 @@ function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): str
   for (let i = 0; i < 100; i++) {
     const w1 = pickRandom(words1)
     const w2 = pickRandom(words2)
-    if (!used.has(`${w1}-${w2}`) && w1.length + w2.length <= GUEST_NAME_MAX_WORD_LENGTH) return `${w1}-${w2}`
+    if (!used.has(`${w1}-${w2}`) && w1.length + w2.length <= GUEST_NAME_MAX_WORD_LENGTH)
+      return `${w1}-${w2}`
   }
   // Fallback: filter to valid-length pairs and pick from those
   const validPairs = words1.flatMap((w1) =>
-    words2.filter((w2) => w1.length + w2.length <= GUEST_NAME_MAX_WORD_LENGTH).map((w2) => `${w1}-${w2}`),
+    words2
+      .filter((w2) => w1.length + w2.length <= GUEST_NAME_MAX_WORD_LENGTH)
+      .map((w2) => `${w1}-${w2}`),
   )
   return pickRandom(validPairs.filter((n) => !used.has(n)) || validPairs)
 }
