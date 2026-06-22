@@ -230,6 +230,7 @@ export class ResourceCard {
 
   private startProbing(url: string): void {
     if (this.probeInterval) return // already running
+    let failCount = 0
     const probe = async () => {
       try {
         const res = await fetch(url, { cache: "no-store" })
@@ -237,13 +238,17 @@ export class ResourceCard {
           this.previewVisible.set(true)
           this.previewReady.emit(this.resource().name)
           this.stopProbing()
+        } else {
+          failCount++
         }
       } catch {
-        // server not yet reachable — keep polling
+        failCount++
       }
+      // Give up after 40 failed attempts (20 minutes)
+      if (failCount > 40) this.stopProbing()
     }
     probe()
-    this.probeInterval = setInterval(probe, 3000)
+    this.probeInterval = setInterval(probe, 5000)
   }
 
   private stopProbing(): void {
