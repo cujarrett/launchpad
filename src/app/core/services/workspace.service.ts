@@ -60,6 +60,12 @@ export class WorkspaceService {
     })
   }
 
+  recordGuestPhase(workspace: string, phase: string, done = false): void {
+    this.http
+      .post<void>(`${environment.apiUrl}/guest/workspaces/${workspace}/phases`, { phase, done })
+      .subscribe({ error: () => {} })
+  }
+
   patchGuestResourceRefs(
     workspace: string,
     resource: string,

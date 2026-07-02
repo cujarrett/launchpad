@@ -29,6 +29,7 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
   XSql: "Relational database.",
   XNoSql: "NoSQL key-value store. Fast lookups, flexible schemas.",
   XObjectStorage: "Object storage for files, assets, and blobs.",
+  XCache: "",
   XTopic: "",
   XSubscription: "",
   XWordpress: "",
@@ -39,172 +40,175 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="guest-create-panel">
-      <h3>What do you want to build?</h3>
+      @if (!saving()) {
+        <h3>What do you want to build?</h3>
 
-      @if (existingResources().length > 0) {
-        <div class="existing-section">
-          <span class="section-label">Already in this workspace:</span>
-          <div class="existing-chips">
-            @for (r of existingResources(); track r.name) {
-              <span class="chip">{{ icons[r.kind] }} {{ labels[r.kind] }}</span>
-            }
+        @if (existingResources().length > 0) {
+          <div class="existing-section">
+            <span class="section-label">Already in this workspace:</span>
+            <div class="existing-chips">
+              @for (r of existingResources(); track r.name) {
+                <span class="chip">{{ icons[r.kind] }} {{ labels[r.kind] }}</span>
+              }
+            </div>
           </div>
-        </div>
-      }
-
-      @if (availableKinds().length === 0) {
-        <p class="all-full">All resource types are already in this workspace.</p>
-      }
-      <div class="kind-grid">
-        @for (k of availableKinds(); track k) {
-          <button
-            class="kind-card"
-            type="button"
-            [class.selected]="selectedKind() === k"
-            (click)="selectedKind.set(k)"
-          >
-            <span class="kind-icon">{{ icons[k] }}</span>
-            <span class="kind-name">{{ labels[k] }}</span>
-            <span class="kind-desc">{{ kindDesc[k] }}</span>
-          </button>
         }
-      </div>
 
-      @if (selectedKind() === "XApi") {
-        <div class="options-section">
-          <span class="options-label">Configure API</span>
-          <div class="options-grid">
-            @if (showSqlToggle()) {
-              <button
-                type="button"
-                class="option-card"
-                [class.active]="withSql()"
-                (click)="withSql.set(!withSql())"
-              >
-                <span class="option-icon">🗄️</span>
-                <div class="option-body">
-                  <span class="option-title">Connect to existing SQL database</span>
-                  <span class="option-desc"
-                    >Wire your API to the SQL database already in this workspace.</span
-                  >
-                </div>
-                <span class="option-toggle" [class.on]="withSql()"></span>
-              </button>
-            }
-            @if (offerSql()) {
-              <button
-                type="button"
-                class="option-card"
-                [class.active]="withSql()"
-                (click)="withSql.set(!withSql())"
-              >
-                <span class="option-icon">🗄️</span>
-                <div class="option-body">
-                  <span class="option-title">Also provision SQL database</span>
-                  <span class="option-desc"
-                    >Creates a relational database and wires it to your API.</span
-                  >
-                </div>
-                <span class="option-toggle" [class.on]="withSql()"></span>
-              </button>
-            }
-            @if (offerNoSql()) {
-              <button
-                type="button"
-                class="option-card"
-                [class.active]="withNoSql()"
-                (click)="withNoSql.set(!withNoSql())"
-              >
-                <span class="option-icon">📋</span>
-                <div class="option-body">
-                  <span class="option-title">Also provision NoSQL database</span>
-                  <span class="option-desc"
-                    >Creates a key-value store and wires it to your API.</span
-                  >
-                </div>
-                <span class="option-toggle" [class.on]="withNoSql()"></span>
-              </button>
-            }
-            @if (offerStorage()) {
-              <button
-                type="button"
-                class="option-card"
-                [class.active]="withStorage()"
-                (click)="withStorage.set(!withStorage())"
-              >
-                <span class="option-icon">🗂️</span>
-                <div class="option-body">
-                  <span class="option-title">Also provision object storage</span>
-                  <span class="option-desc"
-                    >A managed store for files and blobs, wired to your API.</span
-                  >
-                </div>
-                <span class="option-toggle" [class.on]="withStorage()"></span>
-              </button>
-            }
+        @if (availableKinds().length === 0) {
+          <p class="all-full">All resource types are already in this workspace.</p>
+        }
+        <div class="kind-grid">
+          @for (k of availableKinds(); track k) {
             <button
+              class="kind-card"
               type="button"
-              class="option-card"
-              [class.active]="withCache()"
-              (click)="withCache.set(!withCache())"
+              [class.selected]="selectedKind() === k"
+              (click)="selectedKind.set(k)"
             >
-              <span class="option-icon">⏩</span>
-              <div class="option-body">
-                <span class="option-title">Add cache</span>
-                <span class="option-desc">Cache wired to your API via service binding.</span>
-              </div>
-              <span class="option-toggle" [class.on]="withCache()"></span>
+              <span class="kind-icon">{{ icons[k] }}</span>
+              <span class="kind-name">{{ labels[k] }}</span>
+              <span class="kind-desc">{{ kindDesc[k] }}</span>
             </button>
-            @if (offerSpa()) {
+          }
+        </div>
+
+        @if (selectedKind() === "XApi") {
+          <div class="options-section">
+            <span class="options-label">Configure API</span>
+            <div class="options-grid">
+              @if (showSqlToggle()) {
+                <button
+                  type="button"
+                  class="option-card"
+                  [class.active]="withSql()"
+                  (click)="withSql.set(!withSql())"
+                >
+                  <span class="option-icon">🗄️</span>
+                  <div class="option-body">
+                    <span class="option-title">Connect to existing SQL database</span>
+                    <span class="option-desc"
+                      >Wire your API to the SQL database already in this workspace.</span
+                    >
+                  </div>
+                  <span class="option-toggle" [class.on]="withSql()"></span>
+                </button>
+              }
+              @if (offerSql()) {
+                <button
+                  type="button"
+                  class="option-card"
+                  [class.active]="withSql()"
+                  (click)="withSql.set(!withSql())"
+                >
+                  <span class="option-icon">🗄️</span>
+                  <div class="option-body">
+                    <span class="option-title">Also provision SQL database</span>
+                    <span class="option-desc"
+                      >Creates a relational database and wires it to your API.</span
+                    >
+                  </div>
+                  <span class="option-toggle" [class.on]="withSql()"></span>
+                </button>
+              }
+              @if (offerNoSql()) {
+                <button
+                  type="button"
+                  class="option-card"
+                  [class.active]="withNoSql()"
+                  (click)="withNoSql.set(!withNoSql())"
+                >
+                  <span class="option-icon">📋</span>
+                  <div class="option-body">
+                    <span class="option-title">Also provision NoSQL database</span>
+                    <span class="option-desc"
+                      >Creates a key-value store and wires it to your API.</span
+                    >
+                  </div>
+                  <span class="option-toggle" [class.on]="withNoSql()"></span>
+                </button>
+              }
+              @if (offerStorage()) {
+                <button
+                  type="button"
+                  class="option-card"
+                  [class.active]="withStorage()"
+                  (click)="withStorage.set(!withStorage())"
+                >
+                  <span class="option-icon">🗂️</span>
+                  <div class="option-body">
+                    <span class="option-title">Also provision object storage</span>
+                    <span class="option-desc"
+                      >A managed store for files and blobs, wired to your API.</span
+                    >
+                  </div>
+                  <span class="option-toggle" [class.on]="withStorage()"></span>
+                </button>
+              }
               <button
                 type="button"
                 class="option-card"
-                [class.active]="withSpa()"
-                (click)="withSpa.set(!withSpa())"
+                [class.active]="withCache()"
+                (click)="withCache.set(!withCache())"
               >
-                <span class="option-icon">🌐</span>
+                <span class="option-icon">⏩</span>
                 <div class="option-body">
-                  <span class="option-title">Also create a SPA</span>
-                  <span class="option-desc">Provisions a static frontend wired to this API.</span>
+                  <span class="option-title">Add cache</span>
+                  <span class="option-desc">Cache wired to your API via service binding.</span>
                 </div>
-                <span class="option-toggle" [class.on]="withSpa()"></span>
+                <span class="option-toggle" [class.on]="withCache()"></span>
               </button>
-            }
+              @if (offerSpa()) {
+                <button
+                  type="button"
+                  class="option-card"
+                  [class.active]="withSpa()"
+                  (click)="withSpa.set(!withSpa())"
+                >
+                  <span class="option-icon">🌐</span>
+                  <div class="option-body">
+                    <span class="option-title">
+                      Also create a SPA
+                      <span class="recommended-badge">Recommended</span>
+                    </span>
+                    <span class="option-desc">Provisions a static frontend wired to this API.</span>
+                  </div>
+                  <span class="option-toggle" [class.on]="withSpa()"></span>
+                </button>
+              }
+            </div>
           </div>
-        </div>
-      }
+        }
 
-      @if (selectedKind() === "XSpa" && offerApi()) {
-        <div class="options-section">
-          <span class="options-label">Configure SPA</span>
-          <div class="options-grid">
-            <div class="option-card required">
-              <span class="option-icon">⚡</span>
-              <div class="option-body">
-                <span class="option-title"
-                  >API backend <span class="required-badge">Required for this demo</span></span
-                >
-                <span class="option-desc"
-                  >Needed to serve your workspace name to the Demo SPA.</span
-                >
+        @if (selectedKind() === "XSpa" && offerApi()) {
+          <div class="options-section">
+            <span class="options-label">Configure SPA</span>
+            <div class="options-grid">
+              <div class="option-card required">
+                <span class="option-icon">⚡</span>
+                <div class="option-body">
+                  <span class="option-title"
+                    >API backend <span class="required-badge">Required for this demo</span></span
+                  >
+                  <span class="option-desc"
+                    >Needed to serve your workspace name to the Demo SPA.</span
+                  >
+                </div>
               </div>
             </div>
           </div>
+        }
+
+        @if (error()) {
+          <p class="field-error">{{ error() }}</p>
+        }
+
+        <div class="form-actions">
+          @if (availableKinds().length > 0) {
+            <button [disabled]="!selectedKind()" (click)="submit()">Create</button>
+          }
+          <button type="button" class="secondary" (click)="cancelled.emit()">Cancel</button>
         </div>
       }
-
-      @if (error()) {
-        <p class="field-error">{{ error() }}</p>
-      }
-
-      <div class="form-actions">
-        @if (availableKinds().length > 0) {
-          <button [disabled]="saving() || !selectedKind()" (click)="submit()">
-            {{ saving() ? "Creating…" : "Create" }}
-          </button>
-        }
-        <button type="button" class="secondary" (click)="cancelled.emit()">Cancel</button>
-      </div>
     </div>
   `,
   styles: [
@@ -353,6 +357,32 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
         border-color: rgba(124, 58, 237, 0.6);
         background: rgba(124, 58, 237, 0.1);
       }
+      .options-grid .option-card {
+        animation: card-in 0.25s ease both;
+      }
+      .options-grid .option-card:nth-child(1) { animation-delay: 0.05s; }
+      .options-grid .option-card:nth-child(2) { animation-delay: 0.1s; }
+      .options-grid .option-card:nth-child(3) { animation-delay: 0.15s; }
+      .options-grid .option-card:nth-child(4) { animation-delay: 0.2s; }
+      .options-grid .option-card:nth-child(5) { animation-delay: 0.25s; }
+      @keyframes card-in {
+        from { opacity: 0; transform: translateY(4px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .recommended-badge {
+        display: inline-block;
+        font-size: 0.65rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #a78bfa;
+        background: rgba(124, 58, 237, 0.15);
+        border: 1px solid rgba(124, 58, 237, 0.3);
+        border-radius: 4px;
+        padding: 1px 5px;
+        vertical-align: middle;
+        margin-left: 6px;
+      }
       .option-body {
         flex: 1;
         display: flex;
@@ -394,6 +424,7 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
       .option-toggle.on::after {
         transform: translateX(16px);
       }
+
     `,
   ],
 })
@@ -402,6 +433,8 @@ export class GuestCreate implements OnInit {
   readonly existingResources = input<Resource[]>([])
   readonly created = output<void>()
   readonly cancelled = output<void>()
+  readonly commitPlanChange = output<string[]>()
+  readonly commitStepChange = output<string | null>()
 
   private readonly workspaceService = inject(WorkspaceService)
 
@@ -412,12 +445,15 @@ export class GuestCreate implements OnInit {
 
   protected readonly selectedKind = signal<ResourceKind | "">("")
   protected readonly saving = signal(false)
+  protected readonly creatingStep = signal<string | null>(null)
+  protected readonly savedPlan = signal<string[]>([])
   protected readonly error = signal<string | null>(null)
   protected readonly withStorage = signal(false)
   protected readonly withCache = signal(false)
   protected readonly withSql = signal(false)
   protected readonly withNoSql = signal(false)
   protected readonly withSpa = signal(false)
+
 
   protected readonly availableKinds = computed(() => {
     const existing = new Set(this.existingResources().map((r) => r.kind))
@@ -460,9 +496,28 @@ export class GuestCreate implements OnInit {
     }
   }
 
+  protected buildCommitPlan(kind: ResourceKind): string[] {
+    const steps: string[] = []
+    if (this.withStorage() && kind === "XApi") steps.push("Object storage")
+    if (this.withSql() && this.offerSql() && kind === "XApi") steps.push("SQL database")
+    if (this.withNoSql() && kind === "XApi") steps.push("NoSQL database")
+    if (this.withSpa() && kind === "XApi" && this.offerSpa()) steps.push("Frontend")
+    if (kind === "XSpa" && this.offerApi()) steps.push("API")
+    steps.push(kind === "XApi" ? "API" : "Frontend")
+    return steps
+  }
+
+  private setStep(step: string | null) {
+    this.creatingStep.set(step)
+    this.commitStepChange.emit(step)
+  }
+
   protected async submit(): Promise<void> {
     const kind = this.selectedKind()
     if (!kind) return
+    const plan = this.buildCommitPlan(kind)
+    this.savedPlan.set(plan)
+    this.commitPlanChange.emit(plan)
     this.saving.set(true)
     this.error.set(null)
     try {
@@ -470,22 +525,28 @@ export class GuestCreate implements OnInit {
       // existingFiles and wires objectStorageRef on the first render — no
       // re-render pass needed and no risk of accidentally dropping the cache.
       if (this.withStorage() && kind === "XApi") {
+        this.setStep("Object storage")
         await firstValueFrom(
           this.workspaceService.createGuestResource(this.workspace(), "XObjectStorage"),
         )
       }
       if (this.withSql() && this.offerSql() && kind === "XApi") {
+        this.setStep("SQL database")
         await firstValueFrom(this.workspaceService.createGuestResource(this.workspace(), "XSql"))
       }
       if (this.withNoSql() && kind === "XApi") {
+        this.setStep("NoSQL database")
         await firstValueFrom(this.workspaceService.createGuestResource(this.workspace(), "XNoSql"))
       }
       if (this.withSpa() && kind === "XApi" && this.offerSpa()) {
+        this.setStep("Frontend")
         await firstValueFrom(this.workspaceService.createGuestResource(this.workspace(), "XSpa"))
       }
       if (kind === "XSpa" && this.offerApi()) {
+        this.setStep("API")
         await firstValueFrom(this.workspaceService.createGuestResource(this.workspace(), "XApi"))
       }
+      this.setStep(kind === "XApi" ? "API" : "Frontend")
       await firstValueFrom(
         this.workspaceService.createGuestResource(
           this.workspace(),
@@ -503,6 +564,8 @@ export class GuestCreate implements OnInit {
       }
     } finally {
       this.saving.set(false)
+      this.setStep(null)
+      this.commitPlanChange.emit([])
     }
   }
 }

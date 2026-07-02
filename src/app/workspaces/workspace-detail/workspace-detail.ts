@@ -44,6 +44,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
   XSql: "Relational database with automatic service binding.",
   XNoSql: "NoSQL key-value store. Fast lookups, flexible schemas.",
   XObjectStorage: "Object storage for files, assets, and blobs.",
+  XCache: "In-memory cache cluster.",
   XTopic: "Async messaging topic with JetStream.",
   XSubscription: "Durable message subscription wired to a topic.",
   XWordpress: "Managed WordPress site with MariaDB.",
@@ -149,6 +150,8 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
             [existingResources]="resources()"
             (created)="onCreated()"
             (cancelled)="creating.set(false)"
+            (commitPlanChange)="commitPlan.set($event)"
+            (commitStepChange)="commitStep.set($event)"
           />
         } @else {
           <div class="create-panel">
@@ -180,44 +183,52 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
 
       @if (loading()) {
         <p class="muted">Loading...</p>
-      } @else if (viewMode() === "arch") {
-        <app-provisioning-pipeline
-          [resources]="resources()"
-          [statusMap]="statusMap()"
-          [allPreviewsReady]="allPreviewsReady()"
-        />
-        <app-workspace-arch [resources]="resources()" [statusMap]="statusMap()" />
       } @else {
-        <app-provisioning-pipeline
-          [resources]="resources()"
-          [statusMap]="statusMap()"
-          [allPreviewsReady]="allPreviewsReady()"
-        />
-        <div class="card-grid">
-          @for (resource of sortedResources(); track resource.name) {
-            <app-resource-card
-              [resource]="resource"
-              [workspace]="name()"
-              [status]="statusMap()[resource.name] ?? null"
-              [expanded]="expandedResource() === resource.name"
-              [canEdit]="roleService.isContributor()"
-              [canEditConnections]="isGuest() && resource.kind === 'XApi'"
-              [dependencyReady]="resource.kind !== 'XSpa' || spaApiReady()"
-              (toggled)="
-                expandedResource.set(expandedResource() === resource.name ? null : resource.name)
-              "
-              (deleted)="handleDelete($event)"
-              (saved)="expandedResource.set(null); loadResources()"
-              (createKind)="startCreateForKind($event)"
-              (previewReady)="handlePreviewReady($event)"
-            />
-          } @empty {
-            <p class="muted">
-              No resources yet.{{ isGuest() ? " Add one above to watch it spin up!" : "" }}
-            </p>
-          }
+        @if (viewMode() === "arch" && !pipelineActive()) {
+          <app-workspace-arch [resources]="resources()" [statusMap]="statusMap()" />
+        }
+        <!-- Always rendered so resource-card health polling drives allPreviewsReady. -->
+        <div [hidden]="viewMode() === 'arch'">
+          <div class="card-grid">
+            @for (resource of sortedResources(); track resource.name) {
+              <app-resource-card
+                [resource]="resource"
+                [workspace]="name()"
+                [status]="statusMap()[resource.name] ?? null"
+                [expanded]="expandedResource() === resource.name"
+                [canEdit]="roleService.isContributor()"
+                [canEditConnections]="isGuest() && resource.kind === 'XApi'"
+                [dependencyReady]="resource.kind !== 'XSpa' || spaApiReady()"
+                (toggled)="
+                  expandedResource.set(expandedResource() === resource.name ? null : resource.name)
+                "
+                (deleted)="handleDelete($event)"
+                (saved)="expandedResource.set(null); loadResources()"
+                (createKind)="startCreateForKind($event)"
+                (previewReady)="handlePreviewReady($event)"
+              />
+            } @empty {
+              @if (!creating()) {
+                <p class="muted">
+                  No resources yet.{{ isGuest() ? " Add one above to watch it spin up!" : "" }}
+                </p>
+              }
+            }
+          </div>
         </div>
       }
+      <!-- Pipeline is outside the loading gate so it stays mounted across resource refreshes. -->
+      <app-provisioning-pipeline
+        [workspace]="name()"
+        [initialPhaseTimes]="guestPhaseTimes()"
+        [initialDoneTime]="guestDoneAt()"
+        [resources]="resources()"
+        [statusMap]="statusMap()"
+        [podStatusMap]="podStatusMap()"
+        [allPreviewsReady]="allPreviewsReady()"
+        [commitPlan]="commitPlan()"
+        [commitStep]="commitStep()"
+      />
     </div>
   `,
   styles: [
@@ -279,6 +290,10 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
         opacity: 0.6;
         line-height: 1.3;
       }
+      app-provisioning-pipeline {
+        display: block;
+        margin-top: 1.5rem;
+      }
     `,
   ],
 })
@@ -294,11 +309,16 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
 
   protected readonly name = signal("")
   protected readonly guestExpiresAt = signal<string | null>(null)
+  protected readonly guestPhaseTimes = signal<Record<string, string>>({})
+  protected readonly guestDoneAt = signal<string | null>(null)
   protected readonly resources = signal<Resource[]>([])
   protected readonly loading = signal(true)
   protected readonly creating = signal(false)
   protected readonly selectedKind = signal<ResourceKind | null>(null)
   protected readonly statusMap = signal<Partial<Record<string, ResourceStatus>>>({})
+  protected readonly podStatusMap = signal<Partial<Record<string, ResourceStatus>>>({})
+  protected readonly commitPlan = signal<string[]>([])
+  protected readonly commitStep = signal<string | null>(null)
   protected readonly expandedResource = signal<string | null>(null)
   protected readonly viewMode = signal<"cards" | "arch">("cards")
   protected readonly confirmDelete = signal(false)
@@ -332,6 +352,18 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     if (previewable.length === 0) return true
     const confirmed = this.confirmedPreviewSet()
     return previewable.every((r) => confirmed.has(r.name))
+  })
+
+  // True while the pipeline list has something to show — cards are hidden during this time.
+  protected readonly pipelineActive = computed(() => {
+    if (this.commitPlan().length > 0) return true
+    const resources = this.resources()
+    if (resources.length === 0) return false
+    const statusMap = this.statusMap()
+    if (!resources.every((r) => statusMap[r.name]?.ready)) return true
+    const pods = Object.values(this.podStatusMap())
+    if (pods.some((p) => p?.initContainers?.some((ic) => !ic.completed))) return true
+    return !this.allPreviewsReady()
   })
 
   readonly platformKinds = PLATFORM_KINDS
@@ -380,6 +412,8 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
         const workspaces = await firstValueFrom(this.workspaceService.getWorkspaces())
         const ws = workspaces.find((w) => w.name === workspaceName)
         if (ws?.expiresAt) this.guestExpiresAt.set(ws.expiresAt)
+        if (ws?.phaseTimes) this.guestPhaseTimes.set(ws.phaseTimes)
+        if (ws?.doneAt) this.guestDoneAt.set(ws.doneAt)
       } catch {
         // Non-fatal — countdown shows '?' if unavailable.
       }
@@ -389,6 +423,10 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     this.sseSub = this.sseService.watchStatus(`${environment.apiUrl}/status/watch`).subscribe({
       next: (s) => {
         if (s.workspace !== workspaceName) return
+        if (s.kind === "Pod") {
+          this.podStatusMap.update((m) => ({ ...m, [s.name]: s }))
+          return
+        }
         if (s.ready) this.seenReady.add(s.name)
         // Suppress ERROR until the resource has been seen ready at least once —
         // avoids the jarring ERROR flash on initial SSE connect during Crossplane sync.
@@ -445,11 +483,17 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     this.confirmedPreviewSet.update((s) => new Set([...s, name]))
   }
 
+  private initialLoadDone = false
+
   async loadResources(suppressAutoCreate = false) {
-    this.loading.set(true)
+    // Only show the loading indicator on the very first load — subsequent
+    // refreshes (after create/delete) update resources silently so the pipeline
+    // component isn't destroyed and recreated on every commit.
+    if (!this.initialLoadDone) this.loading.set(true)
     const resources = await firstValueFrom(this.workspaceService.getResources(this.name()))
     this.resources.set(resources)
     if (!suppressAutoCreate && resources.length === 0) this.creating.set(true)
+    this.initialLoadDone = true
     this.loading.set(false)
   }
 
