@@ -51,11 +51,16 @@ const KIND_LABEL: Partial<Record<string, string>> = {
 function resourceDetail(r: { kind: string; spec: Record<string, unknown> }): string {
   const backend = (r.spec as { parameters?: { backend?: string } }).parameters?.backend
   switch (r.kind) {
-    case "XNoSql":         return "NoSQL table · access role"
-    case "XObjectStorage": return "Object store · access role"
-    case "XSql":           return backend === "public-cloud" ? "Database · access role" : "Database"
-    case "XCache":         return "Cache cluster"
-    default:               return ""
+    case "XNoSql":
+      return "NoSQL table · access role"
+    case "XObjectStorage":
+      return "Object store · access role"
+    case "XSql":
+      return backend === "public-cloud" ? "Database · access role" : "Database"
+    case "XCache":
+      return "Cache cluster"
+    default:
+      return ""
   }
 }
 
@@ -69,10 +74,10 @@ const BINDING_LABEL: Record<string, string> = {
 // What each binding secret contains — resource metadata + IAM ARNs (no credentials).
 // Credentials are issued at runtime by the aws-spiffe-helper sidecar via IAM Roles Anywhere.
 const BINDING_DETAIL: Record<string, string> = {
-  sql:              "host · port · username · IAM role",
-  nosql:            "table · region · IAM role",
+  sql: "host · port · username · IAM role",
+  nosql: "table · region · IAM role",
   "object-storage": "bucket · region · IAM role",
-  cache:            "host · port",
+  cache: "host · port",
 }
 
 function fmt(ms: number): string {
@@ -104,27 +109,34 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
         <div class="pipeline-mini" [class.pipeline-mini--done]="isDone()">
           @for (node of pipelineNodes; track node.label; let i = $index) {
             <div class="pm-stage">
-              <div class="pm-node"
+              <div
+                class="pm-node"
                 [class.pm-node--done]="pipelineStates()[i] === 'done'"
                 [class.pm-node--active]="pipelineStates()[i] === 'active'"
-                [class.pm-node--pending]="pipelineStates()[i] === 'pending'">
+                [class.pm-node--pending]="pipelineStates()[i] === 'pending'"
+              >
                 <div class="pm-pulse"></div>
                 <span class="pm-icon">{{ pipelineStates()[i] === "done" ? "✓" : node.icon }}</span>
               </div>
-              <span class="pm-label" [class.pm-label--active]="pipelineStates()[i] === 'active'">{{ node.label }}</span>
+              <span class="pm-label" [class.pm-label--active]="pipelineStates()[i] === 'active'">{{
+                node.label
+              }}</span>
             </div>
             @if (i < pipelineNodes.length - 1) {
-              <div class="pm-connector"
+              <div
+                class="pm-connector"
                 [class.pm-connector--done]="pipelineStates()[i] === 'done'"
                 [class.pm-connector--active]="pipelineStates()[i] === 'active'"
-                [class.pm-connector--pending]="pipelineStates()[i] === 'pending'">
-              </div>
+                [class.pm-connector--pending]="pipelineStates()[i] === 'pending'"
+              ></div>
             }
           }
         </div>
         <div class="list-header">
           @if (totalDuration()) {
-            <span class="total-duration">{{ isDone() ? "Total" : "Elapsed" }}: {{ totalDuration() }}</span>
+            <span class="total-duration"
+              >{{ isDone() ? "Total" : "Elapsed" }}: {{ totalDuration() }}</span
+            >
           }
           @if (isDone()) {
             <button class="collapse-btn" (click)="expanded.set(!expanded())">
@@ -132,9 +144,13 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
             </button>
           }
         </div>
-        @for (row of (isDone() && expanded() ? fullDoneRows() : rows()); track row.key) {
+        @for (row of isDone() && expanded() ? fullDoneRows() : rows(); track row.key) {
           @if (row.kind === "section") {
-            <div class="section-row" [class]="'row--' + row.status" [class.section-row--compact]="isDone() && !expanded()">
+            <div
+              class="section-row"
+              [class]="'row--' + row.status"
+              [class.section-row--compact]="isDone() && !expanded()"
+            >
               <span class="indicator">
                 @if (row.status === "done") {
                   <span class="check">✓</span>
@@ -235,9 +251,15 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
         transition: opacity 0.3s;
       }
 
-      .row--pending { opacity: 0.3; }
-      .row--done    { opacity: 0.5; }
-      .row--active  { opacity: 1; }
+      .row--pending {
+        opacity: 0.3;
+      }
+      .row--done {
+        opacity: 0.5;
+      }
+      .row--active {
+        opacity: 1;
+      }
 
       .section-label {
         font-size: 0.78rem;
@@ -380,8 +402,14 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
       }
 
       @keyframes check-pop {
-        from { transform: scale(0); opacity: 0; }
-        to   { transform: scale(1); opacity: 1; }
+        from {
+          transform: scale(0);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
       }
 
       .dot {
@@ -403,14 +431,21 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
       }
 
       @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+          transform: rotate(360deg);
+        }
       }
 
       /* ── Row entrance ── */
 
       @keyframes row-in {
-        from { opacity: 0; transform: translateY(5px); }
-        to   { transform: none; }
+        from {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        to {
+          transform: none;
+        }
       }
 
       .section-row,
@@ -422,8 +457,12 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
       /* ── Active section: sweeping text shimmer ── */
 
       @keyframes shimmer {
-        0%   { background-position: 150% center; }
-        100% { background-position: -150% center; }
+        0% {
+          background-position: 150% center;
+        }
+        100% {
+          background-position: -150% center;
+        }
       }
 
       .section-row.row--active .section-label {
@@ -438,8 +477,13 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
       /* ── Pulsing detail text on in-progress items ── */
 
       @keyframes pulse-opacity {
-        0%, 100% { opacity: 0.6; }
-        50%       { opacity: 0.25; }
+        0%,
+        100% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 0.25;
+        }
       }
 
       .row--active .item-detail {
@@ -455,7 +499,10 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
         overflow: hidden;
         max-height: 100px;
         opacity: 1;
-        transition: opacity 0.4s ease, max-height 0.5s ease, padding 0.5s ease;
+        transition:
+          opacity 0.4s ease,
+          max-height 0.5s ease,
+          padding 0.5s ease;
       }
 
       .pipeline-mini--done {
@@ -485,7 +532,9 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
         position: relative;
         border: 1.5px solid rgba(255, 255, 255, 0.12);
         background: rgba(255, 255, 255, 0.05);
-        transition: background 0.3s, border-color 0.3s;
+        transition:
+          background 0.3s,
+          border-color 0.3s;
       }
 
       .pm-node--done {
@@ -507,8 +556,13 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
       }
 
       @keyframes pulse-node {
-        0%, 100% { box-shadow: 0 0 6px rgba(124, 58, 237, 0.3); }
-        50%       { box-shadow: 0 0 16px rgba(124, 58, 237, 0.65); }
+        0%,
+        100% {
+          box-shadow: 0 0 6px rgba(124, 58, 237, 0.3);
+        }
+        50% {
+          box-shadow: 0 0 16px rgba(124, 58, 237, 0.65);
+        }
       }
 
       .pm-pulse {
@@ -526,8 +580,14 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
       }
 
       @keyframes pulse-ring {
-        0%   { transform: scale(1); opacity: 0.7; }
-        100% { transform: scale(1.6); opacity: 0; }
+        0% {
+          transform: scale(1);
+          opacity: 0.7;
+        }
+        100% {
+          transform: scale(1.6);
+          opacity: 0;
+        }
       }
 
       .pm-icon {
@@ -560,25 +620,40 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
         overflow: hidden;
       }
 
-      .pm-connector--done    { background: #22c55e; }
-      .pm-connector--pending { background: rgba(255, 255, 255, 0.1); }
-      .pm-connector--active  { background: rgba(124, 58, 237, 0.2); }
+      .pm-connector--done {
+        background: #22c55e;
+      }
+      .pm-connector--pending {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .pm-connector--active {
+        background: rgba(124, 58, 237, 0.2);
+      }
 
       .pm-connector--active::after {
         content: "";
         position: absolute;
-        top: 0; bottom: 0; left: -20px; right: 0;
+        top: 0;
+        bottom: 0;
+        left: -20px;
+        right: 0;
         background: repeating-linear-gradient(
           90deg,
-          #7c3aed 0, #7c3aed 8px,
-          transparent 8px, transparent 18px
+          #7c3aed 0,
+          #7c3aed 8px,
+          transparent 8px,
+          transparent 18px
         );
         animation: flow-dots 0.55s linear infinite;
       }
 
       @keyframes flow-dots {
-        from { transform: translateX(0); }
-        to   { transform: translateX(20px); }
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(20px);
+        }
       }
     `,
   ],
@@ -611,7 +686,11 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
   private persistLocal(times: Partial<Record<number, number>>): void {
     const ws = this.workspace()
     if (!ws) return
-    try { localStorage.setItem(this.lsKey("times"), JSON.stringify(times)) } catch { /* ignore */ }
+    try {
+      localStorage.setItem(this.lsKey("times"), JSON.stringify(times))
+    } catch {
+      /* ignore */
+    }
   }
 
   constructor() {
@@ -635,7 +714,10 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     let planWasActive = false
     effect(() => {
       const planLen = this.commitPlan().length
-      if (planLen > 0) { planWasActive = true; return }
+      if (planLen > 0) {
+        planWasActive = true
+        return
+      }
       if (!planWasActive) return
       planWasActive = false
       if (this.resources().length === 0) {
@@ -644,7 +726,13 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
           const updated = { ...t }
           delete updated[0]
           const ws = this.workspace()
-          if (ws) { try { localStorage.removeItem(this.lsKey("times")) } catch { /* ignore */ } }
+          if (ws) {
+            try {
+              localStorage.removeItem(this.lsKey("times"))
+            } catch {
+              /* ignore */
+            }
+          }
           return updated
         })
       }
@@ -656,7 +744,11 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
         this.doneTime.set(done)
         const ws = this.workspace()
         if (ws) {
-          try { localStorage.setItem(this.lsKey("done"), String(done)) } catch { /* ignore */ }
+          try {
+            localStorage.setItem(this.lsKey("done"), String(done))
+          } catch {
+            /* ignore */
+          }
           this.workspaceService.recordGuestPhase(ws, "", true)
         }
       }
@@ -689,13 +781,17 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
       try {
         const raw = localStorage.getItem(this.lsKey("times"))
         if (raw) this.phaseTimes.set(JSON.parse(raw) as Partial<Record<number, number>>)
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     if (!this.initialDoneTime()) {
       try {
         const done = Number(localStorage.getItem(this.lsKey("done")))
         if (done > 0) this.doneTime.set(done)
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     this.ticker = setInterval(() => this.now.set(Date.now()), 1000)
   }
@@ -714,7 +810,10 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     // so completed rows don't tick up indefinitely.
     let nextStart: number | undefined
     for (let p = phase + 1; p <= 4; p++) {
-      if (times[p] !== undefined) { nextStart = times[p]; break }
+      if (times[p] !== undefined) {
+        nextStart = times[p]
+        break
+      }
     }
     const end = nextStart ?? this.doneTime() ?? this.now()
     return fmt(end - start)
@@ -748,7 +847,8 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     let active: number
     if (phase === 5) active = -1
     else if (phase >= 0) active = phase
-    else if (committed) active = 1   // after commit, before resources appear = syncing
+    else if (committed)
+      active = 1 // after commit, before resources appear = syncing
     else active = 0
     return PIPELINE_NODES.map((_, i) => {
       if (active === -1) return "done"
@@ -798,7 +898,9 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     // ── Provisioning infrastructure ────────────────────────────────────────
     const allReady = resources.every((r) => statusMap[r.name]?.ready)
     const provActive = phase === 2
-    rows.push(sec("s-prov", "Provisioning infrastructure", allReady ? "done" : "active", this.dur(2)))
+    rows.push(
+      sec("s-prov", "Provisioning infrastructure", allReady ? "done" : "active", this.dur(2)),
+    )
     // Only expand detail rows while this phase is active
     if (provActive) {
       for (const r of resources) {
@@ -848,7 +950,14 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     // ── Container startup ──────────────────────────────────────────────────
     if (hasApi || hasSpa) {
       const healthDone = this.allPreviewsReady()
-      rows.push(sec("s-health", "Waiting for container readiness probe", healthDone ? "done" : "active", this.dur(4)))
+      rows.push(
+        sec(
+          "s-health",
+          "Waiting for container readiness probe",
+          healthDone ? "done" : "active",
+          this.dur(4),
+        ),
+      )
       // Only expand while this phase is active
       if (!healthDone) {
         if (hasApi) rows.push(item("h-api", "API", "polling…", "active"))
@@ -873,7 +982,14 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     rows.push(sec("s-prov", "Provisioning infrastructure", "done", this.dur(2)))
     for (const r of resources) {
       const s = statusMap[r.name]
-      rows.push(subsec(r.name, KIND_LABEL[r.kind] ?? r.kind, s?.ready ? "done" : "active", resourceDetail(r)))
+      rows.push(
+        subsec(
+          r.name,
+          KIND_LABEL[r.kind] ?? r.kind,
+          s?.ready ? "done" : "active",
+          resourceDetail(r),
+        ),
+      )
     }
 
     const hasApi = resources.some((r) => r.kind === "XApi")

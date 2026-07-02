@@ -360,14 +360,30 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
       .options-grid .option-card {
         animation: card-in 0.25s ease both;
       }
-      .options-grid .option-card:nth-child(1) { animation-delay: 0.05s; }
-      .options-grid .option-card:nth-child(2) { animation-delay: 0.1s; }
-      .options-grid .option-card:nth-child(3) { animation-delay: 0.15s; }
-      .options-grid .option-card:nth-child(4) { animation-delay: 0.2s; }
-      .options-grid .option-card:nth-child(5) { animation-delay: 0.25s; }
+      .options-grid .option-card:nth-child(1) {
+        animation-delay: 0.05s;
+      }
+      .options-grid .option-card:nth-child(2) {
+        animation-delay: 0.1s;
+      }
+      .options-grid .option-card:nth-child(3) {
+        animation-delay: 0.15s;
+      }
+      .options-grid .option-card:nth-child(4) {
+        animation-delay: 0.2s;
+      }
+      .options-grid .option-card:nth-child(5) {
+        animation-delay: 0.25s;
+      }
       @keyframes card-in {
-        from { opacity: 0; transform: translateY(4px); }
-        to   { opacity: 1; transform: translateY(0); }
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
       .recommended-badge {
         display: inline-block;
@@ -424,7 +440,6 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
       .option-toggle.on::after {
         transform: translateX(16px);
       }
-
     `,
   ],
 })
@@ -453,7 +468,6 @@ export class GuestCreate implements OnInit {
   protected readonly withSql = signal(false)
   protected readonly withNoSql = signal(false)
   protected readonly withSpa = signal(false)
-
 
   protected readonly availableKinds = computed(() => {
     const existing = new Set(this.existingResources().map((r) => r.kind))

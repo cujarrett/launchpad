@@ -31,9 +31,9 @@ export const RESOURCE_KIND_LABELS: Record<ResourceKind, string> = {
 
 // MUI 2014 Material Design palette — 500 shades
 export const RESOURCE_KIND_COLORS: Record<ResourceKind, string> = {
-  XSpa: "#3f51b5",   // indigo[500]
-  XApi: "#00bcd4",   // cyan[500]
-  XSql: "#ffc107",   // amber[500]
+  XSpa: "#3f51b5", // indigo[500]
+  XApi: "#00bcd4", // cyan[500]
+  XSql: "#ffc107", // amber[500]
   XNoSql: "#ff9800", // orange[500]
   XObjectStorage: "#009688", // teal[500]
   XCache: "#607d8b", // blue-grey[500]
