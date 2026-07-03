@@ -695,8 +695,40 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
   private readonly now = signal(Date.now())
   private ticker?: ReturnType<typeof setInterval>
 
+  // Tracks which workspace's data currently occupies phaseTimes/doneTime — null means
+  // "not yet initialized" (distinct from the default "" workspace value) so the reset
+  // effect below doesn't wipe the very first load.
+  private trackedWorkspace: string | null = null
+
   private lsKey(suffix: string): string {
     return `pipeline-${suffix}-${this.workspace()}`
+  }
+
+  // Restores an immediate fallback from localStorage — used on first mount and again
+  // whenever the workspace changes underneath a reused component instance, since
+  // ngOnInit only runs once per component lifetime but the router can swap `workspace`
+  // without destroying this component (only the `:name` route param changes).
+  private restoreFromLocalStorage(): void {
+    if (Object.keys(this.initialPhaseTimes()).length === 0) {
+      try {
+        const raw = localStorage.getItem(this.lsKey("times"))
+        if (raw) {
+          const parsed = JSON.parse(raw) as Partial<Record<number, number>>
+          this.phaseTimes.set(this.clampPhaseTimes(parsed))
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    if (!this.initialDoneTime()) {
+      try {
+        const done = Number(localStorage.getItem(this.lsKey("done")))
+        const min = this.minPhaseTime()
+        if (done > 0 && (min === null || done >= min)) this.doneTime.set(done)
+      } catch {
+        /* ignore */
+      }
+    }
   }
 
   // Drops any phase timestamp earlier than minPhaseTime (the workspace's real createdAt).
@@ -724,6 +756,22 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
   }
 
   constructor() {
+    // Reset phase-timing state when the displayed workspace actually changes. The router
+    // reuses this component instance across `workspaces/:name` navigations (only the param
+    // changes, no destroy/recreate), so without this reset the phaseTimes/doneTime signals
+    // from whichever workspace was viewed previously leak into the newly-displayed one —
+    // showing wrong per-step durations, and a hidden Total once totalDuration()'s own
+    // minPhaseTime guard (correctly) filters the stale values out entirely.
+    effect(() => {
+      const ws = this.workspace()
+      if (this.trackedWorkspace !== null && this.trackedWorkspace !== ws) {
+        this.phaseTimes.set({})
+        this.doneTime.set(null)
+        this.expanded.set(false)
+        this.restoreFromLocalStorage()
+      }
+      this.trackedWorkspace = ws
+    })
     // Record start time the first time each phase becomes active, persist to server + localStorage.
     // Phase 5 is the "done" sentinel — skip it so it can't pollute totalDuration.
     effect(() => {
@@ -806,27 +854,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // localStorage as an immediate fallback — server data arrives later via effects above.
-    // Only restore from localStorage if server hasn't already provided data.
-    if (Object.keys(this.initialPhaseTimes()).length === 0) {
-      try {
-        const raw = localStorage.getItem(this.lsKey("times"))
-        if (raw) {
-          const parsed = JSON.parse(raw) as Partial<Record<number, number>>
-          this.phaseTimes.set(this.clampPhaseTimes(parsed))
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-    if (!this.initialDoneTime()) {
-      try {
-        const done = Number(localStorage.getItem(this.lsKey("done")))
-        const min = this.minPhaseTime()
-        if (done > 0 && (min === null || done >= min)) this.doneTime.set(done)
-      } catch {
-        /* ignore */
-      }
-    }
+    this.restoreFromLocalStorage()
     this.ticker = setInterval(() => this.now.set(Date.now()), 1000)
   }
 
