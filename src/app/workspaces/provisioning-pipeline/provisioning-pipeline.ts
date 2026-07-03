@@ -703,9 +703,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
   // Applied wherever phaseTimes can be populated from a source other than "record it now"
   // (localStorage, server data) — both can carry a stale value from an earlier workspace
   // that reused the same name.
-  private clampPhaseTimes(
-    times: Partial<Record<number, number>>,
-  ): Partial<Record<number, number>> {
+  private clampPhaseTimes(times: Partial<Record<number, number>>): Partial<Record<number, number>> {
     const min = this.minPhaseTime()
     if (min === null) return times
     const clamped: Partial<Record<number, number>> = {}
