@@ -449,7 +449,6 @@ export class GuestCreate implements OnInit {
   readonly created = output<void>()
   readonly cancelled = output<void>()
   readonly commitPlanChange = output<string[]>()
-  readonly commitStepChange = output<string | null>()
 
   private readonly workspaceService = inject(WorkspaceService)
 
@@ -460,7 +459,6 @@ export class GuestCreate implements OnInit {
 
   protected readonly selectedKind = signal<ResourceKind | "">("")
   protected readonly saving = signal(false)
-  protected readonly creatingStep = signal<string | null>(null)
   protected readonly savedPlan = signal<string[]>([])
   protected readonly error = signal<string | null>(null)
   protected readonly withStorage = signal(false)
@@ -521,11 +519,6 @@ export class GuestCreate implements OnInit {
     return steps
   }
 
-  private setStep(step: string | null) {
-    this.creatingStep.set(step)
-    this.commitStepChange.emit(step)
-  }
-
   protected async submit(): Promise<void> {
     const kind = this.selectedKind()
     if (!kind) return
@@ -535,39 +528,19 @@ export class GuestCreate implements OnInit {
     this.saving.set(true)
     this.error.set(null)
     try {
-      // Provision object storage before XApi so the XApi creation sees it in
-      // existingFiles and wires objectStorageRef on the first render — no
-      // re-render pass needed and no risk of accidentally dropping the cache.
-      if (this.withStorage() && kind === "XApi") {
-        this.setStep("Object storage")
-        await firstValueFrom(
-          this.workspaceService.createGuestResource(this.workspace(), "XObjectStorage"),
-        )
-      }
-      if (this.withSql() && this.offerSql() && kind === "XApi") {
-        this.setStep("SQL database")
-        await firstValueFrom(this.workspaceService.createGuestResource(this.workspace(), "XSql"))
-      }
-      if (this.withNoSql() && kind === "XApi") {
-        this.setStep("NoSQL database")
-        await firstValueFrom(this.workspaceService.createGuestResource(this.workspace(), "XNoSql"))
-      }
-      if (this.withSpa() && kind === "XApi" && this.offerSpa()) {
-        this.setStep("Frontend")
-        await firstValueFrom(this.workspaceService.createGuestResource(this.workspace(), "XSpa"))
-      }
-      if (kind === "XSpa" && this.offerApi()) {
-        this.setStep("API")
-        await firstValueFrom(this.workspaceService.createGuestResource(this.workspace(), "XApi"))
-      }
-      this.setStep(kind === "XApi" ? "API" : "Frontend")
+      // All requested resources (add-ons plus the API/SPA itself) are created
+      // in one request and one atomic Git commit server-side — no more
+      // sequential round trips per add-on, and no risk of a partially created
+      // workspace if this request is interrupted.
       await firstValueFrom(
-        this.workspaceService.createGuestResource(
-          this.workspace(),
-          kind,
-          this.withCache(),
-          this.withSql(),
-        ),
+        this.workspaceService.createGuestResourceBatch(this.workspace(), kind, {
+          withCache: this.withCache(),
+          withSql: this.withSql(),
+          withNoSql: this.withNoSql() && kind === "XApi",
+          withStorage: this.withStorage() && kind === "XApi",
+          withSpa: this.withSpa() && kind === "XApi" && this.offerSpa(),
+          withApi: kind === "XSpa" && this.offerApi(),
+        }),
       )
       this.created.emit()
     } catch (e) {
@@ -578,7 +551,6 @@ export class GuestCreate implements OnInit {
       }
     } finally {
       this.saving.set(false)
-      this.setStep(null)
       this.commitPlanChange.emit([])
     }
   }

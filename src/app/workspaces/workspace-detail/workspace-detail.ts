@@ -151,7 +151,6 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
             (created)="onCreated()"
             (cancelled)="creating.set(false)"
             (commitPlanChange)="commitPlan.set($event)"
-            (commitStepChange)="commitStep.set($event)"
           />
         } @else {
           <div class="create-panel">
@@ -227,7 +226,6 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
         [podStatusMap]="podStatusMap()"
         [allPreviewsReady]="allPreviewsReady()"
         [commitPlan]="commitPlan()"
-        [commitStep]="commitStep()"
       />
     </div>
   `,
@@ -318,7 +316,6 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   protected readonly statusMap = signal<Partial<Record<string, ResourceStatus>>>({})
   protected readonly podStatusMap = signal<Partial<Record<string, ResourceStatus>>>({})
   protected readonly commitPlan = signal<string[]>([])
-  protected readonly commitStep = signal<string | null>(null)
   protected readonly expandedResource = signal<string | null>(null)
   protected readonly viewMode = signal<"cards" | "arch">("cards")
   protected readonly confirmDelete = signal(false)

@@ -675,7 +675,6 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
   readonly podStatusMap = input<Partial<Record<string, ResourceStatus>>>({})
   readonly allPreviewsReady = input.required<boolean>()
   readonly commitPlan = input<string[]>([])
-  readonly commitStep = input<string | null>(null)
   readonly workspace = input<string>("")
   // Server-persisted phase times — wins over localStorage so any browser sees the same data.
   readonly initialPhaseTimes = input<Record<string, string>>({})

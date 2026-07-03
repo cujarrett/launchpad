@@ -45,19 +45,22 @@ export class WorkspaceService {
     )
   }
 
-  createGuestResource(
+  createGuestResourceBatch(
     workspace: string,
     kind: string,
-    withCache = false,
-    withSql = false,
-    params?: Record<string, unknown>,
+    opts: {
+      withCache?: boolean
+      withSql?: boolean
+      withNoSql?: boolean
+      withStorage?: boolean
+      withSpa?: boolean
+      withApi?: boolean
+    } = {},
   ): Observable<void> {
-    return this.http.post<void>(`${environment.apiUrl}/guest/workspaces/${workspace}/resources`, {
-      kind,
-      withCache,
-      withSql,
-      ...(params ? { params } : {}),
-    })
+    return this.http.post<void>(
+      `${environment.apiUrl}/guest/workspaces/${workspace}/resources/batch`,
+      { kind, ...opts },
+    )
   }
 
   recordGuestPhase(workspace: string, phase: string, done = false): void {
