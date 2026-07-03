@@ -1,34 +1,38 @@
 import { Injectable, inject } from "@angular/core"
-import { Observable, from, switchMap, timer } from "rxjs"
-import { retry } from "rxjs/operators"
+import { HttpClient } from "@angular/common/http"
+import { Observable, of, switchMap, timer } from "rxjs"
+import { catchError, retry } from "rxjs/operators"
 import { MsalService } from "@azure/msal-angular"
 import { ResourceStatus } from "../models/workspace.model"
-import { environment } from "../../../environments/environment"
 
 @Injectable({ providedIn: "root" })
 export class SseService {
   private readonly msal = inject(MsalService)
+  private readonly http = inject(HttpClient)
 
   watchStatus(url: string): Observable<ResourceStatus> {
-    return from(this.acquireToken()).pipe(
-      // NOTE: EventSource does not support Authorization headers. The token is
-      // passed as a query param as a workaround. The backend should treat it as
-      // short-lived and validate strictly. Prefer cookie-based auth or a
-      // fetch-based SSE proxy to avoid token exposure in server logs.
-      switchMap((token) =>
-        this.openEventSource(token ? `${url}?token=${encodeURIComponent(token)}` : url),
+    return this.acquireTicket(url).pipe(
+      switchMap((ticket) =>
+        this.openEventSource(ticket ? `${url}?ticket=${encodeURIComponent(ticket)}` : url),
       ),
       retry({ delay: () => timer(5000) }),
     )
   }
 
-  private async acquireToken(): Promise<string | null> {
+  // EventSource can't send an Authorization header, so we can't hand it the
+  // real MSAL access token directly without putting it in the URL (and from
+  // there, every access log and proxy it transits). Instead, exchange the
+  // real token for a short-lived, single-use ticket over a normal
+  // header-authenticated request (authInterceptor attaches the Bearer token),
+  // and pass that ticket in the URL instead — worthless if logged or leaked.
+  private acquireTicket(url: string): Observable<string | null> {
     const account = this.msal.instance.getActiveAccount() ?? this.msal.instance.getAllAccounts()[0]
-    if (!account) return null
-    return this.msal.instance
-      .acquireTokenSilent({ scopes: [environment.msalApiScope], account })
-      .then((r) => r.accessToken)
-      .catch(() => null)
+    if (!account) return of(null)
+
+    return this.http.post<{ ticket: string }>(`${url}/ticket`, {}).pipe(
+      switchMap((res) => of(res.ticket)),
+      catchError(() => of(null)),
+    )
   }
 
   private openEventSource(url: string): Observable<ResourceStatus> {
