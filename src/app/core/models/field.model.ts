@@ -26,6 +26,8 @@ export interface FieldDef {
   connection?: boolean
   refKind?: ResourceKind // only for resource-ref
   children?: FieldDef[] // only for sub-object
+  /** Hide this field when a sibling field has the given value. */
+  hiddenWhen?: { key: string; value: unknown }
 }
 
 // Maps *Ref field names → the ResourceKind they reference.
@@ -37,6 +39,12 @@ export const REF_KIND: Record<string, ResourceKind> = {
   objectStorageRefs: "XObjectStorage",
   topicRef: "XTopic",
   subscriptionRef: "XSubscription",
+}
+
+// Fields hidden when a sibling field has a specific value.
+// Use this for fields that only apply to certain backends/modes, not general optional fields.
+const HIDDEN_WHEN: Record<string, { key: string; value: unknown }> = {
+  consumerServiceAccounts: { key: "backend", value: "private-cloud" },
 }
 
 // Fields excluded from the Launchpad UI entirely.
@@ -81,6 +89,7 @@ function classifyField(key: string, schema: Record<string, unknown>, required: b
     pattern: schema["pattern"] as string | undefined,
     required,
     ...(ADVANCED_KEYS.has(key) ? { advanced: true } : {}),
+    ...(HIDDEN_WHEN[key] ? { hiddenWhen: HIDDEN_WHEN[key] } : {}),
   }
 
   if (key === "repo" || key === "image") {

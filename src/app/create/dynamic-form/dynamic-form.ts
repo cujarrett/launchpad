@@ -69,6 +69,7 @@ import { WorkspaceService } from "../../core/services/workspace.service"
 
         <div class="form-fields">
           @for (field of editableFields(); track field.key) {
+            @if (!fieldIsHidden(field)) {
             @if (field.kind === "sub-object") {
               <fieldset class="sub-group" [formGroupName]="field.key">
                 <legend>{{ field.label }}</legend>
@@ -118,25 +119,26 @@ import { WorkspaceService } from "../../core/services/workspace.service"
                   }
                 }
               </fieldset>
-            } @else {
-              <div class="field-group">
-                <label>
-                  <span class="field-label-row">
-                    {{ field.label }}{{ field.required ? " *" : "" }}
-                    @if (field.description) {
-                      <span class="hint-icon" [title]="field.description">ⓘ</span>
-                    }
-                  </span>
-                  <ng-container
-                    [ngTemplateOutlet]="fieldInput"
-                    [ngTemplateOutletContext]="{
-                      field: field,
-                      controlName: field.key,
-                      fullControlName: field.key,
-                    }"
-                  />
-                </label>
-              </div>
+              } @else {
+                <div class="field-group">
+                  <label>
+                    <span class="field-label-row">
+                      {{ field.label }}{{ field.required ? " *" : "" }}
+                      @if (field.description) {
+                        <span class="hint-icon" [title]="field.description">ⓘ</span>
+                      }
+                    </span>
+                    <ng-container
+                      [ngTemplateOutlet]="fieldInput"
+                      [ngTemplateOutletContext]="{
+                        field: field,
+                        controlName: field.key,
+                        fullControlName: field.key,
+                      }"
+                    />
+                  </label>
+                </div>
+              }
             }
           }
         </div>
@@ -613,6 +615,11 @@ export class DynamicForm implements OnInit {
     // all sub-object fields so the user isn't silently shown stale defaults.
     if (this.mode() === "edit" && this.valuesLoadError()) return true
     return false
+  }
+
+  protected fieldIsHidden(field: FieldDef): boolean {
+    if (!field.hiddenWhen) return false
+    return this.formSig().get(field.hiddenWhen.key)?.value === field.hiddenWhen.value
   }
 
   protected refsFor(kind: ResourceKind): Resource[] {
