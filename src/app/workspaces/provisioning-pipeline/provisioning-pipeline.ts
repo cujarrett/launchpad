@@ -679,6 +679,12 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
   // Server-persisted phase times — wins over localStorage so any browser sees the same data.
   readonly initialPhaseTimes = input<Record<string, string>>({})
   readonly initialDoneTime = input<string | null>(null)
+  // Earliest legitimate phase timestamp (epoch ms) — the workspace's own createdAt. Guards
+  // against a stale localStorage entry from a previous workspace that happened to reuse the
+  // same name (the guest name pool is finite; collisions across sessions do happen). No phase
+  // can legitimately start before the workspace itself was created, so anything earlier is
+  // discarded rather than trusted. null means "no bound" (non-guest workspaces).
+  readonly minPhaseTime = input<number | null>(null)
 
   private readonly workspaceService = inject(WorkspaceService)
   protected readonly expanded = signal(false)
@@ -691,6 +697,22 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
 
   private lsKey(suffix: string): string {
     return `pipeline-${suffix}-${this.workspace()}`
+  }
+
+  // Drops any phase timestamp earlier than minPhaseTime (the workspace's real createdAt).
+  // Applied wherever phaseTimes can be populated from a source other than "record it now"
+  // (localStorage, server data) — both can carry a stale value from an earlier workspace
+  // that reused the same name.
+  private clampPhaseTimes(
+    times: Partial<Record<number, number>>,
+  ): Partial<Record<number, number>> {
+    const min = this.minPhaseTime()
+    if (min === null) return times
+    const clamped: Partial<Record<number, number>> = {}
+    for (const [k, v] of Object.entries(times)) {
+      if (v !== undefined && v >= min) clamped[Number(k)] = v
+    }
+    return clamped
   }
 
   private persistLocal(times: Partial<Record<number, number>>): void {
@@ -774,7 +796,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
         const ms = new Date(v).getTime()
         if (!isNaN(ms)) parsed[Number(k)] = ms
       }
-      this.phaseTimes.set(parsed)
+      this.phaseTimes.set(this.clampPhaseTimes(parsed))
     })
     effect(() => {
       const serverDone = this.initialDoneTime()
@@ -790,7 +812,10 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     if (Object.keys(this.initialPhaseTimes()).length === 0) {
       try {
         const raw = localStorage.getItem(this.lsKey("times"))
-        if (raw) this.phaseTimes.set(JSON.parse(raw) as Partial<Record<number, number>>)
+        if (raw) {
+          const parsed = JSON.parse(raw) as Partial<Record<number, number>>
+          this.phaseTimes.set(this.clampPhaseTimes(parsed))
+        }
       } catch {
         /* ignore */
       }
@@ -798,7 +823,8 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     if (!this.initialDoneTime()) {
       try {
         const done = Number(localStorage.getItem(this.lsKey("done")))
-        if (done > 0) this.doneTime.set(done)
+        const min = this.minPhaseTime()
+        if (done > 0 && (min === null || done >= min)) this.doneTime.set(done)
       } catch {
         /* ignore */
       }
@@ -872,7 +898,12 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     const times = this.phaseTimes()
     const starts = Object.values(times).filter((v): v is number => v !== undefined)
     if (starts.length === 0) return null
-    const earliest = Math.min(...starts)
+    // Defensive second layer: clampPhaseTimes already filters at every write site, but a bad
+    // value slipping in from an untested path shouldn't produce a nonsensical total.
+    const min = this.minPhaseTime()
+    const validStarts = min === null ? starts : starts.filter((v) => v >= min)
+    if (validStarts.length === 0) return null
+    const earliest = Math.min(...validStarts)
     const end = this.isDone() ? (this.doneTime() ?? this.now()) : this.now()
     return fmt(end - earliest)
   })

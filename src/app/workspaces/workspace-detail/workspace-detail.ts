@@ -27,6 +27,10 @@ import { ProvisioningPipeline } from "../provisioning-pipeline/provisioning-pipe
 import { SseService } from "../../core/services/sse.service"
 import { environment } from "../../../environments/environment"
 
+// Must match guestTTL in launchpad-api's guest.go — used only to derive the workspace's
+// createdAt from its expiresAt for the provisioning-pipeline's stale-data bound check.
+const GUEST_TTL_MS = 10 * 60 * 1000
+
 const PLATFORM_KINDS: ResourceKind[] = [
   "XSpa",
   "XApi",
@@ -221,6 +225,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
         [workspace]="name()"
         [initialPhaseTimes]="guestPhaseTimes()"
         [initialDoneTime]="guestDoneAt()"
+        [minPhaseTime]="guestMinPhaseTime()"
         [resources]="resources()"
         [statusMap]="statusMap()"
         [podStatusMap]="podStatusMap()"
@@ -307,6 +312,15 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
 
   protected readonly name = signal("")
   protected readonly guestExpiresAt = signal<string | null>(null)
+  // Workspace's actual createdAt, derived from expiresAt (createdAt + guestTTL). Passed to
+  // provisioning-pipeline so it can discard any phase timestamp (from localStorage or a stale
+  // server read) that claims to predate the workspace's own creation.
+  protected readonly guestMinPhaseTime = computed<number | null>(() => {
+    const expiresAt = this.guestExpiresAt()
+    if (!expiresAt) return null
+    const ms = new Date(expiresAt).getTime()
+    return isNaN(ms) ? null : ms - GUEST_TTL_MS
+  })
   protected readonly guestPhaseTimes = signal<Record<string, string>>({})
   protected readonly guestDoneAt = signal<string | null>(null)
   protected readonly resources = signal<Resource[]>([])
