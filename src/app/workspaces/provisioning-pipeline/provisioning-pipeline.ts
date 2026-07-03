@@ -209,7 +209,18 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
       }
 
       .status-list--done:hover {
-        opacity: 0.9;
+        opacity: 1;
+      }
+
+      .status-list--done:hover .row--done,
+      .status-list--done:hover .total-duration,
+      .status-list--done:hover .collapse-btn,
+      .status-list--done:hover .section-duration,
+      .status-list--done:hover .subsection-label,
+      .status-list--done:hover .subsection-detail,
+      .status-list--done:hover .item-label,
+      .status-list--done:hover .item-detail {
+        opacity: 1;
       }
 
       .list-header {
