@@ -70,55 +70,55 @@ import { WorkspaceService } from "../../core/services/workspace.service"
         <div class="form-fields">
           @for (field of editableFields(); track field.key) {
             @if (!fieldIsHidden(field)) {
-            @if (field.kind === "sub-object") {
-              <fieldset class="sub-group" [formGroupName]="field.key">
-                <legend>{{ field.label }}</legend>
-                @if (hasEnabledToggle(field)) {
-                  <label class="toggle">
-                    <input type="checkbox" formControlName="enabled" />
-                    Enable {{ field.label }}
-                  </label>
-                }
-                @if (!hasEnabledToggle(field) || isSubObjectEnabled(field.key)) {
-                  @for (child of field.children ?? []; track child.key) {
-                    @if (child.key !== "enabled") {
-                      <label>
-                        {{ child.label }}{{ child.required ? " *" : "" }}
-                        @switch (child.kind) {
-                          @case ("select") {
-                            <select [formControlName]="child.key">
-                              @if (!child.required) {
-                                <option value="">— none —</option>
-                              }
-                              @for (opt of child.enum ?? []; track opt; let i = $index) {
-                                <option [value]="opt">{{ child.enumLabels?.[i] ?? opt }}</option>
-                              }
-                            </select>
+              @if (field.kind === "sub-object") {
+                <fieldset class="sub-group" [formGroupName]="field.key">
+                  <legend>{{ field.label }}</legend>
+                  @if (hasEnabledToggle(field)) {
+                    <label class="toggle">
+                      <input type="checkbox" formControlName="enabled" />
+                      Enable {{ field.label }}
+                    </label>
+                  }
+                  @if (!hasEnabledToggle(field) || isSubObjectEnabled(field.key)) {
+                    @for (child of field.children ?? []; track child.key) {
+                      @if (child.key !== "enabled") {
+                        <label>
+                          {{ child.label }}{{ child.required ? " *" : "" }}
+                          @switch (child.kind) {
+                            @case ("select") {
+                              <select [formControlName]="child.key">
+                                @if (!child.required) {
+                                  <option value="">— none —</option>
+                                }
+                                @for (opt of child.enum ?? []; track opt; let i = $index) {
+                                  <option [value]="opt">{{ child.enumLabels?.[i] ?? opt }}</option>
+                                }
+                              </select>
+                            }
+                            @case ("boolean") {
+                              <input type="checkbox" [formControlName]="child.key" />
+                            }
+                            @case ("number") {
+                              <input
+                                type="number"
+                                [min]="child.minimum ?? 0"
+                                [formControlName]="child.key"
+                                [placeholder]="child.default?.toString() ?? ''"
+                              />
+                            }
+                            @default {
+                              <input
+                                type="text"
+                                [formControlName]="child.key"
+                                [placeholder]="child.default?.toString() ?? ''"
+                              />
+                            }
                           }
-                          @case ("boolean") {
-                            <input type="checkbox" [formControlName]="child.key" />
-                          }
-                          @case ("number") {
-                            <input
-                              type="number"
-                              [min]="child.minimum ?? 0"
-                              [formControlName]="child.key"
-                              [placeholder]="child.default?.toString() ?? ''"
-                            />
-                          }
-                          @default {
-                            <input
-                              type="text"
-                              [formControlName]="child.key"
-                              [placeholder]="child.default?.toString() ?? ''"
-                            />
-                          }
-                        }
-                      </label>
+                        </label>
+                      }
                     }
                   }
-                }
-              </fieldset>
+                </fieldset>
               } @else {
                 <div class="field-group">
                   <label>
