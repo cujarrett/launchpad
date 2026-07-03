@@ -816,7 +816,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
       }
     }
     const end = nextStart ?? this.doneTime() ?? this.now()
-    return fmt(end - start)
+    return fmt(Math.max(0, end - start))
   }
 
   // Phase index drives all section states.
