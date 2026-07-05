@@ -103,13 +103,15 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
               >
                 Cards
               </button>
-              <button
-                [class.active]="viewMode() === 'arch'"
-                class="secondary"
-                (click)="viewMode.set('arch')"
-              >
-                Arch
-              </button>
+              @if (!pipelineActive()) {
+                <button
+                  [class.active]="viewMode() === 'arch'"
+                  class="secondary"
+                  (click)="viewMode.set('arch')"
+                >
+                  Arch
+                </button>
+              }
             </div>
           }
           @if (!creating()) {
