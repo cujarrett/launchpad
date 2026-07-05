@@ -83,136 +83,145 @@ const USER_NODE_ID = "__users__"
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="arch-view">
-    <div class="arch-wrap" [class.arch-wrap--overflow]="isOverflowing()" #archWrap>
-      @if (layout(); as l) {
-        <div class="arch-scaler" [style.width.px]="scaledWidth()" [style.height.px]="scaledHeight()">
-        <div
-          class="arch-canvas"
-          [style.width.px]="l.width"
-          [style.height.px]="l.height"
-          [style.transform]="'scale(' + scale() + ')'"
-        >
-          <svg class="arch-svg" [attr.width]="l.width" [attr.height]="l.height" aria-hidden="true">
-            <defs>
-              <marker
-                id="arch-arrow-ok"
-                viewBox="0 0 10 10"
-                refX="9"
-                refY="5"
-                markerWidth="5"
-                markerHeight="5"
-                orient="auto-start-reverse"
-              >
-                <path d="M 0 0 L 10 5 L 0 10 z" class="arch-arrow-head arch-arrow-head--ok" />
-              </marker>
-              <marker
-                id="arch-arrow-warn"
-                viewBox="0 0 10 10"
-                refX="9"
-                refY="5"
-                markerWidth="5"
-                markerHeight="5"
-                orient="auto-start-reverse"
-              >
-                <path d="M 0 0 L 10 5 L 0 10 z" class="arch-arrow-head arch-arrow-head--warn" />
-              </marker>
-            </defs>
-            @for (edge of l.edges; track edge.id) {
-              @let ok = edgeOk(edge);
-              <g
-                class="arch-edge-g"
-                [class.arch-edge-g--ok]="ok"
-                [class.arch-edge-g--warn]="!ok"
-                [class.arch-edge-g--dim]="isEdgeDimmed(edge)"
-              >
-                <path
-                  [attr.id]="edge.id"
-                  [attr.d]="edge.d"
-                  class="arch-edge"
-                  [attr.marker-end]="ok ? 'url(#arch-arrow-ok)' : 'url(#arch-arrow-warn)'"
-                />
-                <text [attr.x]="edge.labelX" [attr.y]="edge.labelY" class="arch-edge-label">
-                  {{ edge.label }}
-                </text>
-                @if (ok) {
-                  <circle r="2.5" class="arch-particle">
-                    <animateMotion dur="2.4s" repeatCount="indefinite">
-                      <mpath [attr.href]="'#' + edge.id" />
-                    </animateMotion>
-                  </circle>
-                  <circle r="2.5" class="arch-particle">
-                    <animateMotion dur="2.4s" begin="-1.2s" repeatCount="indefinite">
-                      <mpath [attr.href]="'#' + edge.id" />
-                    </animateMotion>
-                  </circle>
-                }
-              </g>
-            }
-          </svg>
-
-          @for (node of l.nodes; track node.id) {
-            @let status = nodeStatus(node);
-            @let ok = status !== null && status.synced && status.ready;
+      <div class="arch-wrap" [class.arch-wrap--overflow]="isOverflowing()" #archWrap>
+        @if (layout(); as l) {
+          <div
+            class="arch-scaler"
+            [style.width.px]="scaledWidth()"
+            [style.height.px]="scaledHeight()"
+          >
             <div
-              class="arch-node"
-              [class.arch-node--user]="node.isUser"
-              [class.arch-node--ok]="ok"
-              [class.arch-node--warn]="status !== null && !ok"
-              [class.arch-node--dim]="isNodeDimmed(node.id)"
-              [style.left.px]="node.x"
-              [style.top.px]="node.y"
-              [style.--node-color]="node.color"
-              (mouseenter)="hovered.set(node.id)"
-              (mouseleave)="hovered.set(null)"
+              class="arch-canvas"
+              [style.width.px]="l.width"
+              [style.height.px]="l.height"
+              [style.transform]="'scale(' + scale() + ')'"
             >
-              <div class="arch-node-top">
-                <span class="arch-node-icon">{{ node.icon }}</span>
-                <span class="arch-node-kind">{{ node.kindLabel }}</span>
-                @if (status !== null) {
-                  <span
-                    class="arch-node-dot"
-                    [class.arch-node-dot--ok]="ok"
-                    [class.arch-node-dot--warn]="!ok"
-                  ></span>
+              <svg
+                class="arch-svg"
+                [attr.width]="l.width"
+                [attr.height]="l.height"
+                aria-hidden="true"
+              >
+                <defs>
+                  <marker
+                    id="arch-arrow-ok"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="5"
+                    markerHeight="5"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M 0 0 L 10 5 L 0 10 z" class="arch-arrow-head arch-arrow-head--ok" />
+                  </marker>
+                  <marker
+                    id="arch-arrow-warn"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="5"
+                    markerHeight="5"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M 0 0 L 10 5 L 0 10 z" class="arch-arrow-head arch-arrow-head--warn" />
+                  </marker>
+                </defs>
+                @for (edge of l.edges; track edge.id) {
+                  @let ok = edgeOk(edge);
+                  <g
+                    class="arch-edge-g"
+                    [class.arch-edge-g--ok]="ok"
+                    [class.arch-edge-g--warn]="!ok"
+                    [class.arch-edge-g--dim]="isEdgeDimmed(edge)"
+                  >
+                    <path
+                      [attr.id]="edge.id"
+                      [attr.d]="edge.d"
+                      class="arch-edge"
+                      [attr.marker-end]="ok ? 'url(#arch-arrow-ok)' : 'url(#arch-arrow-warn)'"
+                    />
+                    <text [attr.x]="edge.labelX" [attr.y]="edge.labelY" class="arch-edge-label">
+                      {{ edge.label }}
+                    </text>
+                    @if (ok) {
+                      <circle r="2.5" class="arch-particle">
+                        <animateMotion dur="2.4s" repeatCount="indefinite">
+                          <mpath [attr.href]="'#' + edge.id" />
+                        </animateMotion>
+                      </circle>
+                      <circle r="2.5" class="arch-particle">
+                        <animateMotion dur="2.4s" begin="-1.2s" repeatCount="indefinite">
+                          <mpath [attr.href]="'#' + edge.id" />
+                        </animateMotion>
+                      </circle>
+                    }
+                  </g>
                 }
-              </div>
-              <div class="arch-node-name">{{ node.label }}</div>
-              <div class="arch-node-bottom">
-                @if (status !== null) {
-                  <span class="arch-node-pill" [class.arch-node-pill--ok]="ok">
-                    {{ ok ? "Ready" : status.message || "Not ready" }}
-                  </span>
-                }
-                @if (node.host) {
-                  <span class="arch-node-host">{{ node.host }}</span>
-                }
-              </div>
-            </div>
-          }
-        </div>
-        </div>
-      } @else {
-        <p class="muted">No resources yet.</p>
-      }
-    </div>
+              </svg>
 
-    @if (layout()) {
-      <div class="arch-legend">
-        <span class="arch-legend-summary">
-          {{ resources().length }} resource{{ resources().length === 1 ? "" : "s" }} ·
-          {{ readyCount() }} ready
-        </span>
-        <span class="arch-legend-item">
-          <span class="arch-legend-dot arch-legend-dot--ok"></span> Ready
-        </span>
-        <span class="arch-legend-item">
-          <span class="arch-legend-dot arch-legend-dot--warn"></span> Provisioning
-        </span>
-        <span class="arch-legend-item"
-          ><span class="arch-legend-flow"></span> Live data flow</span
-        >
+              @for (node of l.nodes; track node.id) {
+                @let status = nodeStatus(node);
+                @let ok = status !== null && status.synced && status.ready;
+                <div
+                  class="arch-node"
+                  [class.arch-node--user]="node.isUser"
+                  [class.arch-node--ok]="ok"
+                  [class.arch-node--warn]="status !== null && !ok"
+                  [class.arch-node--dim]="isNodeDimmed(node.id)"
+                  [style.left.px]="node.x"
+                  [style.top.px]="node.y"
+                  [style.--node-color]="node.color"
+                  (mouseenter)="hovered.set(node.id)"
+                  (mouseleave)="hovered.set(null)"
+                >
+                  <div class="arch-node-top">
+                    <span class="arch-node-icon">{{ node.icon }}</span>
+                    <span class="arch-node-kind">{{ node.kindLabel }}</span>
+                    @if (status !== null) {
+                      <span
+                        class="arch-node-dot"
+                        [class.arch-node-dot--ok]="ok"
+                        [class.arch-node-dot--warn]="!ok"
+                      ></span>
+                    }
+                  </div>
+                  <div class="arch-node-name">{{ node.label }}</div>
+                  <div class="arch-node-bottom">
+                    @if (status !== null) {
+                      <span class="arch-node-pill" [class.arch-node-pill--ok]="ok">
+                        {{ ok ? "Ready" : status.message || "Not ready" }}
+                      </span>
+                    }
+                    @if (node.host) {
+                      <span class="arch-node-host">{{ node.host }}</span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <p class="muted">No resources yet.</p>
+        }
       </div>
-    }
+
+      @if (layout()) {
+        <div class="arch-legend">
+          <span class="arch-legend-summary">
+            {{ resources().length }} resource{{ resources().length === 1 ? "" : "s" }} ·
+            {{ readyCount() }} ready
+          </span>
+          <span class="arch-legend-item">
+            <span class="arch-legend-dot arch-legend-dot--ok"></span> Ready
+          </span>
+          <span class="arch-legend-item">
+            <span class="arch-legend-dot arch-legend-dot--warn"></span> Provisioning
+          </span>
+          <span class="arch-legend-item"
+            ><span class="arch-legend-flow"></span> Live data flow</span
+          >
+        </div>
+      }
     </div>
   `,
 })
