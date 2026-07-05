@@ -133,7 +133,7 @@ h3 {
 .app-footer {
   margin-top: auto;
   text-align: center;
-  padding: 1.75rem 1.5rem;
+  padding: 0.9rem 1.5rem;
   background: var(--color-surface);
   font-size: 1rem;
   color: var(--color-text-muted);
@@ -156,7 +156,7 @@ h3 {
 .page {
   max-width: 960px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 1.5rem 1.5rem 1.25rem;
 }
 
 .page-header {
@@ -1069,102 +1069,59 @@ details.advanced-fields .form-fields {
 
 /* ── Arch view ──────────────────────────────────────────── */
 .arch-wrap {
-  position: relative;
   width: 100%;
-  min-height: 320px;
+  overflow-x: auto;
 }
 
-.arch-cols {
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+.arch-canvas {
+  position: relative;
+  margin: 0 auto;
 }
 
-.arch-col {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  border-radius: var(--radius-md);
-  padding: 0.5rem;
+.arch-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: visible;
 }
 
-.arch-col:nth-child(1) {
-  background: rgba(129, 140, 248, 0.05);
-}
-.arch-col:nth-child(2) {
-  background: rgba(245, 158, 11, 0.05);
-}
-.arch-col:nth-child(3) {
-  background: rgba(34, 197, 94, 0.05);
-}
-.arch-col:nth-child(4) {
-  background: rgba(56, 189, 248, 0.05);
-}
-
-.arch-col-label {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--color-text-muted);
-  padding-bottom: 0.625rem;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.arch-col-nodes {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-}
-
+/* ── Nodes ── */
 .arch-node {
+  position: absolute;
+  width: 176px;
+  height: 84px;
   border: 1px solid var(--color-border);
   border-left: 3px solid var(--node-color, var(--color-border));
   border-radius: var(--radius-md);
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.65rem;
   background: var(--color-surface-alt);
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  transition: box-shadow 0.2s;
+  justify-content: space-between;
+  transition:
+    box-shadow 0.2s,
+    opacity 0.2s;
 }
 
-.arch-node--synced {
-  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.2);
+.arch-node--ok {
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.25);
 }
-.arch-node--unsynced {
-  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2);
-}
-.arch-node--empty {
-  border-left-color: var(--color-border);
-  opacity: 0.35;
+.arch-node--warn {
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.25);
 }
 
-.arch-cms {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-width: 360px;
-  margin: 0 auto;
-  padding: 0.5rem;
+.arch-node--user {
+  border-style: dashed;
+  border-left-style: solid;
+  background: transparent;
 }
 
-.arch-node--cms {
-  /* inherits all .arch-node styles */
+.arch-node--dim {
+  opacity: 0.3;
 }
 
-.arch-cms-host {
-  font-size: 0.6875rem;
-  font-family: var(--font-mono);
-  color: var(--color-text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-top: 0.1rem;
-}
-
-.arch-node-header {
+.arch-node-top {
   display: flex;
   align-items: center;
   gap: 0.3rem;
@@ -1182,6 +1139,7 @@ details.advanced-fields .form-fields {
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .arch-node-dot {
@@ -1194,13 +1152,13 @@ details.advanced-fields .form-fields {
 }
 
 .arch-node-dot--ok {
-  background: #22c55e;
+  background: var(--color-success);
   box-shadow: 0 0 5px rgba(34, 197, 94, 0.6);
   animation: dot-pulse 2.4s ease-in-out infinite;
 }
 
 .arch-node-dot--warn {
-  background: #f59e0b;
+  background: var(--color-warning);
   animation: dot-blink 1.2s step-end infinite;
 }
 
@@ -1229,70 +1187,139 @@ details.advanced-fields .form-fields {
   font-weight: 500;
   font-family: var(--font-mono);
   color: var(--color-text);
-  word-break: break-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.arch-node-status {
-  margin-top: 0.2rem;
-}
-
-.arch-node-status-pill {
-  display: inline-flex;
+.arch-node-bottom {
+  display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.arch-node-pill {
+  flex-shrink: 0;
   font-size: 0.5625rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 0.125rem 0.4rem;
   border-radius: 999px;
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--color-warning);
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.arch-node-status-pill--ok {
+.arch-node-pill--ok {
   background: rgba(34, 197, 94, 0.12);
-  color: #22c55e;
+  color: var(--color-success);
 }
 
-.arch-node-status-pill--warn {
-  background: rgba(245, 158, 11, 0.12);
-  color: #f59e0b;
+.arch-node-host {
+  font-size: 0.625rem;
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.arch-svg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-  overflow: visible;
+/* ── Edges ── */
+.arch-edge-g {
+  transition: opacity 0.2s;
+}
+
+.arch-edge-g--dim {
+  opacity: 0.12;
 }
 
 .arch-edge {
   fill: none;
+  stroke-width: 1.5;
+}
+
+.arch-edge-g--ok .arch-edge {
   stroke: var(--color-accent);
-  stroke-width: 2;
-  opacity: 0.9;
-  stroke-dasharray: 5 18;
-  animation: edge-flow 1.8s linear infinite;
+  opacity: 0.55;
 }
 
-.arch-edge-glow {
-  fill: none;
-  stroke-width: 7;
-  opacity: 0.12;
-  filter: url(#edge-glow);
+.arch-edge-g--warn .arch-edge {
+  stroke: var(--color-warning);
+  opacity: 0.35;
+  stroke-dasharray: 4 4;
 }
 
-@keyframes edge-flow {
-  to {
-    stroke-dashoffset: -23;
-  }
+.arch-edge-label {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  fill: var(--color-text-muted);
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--color-surface);
+  stroke-width: 3px;
 }
 
-.arch-arrow-head {
+.arch-particle {
   fill: var(--color-accent);
+  filter: drop-shadow(0 0 3px var(--color-accent));
+}
+
+.arch-arrow-head--ok {
+  fill: var(--color-accent);
+  opacity: 0.7;
+}
+
+.arch-arrow-head--warn {
+  fill: var(--color-warning);
+  opacity: 0.5;
+}
+
+/* ── Legend ── */
+.arch-legend {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+}
+
+.arch-legend-summary {
+  font-weight: 600;
+  margin-right: auto;
+}
+
+.arch-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.arch-legend-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.arch-legend-dot--ok {
+  background: var(--color-success);
+}
+
+.arch-legend-dot--warn {
+  background: var(--color-warning);
+}
+
+.arch-legend-flow {
+  width: 22px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--color-accent);
   opacity: 0.7;
 }

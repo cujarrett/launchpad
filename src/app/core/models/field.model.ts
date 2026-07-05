@@ -51,7 +51,9 @@ const HIDDEN_WHEN: Record<string, { key: string; value: unknown }> = {
 // CI-managed or platform-internal fields that app developers never need to touch.
 // secretRef is omitted: binding arbitrary Kubernetes Secrets via the UI is too
 // sensitive — set it directly in the YAML if needed.
-const HIDDEN_KEYS = new Set(["namespace", "scrapeInterval", "secretRef"])
+// tlsSecret is omitted: pre-provisioned cert Secrets exist only for the guest
+// demo slots, where the server wires them up itself. Everyone else uses tlsIssuer.
+const HIDDEN_KEYS = new Set(["namespace", "scrapeInterval", "secretRef", "tlsSecret"])
 
 // Parses the raw OpenAPI parameters schema from the BFF into a flat FieldDef[].
 export function parseSchema(paramsSchema: Record<string, unknown>): FieldDef[] {

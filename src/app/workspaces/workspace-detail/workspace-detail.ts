@@ -220,18 +220,24 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
           </div>
         </div>
       }
-      <!-- Pipeline is outside the loading gate so it stays mounted across resource refreshes. -->
-      <app-provisioning-pipeline
-        [workspace]="name()"
-        [initialPhaseTimes]="guestPhaseTimes()"
-        [initialDoneTime]="guestDoneAt()"
-        [minPhaseTime]="guestMinPhaseTime()"
-        [resources]="resources()"
-        [statusMap]="statusMap()"
-        [podStatusMap]="podStatusMap()"
-        [allPreviewsReady]="allPreviewsReady()"
-        [commitPlan]="commitPlan()"
-      />
+      <!-- Pipeline is outside the loading gate so it stays mounted across resource refreshes.
+           Hidden (not removed) in Arch view once provisioning finishes — the diagram shows live
+           health itself, so the collapsed "Details" summary is redundant there. Still shown
+           while pipelineActive(), since that's also what gates the arch diagram from rendering
+           at all (see above), so hiding it too would leave the tab blank during provisioning. -->
+      <div [hidden]="viewMode() === 'arch' && !pipelineActive()">
+        <app-provisioning-pipeline
+          [workspace]="name()"
+          [initialPhaseTimes]="guestPhaseTimes()"
+          [initialDoneTime]="guestDoneAt()"
+          [minPhaseTime]="guestMinPhaseTime()"
+          [resources]="resources()"
+          [statusMap]="statusMap()"
+          [podStatusMap]="podStatusMap()"
+          [allPreviewsReady]="allPreviewsReady()"
+          [commitPlan]="commitPlan()"
+        />
+      </div>
     </div>
   `,
   styles: [
@@ -353,6 +359,9 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   protected readonly spaApiReady = computed(() => {
     const api = this.resources().find((r) => r.kind === "XApi")
     if (!api) return true
+    // Cluster-internal APIs (no public host) can't be probed from the browser,
+    // so don't gate the SPA on a confirmation that can never arrive.
+    if (!api.spec["host"]) return true
     return this.confirmedPreviewSet().has(api.name)
   })
 
