@@ -27,6 +27,9 @@ const MAX_COL_GAP = 170
 const PAD_X = 12
 const PAD_TOP = 16
 const PAD_BOTTOM = 16
+// Below this, node text stops being legible — beyond it, fall back to
+// horizontal scroll rather than keep shrinking.
+const MIN_SCALE = 0.6
 
 interface DiagramNode {
   id: string
@@ -79,9 +82,16 @@ const USER_NODE_ID = "__users__"
   selector: "app-workspace-arch",
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="arch-wrap" #archWrap>
+    <div class="arch-view">
+    <div class="arch-wrap" [class.arch-wrap--overflow]="isOverflowing()" #archWrap>
       @if (layout(); as l) {
-        <div class="arch-canvas" [style.width.px]="l.width" [style.height.px]="l.height">
+        <div class="arch-scaler" [style.width.px]="scaledWidth()" [style.height.px]="scaledHeight()">
+        <div
+          class="arch-canvas"
+          [style.width.px]="l.width"
+          [style.height.px]="l.height"
+          [style.transform]="'scale(' + scale() + ')'"
+        >
           <svg class="arch-svg" [attr.width]="l.width" [attr.height]="l.height" aria-hidden="true">
             <defs>
               <marker
@@ -180,25 +190,29 @@ const USER_NODE_ID = "__users__"
             </div>
           }
         </div>
-
-        <div class="arch-legend">
-          <span class="arch-legend-summary">
-            {{ resources().length }} resource{{ resources().length === 1 ? "" : "s" }} ·
-            {{ readyCount() }} ready
-          </span>
-          <span class="arch-legend-item">
-            <span class="arch-legend-dot arch-legend-dot--ok"></span> Ready
-          </span>
-          <span class="arch-legend-item">
-            <span class="arch-legend-dot arch-legend-dot--warn"></span> Provisioning
-          </span>
-          <span class="arch-legend-item"
-            ><span class="arch-legend-flow"></span> Live data flow</span
-          >
         </div>
       } @else {
         <p class="muted">No resources yet.</p>
       }
+    </div>
+
+    @if (layout()) {
+      <div class="arch-legend">
+        <span class="arch-legend-summary">
+          {{ resources().length }} resource{{ resources().length === 1 ? "" : "s" }} ·
+          {{ readyCount() }} ready
+        </span>
+        <span class="arch-legend-item">
+          <span class="arch-legend-dot arch-legend-dot--ok"></span> Ready
+        </span>
+        <span class="arch-legend-item">
+          <span class="arch-legend-dot arch-legend-dot--warn"></span> Provisioning
+        </span>
+        <span class="arch-legend-item"
+          ><span class="arch-legend-flow"></span> Live data flow</span
+        >
+      </div>
+    }
     </div>
   `,
 })
@@ -223,6 +237,8 @@ export class WorkspaceArch {
   private measure() {
     this.containerW.set(this.wrapRef.nativeElement.getBoundingClientRect().width)
   }
+
+  protected readonly isOverflowing = computed(() => this.scaledWidth() > this.containerW() + 1)
 
   protected readonly readyCount = computed(() => {
     const statusMap = this.statusMap()
@@ -441,7 +457,28 @@ export class WorkspaceArch {
       })
     })
 
-    return { width: Math.max(containerW, totalW), height, nodes, edges: placedEdges }
+    return { width: totalW, height, nodes, edges: placedEdges }
+  })
+
+  // ── Scale-to-fit: shrink the whole diagram down to MIN_SCALE before
+  // falling back to horizontal scroll, so mobile widths get a fitted view
+  // instead of a partially-cropped one. ──
+
+  protected readonly scale = computed(() => {
+    const l = this.layout()
+    const w = this.containerW()
+    if (!l || w === 0) return 1
+    return Math.max(MIN_SCALE, Math.min(1, w / l.width))
+  })
+
+  protected readonly scaledWidth = computed(() => {
+    const l = this.layout()
+    return l ? l.width * this.scale() : 0
+  })
+
+  protected readonly scaledHeight = computed(() => {
+    const l = this.layout()
+    return l ? l.height * this.scale() : 0
   })
 
   // ── Health + hover state ──

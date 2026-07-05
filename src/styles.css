@@ -1068,14 +1068,47 @@ details.advanced-fields .form-fields {
 }
 
 /* ── Arch view ──────────────────────────────────────────── */
+.arch-view {
+  width: 100%;
+}
+
 .arch-wrap {
   width: 100%;
   overflow-x: auto;
 }
 
-.arch-canvas {
+/* Fade the edges so a diagram wider than the screen reads as scrollable
+   instead of abruptly clipped. Only applied when the diagram actually
+   overflows its container — otherwise it would needlessly clip content
+   that already fits. */
+.arch-wrap--overflow {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 24px,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 24px,
+    #000 calc(100% - 24px),
+    transparent 100%
+  );
+}
+
+.arch-scaler {
   position: relative;
   margin: 0 auto;
+  overflow: hidden;
+}
+
+.arch-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
 }
 
 .arch-svg {
@@ -1285,6 +1318,8 @@ details.advanced-fields .form-fields {
 .arch-legend {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  row-gap: 0.5rem;
   gap: 1.25rem;
   margin-top: 1.25rem;
   padding-top: 0.75rem;
