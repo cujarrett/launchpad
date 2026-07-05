@@ -1099,6 +1099,8 @@ details.advanced-fields .form-fields {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  cursor: default;
+  user-select: none;
   transition:
     box-shadow 0.2s,
     opacity 0.2s;
