@@ -188,6 +188,11 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
 
       @if (loading()) {
         <p class="muted">Loading...</p>
+      } @else if (loadError()) {
+        <p class="field-error">
+          Still waiting on your workspace — this is taking longer than usual.
+          <button type="button" (click)="retryLoadResources()">Retry</button>
+        </p>
       } @else {
         @if (viewMode() === "arch" && !pipelineActive()) {
           <app-workspace-arch [resources]="resources()" [statusMap]="statusMap()" />
@@ -334,6 +339,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   protected readonly resources = signal<Resource[]>([])
   protected readonly loading = signal(true)
   protected readonly creating = signal(false)
+  protected readonly loadError = signal(false)
   protected readonly selectedKind = signal<ResourceKind | null>(null)
   protected readonly statusMap = signal<Partial<Record<string, ResourceStatus>>>({})
   protected readonly podStatusMap = signal<Partial<Record<string, ResourceStatus>>>({})
@@ -463,7 +469,18 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     } catch (e) {
       console.error("[WorkspaceDetail] loadResources failed", e)
       this.loading.set(false)
+      this.loadError.set(true)
     }
+  }
+
+  protected retryLoadResources() {
+    this.loadError.set(false)
+    this.loading.set(true)
+    this.loadResources().catch((e) => {
+      console.error("[WorkspaceDetail] loadResources retry failed", e)
+      this.loading.set(false)
+      this.loadError.set(true)
+    })
   }
 
   ngOnDestroy() {
@@ -515,9 +532,12 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
 
     // On the very first load, the workspace's namespace.yaml/guest.yaml may not
     // have landed in Git yet — the list page now navigates here without waiting
-    // for that request to finish. Retry briefly instead of surfacing a hard
-    // error for what's normally a sub-second window.
-    const attempts = this.initialLoadDone ? 1 : 6
+    // for that request to finish. GitHub's API is occasionally slow enough that
+    // a short retry window isn't always enough, so retry generously (up to
+    // ~25s) rather than surfacing a hard error — and stay in the loading state
+    // the whole time so it never looks like a silent failure requiring a
+    // manual refresh.
+    const attempts = this.initialLoadDone ? 1 : 25
     let resources: Resource[] | undefined
     let lastErr: unknown
     for (let i = 0; i < attempts; i++) {
@@ -526,7 +546,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
         break
       } catch (e) {
         lastErr = e
-        if (i < attempts - 1) await new Promise((resolve) => setTimeout(resolve, 700))
+        if (i < attempts - 1) await new Promise((resolve) => setTimeout(resolve, 1000))
       }
     }
     if (resources === undefined) throw lastErr
@@ -535,6 +555,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     if (!suppressAutoCreate && resources.length === 0) this.creating.set(true)
     this.initialLoadDone = true
     this.loading.set(false)
+    this.loadError.set(false)
   }
 
   async doDeleteWorkspace() {
