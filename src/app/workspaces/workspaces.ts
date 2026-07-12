@@ -498,16 +498,26 @@ export class Workspaces implements OnInit, OnDestroy {
   }
 
   async launchGuestWorkspace() {
+    const suggestion = this.guestNameSuggestion()
     this.savingGuestWorkspace.set(true)
     this.createGuestError.set(null)
+
+    // Navigate immediately — the name is already reserved client-side against
+    // the current workspace list, and the backend commits to this exact name
+    // on success (validated in-memory before any slow Git writes happen). The
+    // destination page tolerates the brief window before the workspace
+    // actually exists server-side, so there's no reason to block navigation
+    // on the create request's network round trip.
+    this.pickingGuestName.set(false)
+    await this.router.navigate(["/workspaces", `guest-${suggestion}`])
+
     try {
-      const result = await firstValueFrom(
-        this.workspaceService.createGuestWorkspace(this.guestNameSuggestion()),
-      )
-      this.router.navigate(["/workspaces", result.name])
+      await firstValueFrom(this.workspaceService.createGuestWorkspace(suggestion))
     } catch (err: unknown) {
+      // Creation failed after navigating away — bounce back and surface the error.
+      await this.router.navigate(["/"])
+      this.startGuestNamePicker()
       if (err instanceof HttpErrorResponse && err.status === 409) {
-        // Name was just taken — reload workspace list so the filter is fresh, then reroll.
         try {
           this.workspaces.set(await firstValueFrom(this.workspaceService.getWorkspaces()))
         } catch {

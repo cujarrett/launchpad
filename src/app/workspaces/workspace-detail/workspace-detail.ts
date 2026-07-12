@@ -512,7 +512,25 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     // refreshes (after create/delete) update resources silently so the pipeline
     // component isn't destroyed and recreated on every commit.
     if (!this.initialLoadDone) this.loading.set(true)
-    const resources = await firstValueFrom(this.workspaceService.getResources(this.name()))
+
+    // On the very first load, the workspace's namespace.yaml/guest.yaml may not
+    // have landed in Git yet — the list page now navigates here without waiting
+    // for that request to finish. Retry briefly instead of surfacing a hard
+    // error for what's normally a sub-second window.
+    const attempts = this.initialLoadDone ? 1 : 6
+    let resources: Resource[] | undefined
+    let lastErr: unknown
+    for (let i = 0; i < attempts; i++) {
+      try {
+        resources = await firstValueFrom(this.workspaceService.getResources(this.name()))
+        break
+      } catch (e) {
+        lastErr = e
+        if (i < attempts - 1) await new Promise((resolve) => setTimeout(resolve, 700))
+      }
+    }
+    if (resources === undefined) throw lastErr
+
     this.resources.set(resources)
     if (!suppressAutoCreate && resources.length === 0) this.creating.set(true)
     this.initialLoadDone = true
