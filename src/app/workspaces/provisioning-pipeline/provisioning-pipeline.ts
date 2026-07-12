@@ -88,7 +88,10 @@ const BINDING_DETAIL_PUBLIC: Record<string, string> = {
   cache: "host · port · IAM role",
 }
 
-function bindingDetail(binding: string, resources: { kind: string; spec: Record<string, unknown> }[]): string {
+function bindingDetail(
+  binding: string,
+  resources: { kind: string; spec: Record<string, unknown> }[],
+): string {
   if (binding === "nosql" || binding === "object-storage") return BINDING_DETAIL_PUBLIC[binding]
   const kind = binding === "sql" ? "XSql" : binding === "cache" ? "XCache" : undefined
   const resource = resources.find((r) => r.kind === kind)
