@@ -151,12 +151,14 @@ Workspace list page.
 - Contributor users can create regular workspaces.
 - Non-contributor users can launch guest workspaces with randomized names.
 - Guest cards show live TTL countdown.
+- `launchGuestWorkspace()` navigates to the new workspace's route immediately after picking a name, without waiting for the create request to finish — the name is validated in-memory server-side before any Git write, so it's safe to assume success. The create call itself fires in the background; a failure (rare — mostly a 409 name race) bounces the user back with the error surfaced.
 
 ### `src/app/workspaces/workspace-detail/workspace-detail.ts`
 
 Main orchestration screen for one workspace.
 
 - Loads resources.
+- The first `loadResources()` call retries up to 6 times (700ms apart) on failure, since the workspace list page now navigates here before the backend has necessarily finished writing the workspace's files. Subsequent refreshes don't retry.
 - Subscribes to live SSE status and stores by resource name (`statusMap`).
 - Supports cards view and architecture view.
 - Shows provisioning pipeline component while resources move toward ready.
