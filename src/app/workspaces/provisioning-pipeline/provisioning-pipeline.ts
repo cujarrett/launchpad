@@ -71,13 +71,30 @@ const BINDING_LABEL: Record<string, string> = {
   cache: "Cache",
 }
 
-// What each binding secret contains — resource metadata + IAM ARNs (no credentials).
-// Credentials are issued at runtime by the aws-spiffe-helper sidecar via IAM Roles Anywhere.
-const BINDING_DETAIL: Record<string, string> = {
+// What each binding secret contains. nosql/object-storage are always real AWS
+// resources, so they always carry an IAM role. sql/cache are in-cluster by
+// default (backend: private-cloud) and only get an IAM role when explicitly
+// switched to backend: public-cloud — must match the binding secret shape in
+// platform/sql/composition.yaml and platform/cache/composition.yaml, not just
+// guess based on resource kind.
+const BINDING_DETAIL_PRIVATE: Record<string, string> = {
+  sql: "host · port · username · password",
+  cache: "host · port",
+}
+const BINDING_DETAIL_PUBLIC: Record<string, string> = {
   sql: "host · port · username · IAM role",
   nosql: "table · region · IAM role",
   "object-storage": "bucket · region · IAM role",
-  cache: "host · port",
+  cache: "host · port · IAM role",
+}
+
+function bindingDetail(binding: string, resources: { kind: string; spec: Record<string, unknown> }[]): string {
+  if (binding === "nosql" || binding === "object-storage") return BINDING_DETAIL_PUBLIC[binding]
+  const kind = binding === "sql" ? "XSql" : binding === "cache" ? "XCache" : undefined
+  const resource = resources.find((r) => r.kind === kind)
+  const backend = (resource?.spec as { parameters?: { backend?: string } })?.parameters?.backend
+  const table = backend === "public-cloud" ? BINDING_DETAIL_PUBLIC : BINDING_DETAIL_PRIVATE
+  return table[binding] ?? "connection details"
 }
 
 function fmt(ms: number): string {
@@ -999,7 +1016,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
       if (phase === 3) {
         for (const ic of apiPod.initContainers) {
           const label = BINDING_LABEL[ic.binding] ?? ic.binding
-          const detail = BINDING_DETAIL[ic.binding] ?? "connection details"
+          const detail = bindingDetail(ic.binding, resources)
           rows.push(
             item(
               `bind-${ic.binding}`,
@@ -1076,7 +1093,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
       }
       for (const ic of apiPod.initContainers) {
         const label = BINDING_LABEL[ic.binding] ?? ic.binding
-        const detail = BINDING_DETAIL[ic.binding] ?? "connection details"
+        const detail = bindingDetail(ic.binding, resources)
         rows.push(item(`bind-${ic.binding}`, label, detail, "done"))
       }
     }
