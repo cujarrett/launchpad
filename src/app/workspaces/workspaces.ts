@@ -76,9 +76,20 @@ function pickRandom<T>(arr: T[]): T {
 // wait-for-object-storage-xobjectstorage-{w1}-{w2}-binding (48 fixed chars → w1+w2 <= 15).
 const GUEST_NAME_MAX_WORD_LENGTH = 15
 
-function pickGuestName(used: Set<string>, avoidWord1 = "", avoidWord2 = ""): string {
-  const words1 = avoidWord1 ? GUEST_WORDS_1.filter((w) => w !== avoidWord1) : GUEST_WORDS_1
-  const words2 = avoidWord2 ? GUEST_WORDS_2.filter((w) => w !== avoidWord2) : GUEST_WORDS_2
+// pickGuestName avoids both full-name collisions (used) and reusing a word
+// that's already part of another active sandbox's name (excludeWords1/2) —
+// two sandboxes named e.g. "silver-turtle" and "blue-turtle" are confusingly
+// similar even though the full names differ. Falls back to the unfiltered
+// word lists if excluding active words would leave nothing to pick from.
+function pickGuestName(
+  used: Set<string>,
+  excludeWords1: Set<string> = new Set(),
+  excludeWords2: Set<string> = new Set(),
+): string {
+  const filtered1 = GUEST_WORDS_1.filter((w) => !excludeWords1.has(w))
+  const filtered2 = GUEST_WORDS_2.filter((w) => !excludeWords2.has(w))
+  const words1 = filtered1.length ? filtered1 : GUEST_WORDS_1
+  const words2 = filtered2.length ? filtered2 : GUEST_WORDS_2
   for (let i = 0; i < 100; i++) {
     const w1 = pickRandom(words1)
     const w2 = pickRandom(words2)
@@ -473,23 +484,33 @@ export class Workspaces implements OnInit, OnDestroy {
 
   // ── Guest workspace ────────────────────────────────────
 
-  private usedGuestNames(): Set<string> {
-    return new Set(
-      this.workspaces()
-        .filter((w) => w.isGuest)
-        .map((w) => w.name.replace("guest-", "")),
-    )
+  private activeGuestWords(): { full: Set<string>; word1s: Set<string>; word2s: Set<string> } {
+    const names = this.workspaces()
+      .filter((w) => w.isGuest)
+      .map((w) => w.name.replace("guest-", ""))
+    const word1s = new Set<string>()
+    const word2s = new Set<string>()
+    for (const n of names) {
+      const [w1, w2] = n.split("-")
+      if (w1) word1s.add(w1)
+      if (w2) word2s.add(w2)
+    }
+    return { full: new Set(names), word1s, word2s }
   }
 
   startGuestNamePicker() {
-    this.guestNameSuggestion.set(pickGuestName(this.usedGuestNames()))
+    const { full, word1s, word2s } = this.activeGuestWords()
+    this.guestNameSuggestion.set(pickGuestName(full, word1s, word2s))
     this.createGuestError.set(null)
     this.pickingGuestName.set(true)
   }
 
   rerollGuestName() {
     const [w1, w2] = this.guestNameSuggestion().split("-")
-    this.guestNameSuggestion.set(pickGuestName(this.usedGuestNames(), w1, w2))
+    const { full, word1s, word2s } = this.activeGuestWords()
+    word1s.add(w1)
+    word2s.add(w2)
+    this.guestNameSuggestion.set(pickGuestName(full, word1s, word2s))
   }
 
   cancelGuestPicker() {
