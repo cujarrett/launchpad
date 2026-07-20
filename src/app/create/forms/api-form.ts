@@ -32,7 +32,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
     </form>
   `,
 })
-export class XApiForm {
+export class ApiForm {
   private readonly fb = inject(FormBuilder)
   readonly tenant = input.required<string>()
   readonly submitted = output<unknown>()

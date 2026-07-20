@@ -23,7 +23,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
     </form>
   `,
 })
-export class XObjectStorageForm {
+export class ObjectStorageForm {
   private readonly fb = inject(FormBuilder)
   readonly tenant = input.required<string>()
   readonly submitted = output<unknown>()
