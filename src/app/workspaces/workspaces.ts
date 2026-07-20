@@ -73,7 +73,7 @@ function pickRandom<T>(arr: T[]): T {
 
 // Max combined word length keeps generated Kubernetes resource names within AWS (64 char)
 // and Kubernetes (63 char) limits. The tightest constraint is the init container name:
-// wait-for-object-storage-xobjectstorage-{w1}-{w2}-binding (48 fixed chars → w1+w2 <= 15).
+// wait-for-object-storage-{w1}-{w2}-store-binding (48 fixed chars → w1+w2 <= 15).
 const GUEST_NAME_MAX_WORD_LENGTH = 15
 
 // pickGuestName avoids both full-name collisions (used) and reusing a word
