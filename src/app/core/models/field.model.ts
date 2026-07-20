@@ -34,11 +34,11 @@ export interface FieldDef {
 // objectStorageRefs is an array in the XRD but the UI treats it as a single
 // connection (first element) so it can render as a resource-ref dropdown.
 export const REF_KIND: Record<string, ResourceKind> = {
-  sqlRef: "XSql",
-  nosqlRef: "XNoSql",
-  objectStorageRefs: "XObjectStorage",
-  topicRef: "XTopic",
-  subscriptionRef: "XSubscription",
+  sqlRef: "Sql",
+  nosqlRef: "NoSql",
+  objectStorageRefs: "ObjectStorage",
+  topicRef: "Topic",
+  subscriptionRef: "Subscription",
 }
 
 // Fields hidden when a sibling field has a specific value.

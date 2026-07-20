@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from "@angu
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
 
 @Component({
-  selector: "app-xtopic-form",
+  selector: "app-topic-form",
   imports: [ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -44,7 +44,7 @@ export class XTopicForm {
     if (this.form.invalid) return
     const v = this.form.getRawValue()
     this.submitted.emit({
-      kind: "XTopic",
+      kind: "Topic",
       name: v.name,
       params: {
         streamName: v.streamName,

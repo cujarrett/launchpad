@@ -277,7 +277,7 @@ import { WorkspaceService } from "../../core/services/workspace.service"
                   [checked]="withCompanion()"
                   (change)="withCompanion.set(!withCompanion())"
                 />
-                Also create a {{ companionKind() === "XSpa" ? "SPA" : "API" }}
+                Also create a {{ companionKind() === "Spa" ? "SPA" : "API" }}
               </label>
             </legend>
             @if (withCompanion()) {
@@ -298,7 +298,7 @@ import { WorkspaceService } from "../../core/services/workspace.service"
                   <input #cImage type="text" (input)="companionImage.set(cImage.value)" />
                 </label>
               </div>
-              @if (companionKind() === "XSpa") {
+              @if (companionKind() === "Spa") {
                 <div class="field-group">
                   <label>
                     Host *
@@ -535,12 +535,12 @@ export class DynamicForm implements OnInit {
   protected readonly submitting = signal(false)
   protected readonly saveError = signal<string | null>(null)
 
-  // Companion creation: XApi → also create XSpa, XSpa → also create XApi
+  // Companion creation: Api → also create Spa, Spa → also create Api
   protected readonly companionKind = computed<ResourceKind | null>(() => {
     if (this.mode() !== "create") return null
     const k = this.kind()
-    if (k === "XApi") return "XSpa"
-    if (k === "XSpa") return "XApi"
+    if (k === "Api") return "Spa"
+    if (k === "Spa") return "Api"
     return null
   })
   protected readonly withCompanion = signal(false)
@@ -555,7 +555,7 @@ export class DynamicForm implements OnInit {
     const ck = this.companionKind()
     if (!ck) return true
     if (!this.companionName().trim() || !this.companionImage().trim()) return false
-    if (ck === "XSpa" && !this.companionHost().trim()) return false
+    if (ck === "Spa" && !this.companionHost().trim()) return false
     return true
   })
 
@@ -683,7 +683,7 @@ export class DynamicForm implements OnInit {
           image: this.companionImage().trim(),
           replicas: this.companionReplicas(),
         }
-        if (ck === "XSpa") {
+        if (ck === "Spa") {
           cparams["host"] = this.companionHost().trim()
           cparams["tlsIssuer"] = this.companionTlsIssuer()
         } else {

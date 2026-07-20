@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from "@angu
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
 
 @Component({
-  selector: "app-xobjectstorage-form",
+  selector: "app-objectstorage-form",
   imports: [ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -39,7 +39,7 @@ export class XObjectStorageForm {
     if (this.form.invalid) return
     const v = this.form.getRawValue()
     this.submitted.emit({
-      kind: "XObjectStorage",
+      kind: "ObjectStorage",
       name: v.name,
       params: { region: v.region, dataRetention: v.dataRetention },
     })

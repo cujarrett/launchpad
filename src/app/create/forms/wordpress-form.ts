@@ -2,23 +2,22 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from "@angu
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
 
 @Component({
-  selector: "app-xspa-form",
+  selector: "app-wordpress-form",
   imports: [ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()">
       <label>Name <input formControlName="name" /></label>
-      <label>Image <input formControlName="image" /></label>
       <label>Host <input formControlName="host" /></label>
+      <label>Storage Size <input formControlName="storageSize" /></label>
+      <label>DB Storage Size <input formControlName="dbStorageSize" /></label>
       <label
-        >TLS Issuer
-        <select formControlName="tlsIssuer">
-          <option value="letsencrypt-prod">letsencrypt-prod</option>
-          <option value="letsencrypt-staging">letsencrypt-staging</option>
-          <option value="local-lab-ca-issuer">local-lab-ca-issuer</option>
+        >Data Retention
+        <select formControlName="dataRetention">
+          <option value="retain">retain</option>
+          <option value="delete">delete</option>
         </select>
       </label>
-      <label>Replicas <input type="number" formControlName="replicas" /></label>
       <div class="actions">
         <button type="submit" [disabled]="form.invalid">Create</button>
         <button type="button" class="secondary" (click)="cancelled.emit()">Cancel</button>
@@ -26,7 +25,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
     </form>
   `,
 })
-export class XSpaForm {
+export class XWordPressForm {
   private readonly fb = inject(FormBuilder)
   readonly tenant = input.required<string>()
   readonly submitted = output<unknown>()
@@ -34,19 +33,24 @@ export class XSpaForm {
 
   form = this.fb.nonNullable.group({
     name: ["", Validators.required],
-    image: ["", Validators.required],
     host: ["", Validators.required],
-    tlsIssuer: ["letsencrypt-prod"],
-    replicas: [1],
+    storageSize: ["10Gi"],
+    dbStorageSize: ["5Gi"],
+    dataRetention: ["retain"],
   })
 
   submit() {
     if (this.form.invalid) return
     const v = this.form.getRawValue()
     this.submitted.emit({
-      kind: "XSpa",
+      kind: "Wordpress",
       name: v.name,
-      params: { image: v.image, host: v.host, tlsIssuer: v.tlsIssuer, replicas: v.replicas },
+      params: {
+        host: v.host,
+        storageSize: v.storageSize,
+        dbStorageSize: v.dbStorageSize,
+        dataRetention: v.dataRetention,
+      },
     })
   }
 }

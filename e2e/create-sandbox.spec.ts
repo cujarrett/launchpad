@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test"
 
 // End-to-end smoke test for the guest sandbox creation flow: launch a
-// workspace, add an XApi with every add-on (SQL, NoSQL, object storage,
+// workspace, add an Api with every add-on (SQL, NoSQL, object storage,
 // cache, SPA), and confirm the resource cards render without needing a
 // manual refresh. Requires launchpad-api port-forwarded to localhost:8080
 // (see playwright.config.ts) — this hits the real backend and creates a

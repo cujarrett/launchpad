@@ -32,26 +32,26 @@ import { environment } from "../../../environments/environment"
 const GUEST_TTL_MS = 10 * 60 * 1000
 
 const PLATFORM_KINDS: ResourceKind[] = [
-  "XSpa",
-  "XApi",
-  "XSql",
-  "XNoSql",
-  "XObjectStorage",
-  "XTopic",
-  "XSubscription",
-  "XWordpress",
+  "Spa",
+  "Api",
+  "Sql",
+  "NoSql",
+  "ObjectStorage",
+  "Topic",
+  "Subscription",
+  "Wordpress",
 ]
 
 const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
-  XApi: "REST API with HTTPS, metrics, and optional service bindings.",
-  XSpa: "Static frontend app served over HTTPS.",
-  XSql: "Relational database with automatic service binding.",
-  XNoSql: "NoSQL key-value store. Fast lookups, flexible schemas.",
-  XObjectStorage: "Object storage for files, assets, and blobs.",
-  XCache: "In-memory cache cluster.",
-  XTopic: "Async messaging topic with JetStream.",
-  XSubscription: "Durable message subscription wired to a topic.",
-  XWordpress: "Managed WordPress site with MariaDB.",
+  Api: "REST API with HTTPS, metrics, and optional service bindings.",
+  Spa: "Static frontend app served over HTTPS.",
+  Sql: "Relational database with automatic service binding.",
+  NoSql: "NoSQL key-value store. Fast lookups, flexible schemas.",
+  ObjectStorage: "Object storage for files, assets, and blobs.",
+  Cache: "In-memory cache cluster.",
+  Topic: "Async messaging topic with JetStream.",
+  Subscription: "Durable message subscription wired to a topic.",
+  Wordpress: "Managed WordPress site with MariaDB.",
 }
 
 @Component({
@@ -65,7 +65,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
     RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  // allPreviewsReady: true once every XApi/XSpa with a host has confirmed /healthz
+  // allPreviewsReady: true once every Api/Spa with a host has confirmed /healthz
   template: `
     <div class="page">
       @if (isGuest()) {
@@ -207,8 +207,8 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
                 [status]="statusMap()[resource.name] ?? null"
                 [expanded]="expandedResource() === resource.name"
                 [canEdit]="roleService.isContributor()"
-                [canEditConnections]="isGuest() && resource.kind === 'XApi'"
-                [dependencyReady]="resource.kind !== 'XSpa' || spaApiReady()"
+                [canEditConnections]="isGuest() && resource.kind === 'Api'"
+                [dependencyReady]="resource.kind !== 'Spa' || spaApiReady()"
                 (toggled)="
                   expandedResource.set(expandedResource() === resource.name ? null : resource.name)
                 "
@@ -358,14 +358,14 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
 
   protected readonly sortedResources = computed(() =>
     [...this.resources()].sort((a, b) => {
-      if (a.kind === "XSpa") return -1
-      if (b.kind === "XSpa") return 1
+      if (a.kind === "Spa") return -1
+      if (b.kind === "Spa") return 1
       return 0
     }),
   )
 
   protected readonly spaApiReady = computed(() => {
-    const api = this.resources().find((r) => r.kind === "XApi")
+    const api = this.resources().find((r) => r.kind === "Api")
     if (!api) return true
     // Cluster-internal APIs (no public host) can't be probed from the browser,
     // so don't gate the SPA on a confirmation that can never arrive.
@@ -375,7 +375,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
 
   protected readonly allPreviewsReady = computed(() => {
     const previewable = this.resources().filter(
-      (r) => (r.kind === "XApi" || r.kind === "XSpa") && r.spec["host"],
+      (r) => (r.kind === "Api" || r.kind === "Spa") && r.spec["host"],
     )
     if (previewable.length === 0) return true
     const confirmed = this.confirmedPreviewSet()
@@ -508,7 +508,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     this.cancelCreate()
     await this.loadResources(true)
     // GitHub Contents API can return a stale directory listing right after
-    // sequential commits (e.g. XSql + XApi). Reload once after a short delay
+    // sequential commits (e.g. Sql + Api). Reload once after a short delay
     // to catch any propagation lag.
     setTimeout(() => this.loadResources(true), 1500)
   }

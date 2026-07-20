@@ -10,13 +10,13 @@ const origGetBoundingClientRect = Element.prototype.getBoundingClientRect
 const guestResources: Resource[] = [
   {
     name: "magic-pretzel-spa",
-    kind: "XSpa",
+    kind: "Spa",
     namespace: "guest-magic-pretzel",
     spec: { host: "demo1.mattjarrett.dev" },
   },
   {
     name: "magic-pretzel-api",
-    kind: "XApi",
+    kind: "Api",
     namespace: "guest-magic-pretzel",
     spec: {
       host: "demo1-api.mattjarrett.dev",
@@ -26,11 +26,11 @@ const guestResources: Resource[] = [
       cache: { enabled: true },
     },
   },
-  { name: "magic-pretzel-sql", kind: "XSql", namespace: "guest-magic-pretzel", spec: {} },
-  { name: "magic-pretzel-nosql", kind: "XNoSql", namespace: "guest-magic-pretzel", spec: {} },
+  { name: "magic-pretzel-sql", kind: "Sql", namespace: "guest-magic-pretzel", spec: {} },
+  { name: "magic-pretzel-nosql", kind: "NoSql", namespace: "guest-magic-pretzel", spec: {} },
   {
     name: "magic-pretzel-store",
-    kind: "XObjectStorage",
+    kind: "ObjectStorage",
     namespace: "guest-magic-pretzel",
     spec: {},
   },
@@ -124,7 +124,7 @@ describe("WorkspaceArch", () => {
     const fixture = mount([
       {
         name: "foo",
-        kind: "XWordpress",
+        kind: "Wordpress",
         namespace: "foo",
         spec: { host: "foo.example.com" },
       },
@@ -147,20 +147,20 @@ describe("WorkspaceArch", () => {
     const fixture = mount([
       {
         name: "foo-bridge",
-        kind: "XApi",
+        kind: "Api",
         namespace: "foo",
         spec: { host: "foo-bridge.local.lab", topicRef: { name: "foo-events" } },
       },
       {
         name: "foo-consumer",
-        kind: "XApi",
+        kind: "Api",
         namespace: "foo",
         spec: { subscriptionRef: { name: "foo-monitor" } },
       },
-      { name: "foo-events", kind: "XTopic", namespace: "foo", spec: {} },
+      { name: "foo-events", kind: "Topic", namespace: "foo", spec: {} },
       {
         name: "foo-monitor",
-        kind: "XSubscription",
+        kind: "Subscription",
         namespace: "foo",
         spec: { topicRef: { name: "foo-events" } },
       },

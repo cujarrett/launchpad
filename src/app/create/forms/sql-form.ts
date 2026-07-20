@@ -2,21 +2,24 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from "@angu
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
 
 @Component({
-  selector: "app-xsubscription-form",
+  selector: "app-sql-form",
   imports: [ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()">
       <label>Name <input formControlName="name" /></label>
-      <label>Topic Ref (XTopic name) <input formControlName="topicRef" /></label>
-      <label>Filter Subject <input formControlName="filterSubject" placeholder=">" /></label>
       <label
-        >Deliver Policy
-        <select formControlName="deliverPolicy">
-          <option value="all">all</option>
-          <option value="new">new</option>
-          <option value="last">last</option>
-          <option value="lastPerSubject">lastPerSubject</option>
+        >Environment
+        <select formControlName="environment">
+          <option value="private-cloud">cluster (in-cluster Postgres)</option>
+          <option value="public-cloud">cloud (AWS RDS)</option>
+        </select>
+      </label>
+      <label
+        >Data Retention
+        <select formControlName="dataRetention">
+          <option value="delete">delete</option>
+          <option value="retain">retain</option>
         </select>
       </label>
       <div class="actions">
@@ -26,7 +29,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
     </form>
   `,
 })
-export class XSubscriptionForm {
+export class XSqlForm {
   private readonly fb = inject(FormBuilder)
   readonly tenant = input.required<string>()
   readonly submitted = output<unknown>()
@@ -34,22 +37,17 @@ export class XSubscriptionForm {
 
   form = this.fb.nonNullable.group({
     name: ["", Validators.required],
-    topicRef: ["", Validators.required],
-    filterSubject: [">"],
-    deliverPolicy: ["all"],
+    environment: ["cluster"],
+    dataRetention: ["delete"],
   })
 
   submit() {
     if (this.form.invalid) return
     const v = this.form.getRawValue()
     this.submitted.emit({
-      kind: "XSubscription",
+      kind: "Sql",
       name: v.name,
-      params: {
-        topicRef: v.topicRef,
-        filterSubject: v.filterSubject,
-        deliverPolicy: v.deliverPolicy,
-      },
+      params: { environment: v.environment, dataRetention: v.dataRetention },
     })
   }
 }

@@ -2,26 +2,23 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from "@angu
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
 
 @Component({
-  selector: "app-xsql-form",
+  selector: "app-spa-form",
   imports: [ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()">
       <label>Name <input formControlName="name" /></label>
+      <label>Image <input formControlName="image" /></label>
+      <label>Host <input formControlName="host" /></label>
       <label
-        >Environment
-        <select formControlName="environment">
-          <option value="private-cloud">cluster (in-cluster Postgres)</option>
-          <option value="public-cloud">cloud (AWS RDS)</option>
+        >TLS Issuer
+        <select formControlName="tlsIssuer">
+          <option value="letsencrypt-prod">letsencrypt-prod</option>
+          <option value="letsencrypt-staging">letsencrypt-staging</option>
+          <option value="local-lab-ca-issuer">local-lab-ca-issuer</option>
         </select>
       </label>
-      <label
-        >Data Retention
-        <select formControlName="dataRetention">
-          <option value="delete">delete</option>
-          <option value="retain">retain</option>
-        </select>
-      </label>
+      <label>Replicas <input type="number" formControlName="replicas" /></label>
       <div class="actions">
         <button type="submit" [disabled]="form.invalid">Create</button>
         <button type="button" class="secondary" (click)="cancelled.emit()">Cancel</button>
@@ -29,7 +26,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
     </form>
   `,
 })
-export class XSqlForm {
+export class XSpaForm {
   private readonly fb = inject(FormBuilder)
   readonly tenant = input.required<string>()
   readonly submitted = output<unknown>()
@@ -37,17 +34,19 @@ export class XSqlForm {
 
   form = this.fb.nonNullable.group({
     name: ["", Validators.required],
-    environment: ["cluster"],
-    dataRetention: ["delete"],
+    image: ["", Validators.required],
+    host: ["", Validators.required],
+    tlsIssuer: ["letsencrypt-prod"],
+    replicas: [1],
   })
 
   submit() {
     if (this.form.invalid) return
     const v = this.form.getRawValue()
     this.submitted.emit({
-      kind: "XSql",
+      kind: "Spa",
       name: v.name,
-      params: { environment: v.environment, dataRetention: v.dataRetention },
+      params: { image: v.image, host: v.host, tlsIssuer: v.tlsIssuer, replicas: v.replicas },
     })
   }
 }
