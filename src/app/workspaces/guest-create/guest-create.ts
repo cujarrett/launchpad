@@ -478,8 +478,7 @@ export class GuestCreate implements OnInit {
   })
 
   protected readonly offerSql = computed(
-    () =>
-      this.selectedKind() === "Api" && !this.existingResources().some((r) => r.kind === "Sql"),
+    () => this.selectedKind() === "Api" && !this.existingResources().some((r) => r.kind === "Sql"),
   )
 
   protected readonly offerNoSql = computed(
@@ -492,13 +491,11 @@ export class GuestCreate implements OnInit {
   )
 
   protected readonly offerSpa = computed(
-    () =>
-      this.selectedKind() === "Api" && !this.existingResources().some((r) => r.kind === "Spa"),
+    () => this.selectedKind() === "Api" && !this.existingResources().some((r) => r.kind === "Spa"),
   )
 
   protected readonly offerApi = computed(
-    () =>
-      this.selectedKind() === "Spa" && !this.existingResources().some((r) => r.kind === "Api"),
+    () => this.selectedKind() === "Spa" && !this.existingResources().some((r) => r.kind === "Api"),
   )
 
   ngOnInit(): void {
