@@ -18,21 +18,21 @@ import {
   RESOURCE_KIND_LABELS,
 } from "../../core/models/workspace.model"
 
-// Kinds available to guests — XWordpress excluded (production data risk),
-// XSubscription excluded (requires existing topic).
-// XSql, XNoSql, XObjectStorage are only available as XApi add-ons, not as standalone options.
-export const GUEST_KINDS: ResourceKind[] = ["XApi", "XSpa"]
+// Kinds available to guests — Wordpress excluded (production data risk),
+// Subscription excluded (requires existing topic).
+// Sql, NoSql, ObjectStorage are only available as Api add-ons, not as standalone options.
+export const GUEST_KINDS: ResourceKind[] = ["Api", "Spa"]
 
 const GUEST_KIND_DESC: Record<ResourceKind, string> = {
-  XApi: "REST API with HTTPS, cache, and database add-ons.",
-  XSpa: "Static frontend app served over HTTPS.",
-  XSql: "Relational database.",
-  XNoSql: "NoSQL key-value store. Fast lookups, flexible schemas.",
-  XObjectStorage: "Object storage for files, assets, and blobs.",
-  XCache: "",
-  XTopic: "",
-  XSubscription: "",
-  XWordpress: "",
+  Api: "REST API with HTTPS, cache, and database add-ons.",
+  Spa: "Static frontend app served over HTTPS.",
+  Sql: "Relational database.",
+  NoSql: "NoSQL key-value store. Fast lookups, flexible schemas.",
+  ObjectStorage: "Object storage for files, assets, and blobs.",
+  Cache: "",
+  Topic: "",
+  Subscription: "",
+  Wordpress: "",
 }
 
 @Component({
@@ -72,7 +72,7 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
           }
         </div>
 
-        @if (selectedKind() === "XApi") {
+        @if (selectedKind() === "Api") {
           <div class="options-section">
             <span class="options-label">Configure API</span>
             <div class="options-grid">
@@ -179,7 +179,7 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
           </div>
         }
 
-        @if (selectedKind() === "XSpa" && offerApi()) {
+        @if (selectedKind() === "Spa" && offerApi()) {
           <div class="options-section">
             <span class="options-label">Configure SPA</span>
             <div class="options-grid">
@@ -473,49 +473,49 @@ export class GuestCreate implements OnInit {
   })
 
   protected readonly offerStorage = computed(() => {
-    if (this.selectedKind() !== "XApi") return false
-    return !this.existingResources().some((r) => r.kind === "XObjectStorage")
+    if (this.selectedKind() !== "Api") return false
+    return !this.existingResources().some((r) => r.kind === "ObjectStorage")
   })
 
   protected readonly offerSql = computed(
     () =>
-      this.selectedKind() === "XApi" && !this.existingResources().some((r) => r.kind === "XSql"),
+      this.selectedKind() === "Api" && !this.existingResources().some((r) => r.kind === "Sql"),
   )
 
   protected readonly offerNoSql = computed(
     () =>
-      this.selectedKind() === "XApi" && !this.existingResources().some((r) => r.kind === "XNoSql"),
+      this.selectedKind() === "Api" && !this.existingResources().some((r) => r.kind === "NoSql"),
   )
 
   protected readonly showSqlToggle = computed(
-    () => this.selectedKind() === "XApi" && this.existingResources().some((r) => r.kind === "XSql"),
+    () => this.selectedKind() === "Api" && this.existingResources().some((r) => r.kind === "Sql"),
   )
 
   protected readonly offerSpa = computed(
     () =>
-      this.selectedKind() === "XApi" && !this.existingResources().some((r) => r.kind === "XSpa"),
+      this.selectedKind() === "Api" && !this.existingResources().some((r) => r.kind === "Spa"),
   )
 
   protected readonly offerApi = computed(
     () =>
-      this.selectedKind() === "XSpa" && !this.existingResources().some((r) => r.kind === "XApi"),
+      this.selectedKind() === "Spa" && !this.existingResources().some((r) => r.kind === "Api"),
   )
 
   ngOnInit(): void {
-    // Auto-select XApi so the configure options are visible immediately.
-    if (this.availableKinds().includes("XApi")) {
-      this.selectedKind.set("XApi")
+    // Auto-select Api so the configure options are visible immediately.
+    if (this.availableKinds().includes("Api")) {
+      this.selectedKind.set("Api")
     }
   }
 
   protected buildCommitPlan(kind: ResourceKind): string[] {
     const steps: string[] = []
-    if (this.withStorage() && kind === "XApi") steps.push("Object storage")
-    if (this.withSql() && this.offerSql() && kind === "XApi") steps.push("SQL database")
-    if (this.withNoSql() && kind === "XApi") steps.push("NoSQL database")
-    if (this.withSpa() && kind === "XApi" && this.offerSpa()) steps.push("Frontend")
-    if (kind === "XSpa" && this.offerApi()) steps.push("API")
-    steps.push(kind === "XApi" ? "API" : "Frontend")
+    if (this.withStorage() && kind === "Api") steps.push("Object storage")
+    if (this.withSql() && this.offerSql() && kind === "Api") steps.push("SQL database")
+    if (this.withNoSql() && kind === "Api") steps.push("NoSQL database")
+    if (this.withSpa() && kind === "Api" && this.offerSpa()) steps.push("Frontend")
+    if (kind === "Spa" && this.offerApi()) steps.push("API")
+    steps.push(kind === "Api" ? "API" : "Frontend")
     return steps
   }
 
@@ -536,10 +536,10 @@ export class GuestCreate implements OnInit {
         this.workspaceService.createGuestResourceBatch(this.workspace(), kind, {
           withCache: this.withCache(),
           withSql: this.withSql(),
-          withNoSql: this.withNoSql() && kind === "XApi",
-          withStorage: this.withStorage() && kind === "XApi",
-          withSpa: this.withSpa() && kind === "XApi" && this.offerSpa(),
-          withApi: kind === "XSpa" && this.offerApi(),
+          withNoSql: this.withNoSql() && kind === "Api",
+          withStorage: this.withStorage() && kind === "Api",
+          withSpa: this.withSpa() && kind === "Api" && this.offerSpa(),
+          withApi: kind === "Spa" && this.offerApi(),
         }),
       )
       this.created.emit()

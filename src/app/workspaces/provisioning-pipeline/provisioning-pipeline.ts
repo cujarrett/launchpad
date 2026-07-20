@@ -34,15 +34,15 @@ const PIPELINE_NODES = [
 ]
 
 const KIND_LABEL: Partial<Record<string, string>> = {
-  XApi: "API",
-  XSpa: "Frontend",
-  XNoSql: "NoSQL database",
-  XSql: "SQL database",
-  XObjectStorage: "Object storage",
-  XCache: "Cache",
-  XTopic: "Topic",
-  XSubscription: "Subscription",
-  XWordpress: "WordPress",
+  Api: "API",
+  Spa: "Frontend",
+  NoSql: "NoSQL database",
+  Sql: "SQL database",
+  ObjectStorage: "Object storage",
+  Cache: "Cache",
+  Topic: "Topic",
+  Subscription: "Subscription",
+  Wordpress: "WordPress",
 }
 
 // What each XR creates — abstracted names, no cloud-vendor specifics
@@ -51,13 +51,13 @@ const KIND_LABEL: Partial<Record<string, string>> = {
 function resourceDetail(r: { kind: string; spec: Record<string, unknown> }): string {
   const backend = (r.spec as { parameters?: { backend?: string } }).parameters?.backend
   switch (r.kind) {
-    case "XNoSql":
+    case "NoSql":
       return "NoSQL table · access role"
-    case "XObjectStorage":
+    case "ObjectStorage":
       return "Object store · access role"
-    case "XSql":
+    case "Sql":
       return backend === "public-cloud" ? "Database · access role" : "Database"
-    case "XCache":
+    case "Cache":
       return "Cache cluster"
     default:
       return ""
@@ -93,7 +93,7 @@ function bindingDetail(
   resources: { kind: string; spec: Record<string, unknown> }[],
 ): string {
   if (binding === "nosql" || binding === "object-storage") return BINDING_DETAIL_PUBLIC[binding]
-  const kind = binding === "sql" ? "XSql" : binding === "cache" ? "XCache" : undefined
+  const kind = binding === "sql" ? "Sql" : binding === "cache" ? "Cache" : undefined
   const resource = resources.find((r) => r.kind === kind)
   const backend = (resource?.spec as { parameters?: { backend?: string } })?.parameters?.backend
   const table = backend === "public-cloud" ? BINDING_DETAIL_PUBLIC : BINDING_DETAIL_PRIVATE
@@ -1001,12 +1001,12 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     if (!allReady) return rows
 
     // Derived once — needed by both binding and health sections.
-    const hasApi = resources.some((r) => r.kind === "XApi")
-    const hasSpa = resources.some((r) => r.kind === "XSpa")
+    const hasApi = resources.some((r) => r.kind === "Api")
+    const hasSpa = resources.some((r) => r.kind === "Spa")
     const hasCloudBindings = resources.some((r) => {
-      if (r.kind === "XNoSql" || r.kind === "XObjectStorage") return true
+      if (r.kind === "NoSql" || r.kind === "ObjectStorage") return true
       const backend = (r.spec as { parameters?: { backend?: string } }).parameters?.backend
-      return (r.kind === "XSql" || r.kind === "XCache") && backend === "public-cloud"
+      return (r.kind === "Sql" || r.kind === "Cache") && backend === "public-cloud"
     })
 
     // ── Service bindings ───────────────────────────────────────────────────
@@ -1079,12 +1079,12 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
       )
     }
 
-    const hasApi = resources.some((r) => r.kind === "XApi")
-    const hasSpa = resources.some((r) => r.kind === "XSpa")
+    const hasApi = resources.some((r) => r.kind === "Api")
+    const hasSpa = resources.some((r) => r.kind === "Spa")
     const hasCloudBindings = resources.some((r) => {
-      if (r.kind === "XNoSql" || r.kind === "XObjectStorage") return true
+      if (r.kind === "NoSql" || r.kind === "ObjectStorage") return true
       const backend = (r.spec as { parameters?: { backend?: string } }).parameters?.backend
-      return (r.kind === "XSql" || r.kind === "XCache") && backend === "public-cloud"
+      return (r.kind === "Sql" || r.kind === "Cache") && backend === "public-cloud"
     })
 
     const pods = Object.values(this.podStatusMap())

@@ -154,7 +154,7 @@ export class ResourceCard {
   /** Controlled by the parent — true when this card is the active expanded one. */
   readonly expanded = input<boolean>(false)
   readonly canEdit = input<boolean>(true)
-  /** When true, the Resource Integrations section is editable (guest sandbox XApi only). */
+  /** When true, the Resource Integrations section is editable (guest sandbox Api only). */
   readonly canEditConnections = input<boolean>(false)
   /** False when a dependency (e.g. companion API for a SPA) is not yet ready. */
   readonly dependencyReady = input<boolean>(true)
@@ -215,17 +215,17 @@ export class ResourceCard {
     return host?.endsWith(".local.lab") ?? false
   })
 
-  // Probe /readyz for XApi (returns 503 until all integrations are connected)
-  // and /healthz for XSpa (nginx liveness only — API readiness is handled by
+  // Probe /readyz for Api (returns 503 until all integrations are connected)
+  // and /healthz for Spa (nginx liveness only — API readiness is handled by
   // dependencyReady). Cloudflare error pages have no CORS header so they throw
   // rather than resolve, preventing dead links while TLS is still provisioning.
   private readonly probeUrl = computed(() => {
     const host = this.resource().spec["host"] as string | undefined
     if (!host) return null
     const kind = this.resource().kind
-    if (kind !== "XSpa" && kind !== "XApi") return null
+    if (kind !== "Spa" && kind !== "Api") return null
     if (host.endsWith(".local.lab")) return null
-    return `https://${host}/${kind === "XApi" ? "readyz" : "healthz"}`
+    return `https://${host}/${kind === "Api" ? "readyz" : "healthz"}`
   })
 
   private startProbing(url: string): void {
@@ -265,7 +265,7 @@ export class ResourceCard {
     const host = this.resource().spec["host"] as string | undefined
     if (!host) return null
     const kind = this.resource().kind
-    if (kind !== "XSpa" && kind !== "XApi") return null
+    if (kind !== "Spa" && kind !== "Api") return null
     if (host.endsWith(".local.lab")) return null
     const url = `https://${host}`
     return url

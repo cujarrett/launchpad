@@ -213,7 +213,7 @@ Runtime form builder used for both create and edit.
 - Loads existing resources to populate connection/reference controls.
 - In edit mode, fetches live values (`getResourceValues`) unless skipped.
 - Supports connection management UI (add/remove resource integrations).
-- Supports optional companion creation (`XApi ↔ XSpa`) in create mode.
+- Supports optional companion creation (`Api ↔ Spa`) in create mode.
 - Submits via `WorkspaceService.createResource(...)`.
 
 ---

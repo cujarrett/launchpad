@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from "@angu
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
 
 @Component({
-  selector: "app-xapi-form",
+  selector: "app-api-form",
   imports: [ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -67,6 +67,6 @@ export class XApiForm {
     if (v.topicRef) params["topicRef"] = v.topicRef
     if (v.subscriptionRef) params["subscriptionRef"] = v.subscriptionRef
     if (v.cache) params["cache"] = true
-    this.submitted.emit({ kind: "XApi", name: v.name, params })
+    this.submitted.emit({ kind: "Api", name: v.name, params })
   }
 }

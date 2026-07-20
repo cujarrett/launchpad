@@ -273,11 +273,11 @@ export class WorkspaceArch {
       statusName: r.name,
     })
 
-    const frontend = byKind("XSpa", "XWordpress").map(toNode)
-    const apis = byKind("XApi").map(toNode)
+    const frontend = byKind("Spa", "Wordpress").map(toNode)
+    const apis = byKind("Api").map(toNode)
     // Topics before subscriptions so publish→deliver→consume reads top-down.
-    const messaging = [...byKind("XTopic"), ...byKind("XSubscription")].map(toNode)
-    const data = byKind("XSql", "XNoSql", "XObjectStorage", "XCache").map(toNode)
+    const messaging = [...byKind("Topic"), ...byKind("Subscription")].map(toNode)
+    const data = byKind("Sql", "NoSql", "ObjectStorage", "Cache").map(toNode)
 
     const edges: DiagramEdge[] = []
     const nodeIds = new Set([...frontend, ...apis, ...messaging, ...data].map((n) => n.id))
@@ -285,32 +285,32 @@ export class WorkspaceArch {
       if (nodeIds.has(from) && nodeIds.has(to)) edges.push({ from, to, label })
     }
 
-    // Derived nodes: an XApi's embedded cache and a WordPress's MariaDB are
+    // Derived nodes: an Api's embedded cache and a WordPress's MariaDB are
     // real running components with no resource file of their own.
-    for (const r of byKind("XApi")) {
+    for (const r of byKind("Api")) {
       const cache = r.spec["cache"] as { enabled?: boolean } | undefined
       if (cache?.enabled) {
         const id = `${r.name}-cache`
         data.push({
           id,
           label: id,
-          kindLabel: RESOURCE_KIND_LABELS["XCache"],
-          icon: RESOURCE_KIND_ICONS["XCache"],
-          color: RESOURCE_KIND_COLORS["XCache"],
+          kindLabel: RESOURCE_KIND_LABELS["Cache"],
+          icon: RESOURCE_KIND_ICONS["Cache"],
+          color: RESOURCE_KIND_COLORS["Cache"],
           statusName: r.name,
         })
         nodeIds.add(id)
         addEdge(r.name, id, "cache")
       }
     }
-    for (const r of byKind("XWordpress")) {
+    for (const r of byKind("Wordpress")) {
       const id = `${r.name}-db`
       data.push({
         id,
         label: id,
         kindLabel: "MariaDB",
-        icon: RESOURCE_KIND_ICONS["XSql"],
-        color: RESOURCE_KIND_COLORS["XSql"],
+        icon: RESOURCE_KIND_ICONS["Sql"],
+        color: RESOURCE_KIND_COLORS["Sql"],
         statusName: r.name,
       })
       nodeIds.add(id)
@@ -324,8 +324,8 @@ export class WorkspaceArch {
       return typeof host === "string" && host !== "" && !host.endsWith(".local.lab")
     }
     const users: DiagramNode[] = []
-    const publicFrontends = byKind("XSpa", "XWordpress").filter(isPublicHost)
-    const publicApis = byKind("XApi").filter(isPublicHost)
+    const publicFrontends = byKind("Spa", "Wordpress").filter(isPublicHost)
+    const publicApis = byKind("Api").filter(isPublicHost)
     if (publicFrontends.length > 0 || publicApis.length > 0) {
       users.push({
         id: USER_NODE_ID,
@@ -345,8 +345,8 @@ export class WorkspaceArch {
 
     // SPA → API: explicit proxy wins; otherwise a lone SPA+API pair is
     // assumed to talk to each other (guest workspaces set no apiProxy).
-    const apiResources = byKind("XApi")
-    for (const r of byKind("XSpa")) {
+    const apiResources = byKind("Api")
+    for (const r of byKind("Spa")) {
       const proxy = r.spec["apiProxy"] as { enabled?: boolean; upstream?: string } | undefined
       const upstream = proxy?.upstream ?? ""
       const target = proxy?.enabled
@@ -376,7 +376,7 @@ export class WorkspaceArch {
     }
 
     // Subscription ← Topic delivery.
-    for (const r of byKind("XSubscription")) {
+    for (const r of byKind("Subscription")) {
       const topic = (r.spec["topicRef"] as { name?: string } | undefined)?.name
       if (topic) addEdge(topic, r.name, "stream")
     }

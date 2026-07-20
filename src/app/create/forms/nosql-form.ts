@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from "@angu
 import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
 
 @Component({
-  selector: "app-xnosql-form",
+  selector: "app-nosql-form",
   imports: [ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -48,7 +48,7 @@ export class XNoSqlForm {
     if (this.form.invalid) return
     const v = this.form.getRawValue()
     this.submitted.emit({
-      kind: "XNoSql",
+      kind: "NoSql",
       name: v.name,
       params: {
         partitionKey: v.partitionKey,
