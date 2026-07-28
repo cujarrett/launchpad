@@ -27,6 +27,9 @@ const MAX_COL_GAP = 170
 const PAD_X = 12
 const PAD_TOP = 16
 const PAD_BOTTOM = 16
+// Room to the right of a column for its same-column edges to loop through.
+const SAME_COL_BEND = 22
+const SAME_COL_GUTTER = 64
 // Below this, node text stops being legible — beyond it, fall back to
 // horizontal scroll rather than keep shrinking.
 const MIN_SCALE = 0.6
@@ -77,6 +80,9 @@ interface Layout {
 }
 
 const USER_NODE_ID = "__users__"
+
+const colIndexOf = (columns: DiagramColumn[], id: string) =>
+  columns.findIndex((c) => c.nodes.some((node) => node.id === id))
 
 @Component({
   selector: "app-workspace-arch",
@@ -343,19 +349,30 @@ export class WorkspaceArch {
       }
     }
 
-    // SPA → API: explicit proxy wins; otherwise a lone SPA+API pair is
-    // assumed to talk to each other (guest workspaces set no apiProxy).
+    // SPA → API: one edge per declared proxy path; otherwise a lone SPA+API
+    // pair is assumed to talk to each other (guest workspaces declare none).
     const apiResources = byKind("Api")
     for (const r of byKind("Spa")) {
-      const proxy = r.spec["apiProxy"] as { enabled?: boolean; upstream?: string } | undefined
-      const upstream = proxy?.upstream ?? ""
-      const target = proxy?.enabled
-        ? (apiResources.find((a) => upstream.includes(a.name)) ??
-          (apiResources.length === 1 ? apiResources[0] : undefined))
-        : apiResources.length === 1
-          ? apiResources[0]
-          : undefined
-      if (target) addEdge(r.name, target.name, proxy?.enabled ? "/api" : "rest")
+      const proxies = (r.spec["apiProxies"] as { path?: string; upstream?: string }[]) ?? []
+      let drew = false
+      for (const p of proxies) {
+        const target = apiResources.find((a) => (p.upstream ?? "").includes(a.name))
+        if (target) {
+          addEdge(r.name, target.name, p.path ?? "/api")
+          drew = true
+        }
+      }
+      if (!drew && apiResources.length === 1) addEdge(r.name, apiResources[0].name, "rest")
+    }
+
+    // API → API: a provider names who may call it, so the grant is the edge.
+    for (const r of apiResources) {
+      const provides = (r.spec["provides"] as { allowedCallers?: { app?: string }[] }[]) ?? []
+      for (const p of provides) {
+        for (const c of p.allowedCallers ?? []) {
+          if (c.app && c.app !== r.name) addEdge(c.app, r.name, "calls")
+        }
+      }
     }
 
     // API service bindings.
@@ -403,8 +420,16 @@ export class WorkspaceArch {
     const n = columns.length
     const spread = n > 1 ? (containerW - 2 * PAD_X - n * NODE_W) / (n - 1) : 0
     const colGap = Math.max(MIN_COL_GAP, Math.min(MAX_COL_GAP, spread))
-    const totalW = 2 * PAD_X + n * NODE_W + (n - 1) * colGap
-    const offsetX = Math.max(0, (containerW - totalW) / 2)
+    // No horizontal centering offset here — .arch-scaler is margin: 0 auto and
+    // clips at this width, so shifting nodes right would crop the last column.
+    const gridW = 2 * PAD_X + n * NODE_W + (n - 1) * colGap
+    // Same-column edges loop out past the right edge of their column, so the
+    // canvas needs a gutter or the last column's loops get clipped away.
+    const lastCol = columns.length - 1
+    const needsGutter = edges.some(
+      (e) => colIndexOf(columns, e.from) === lastCol && colIndexOf(columns, e.to) === lastCol,
+    )
+    const totalW = gridW + (needsGutter ? SAME_COL_GUTTER : 0)
 
     const colHeights = columns.map((c) => c.nodes.length * NODE_H + (c.nodes.length - 1) * ROW_GAP)
     const maxColH = Math.max(...colHeights)
@@ -414,7 +439,7 @@ export class WorkspaceArch {
     const colOf = new Map<string, number>()
 
     columns.forEach((col, ci) => {
-      const x = offsetX + PAD_X + ci * (NODE_W + colGap)
+      const x = PAD_X + ci * (NODE_W + colGap)
       const yStart = PAD_TOP + (maxColH - colHeights[ci]) / 2
       col.nodes.forEach((node, ri) => {
         colOf.set(node.id, ci)
@@ -434,14 +459,15 @@ export class WorkspaceArch {
       let labelY: number
 
       if (colOf.get(edge.from) === colOf.get(edge.to)) {
-        // Same column (topic → subscription): connect vertically.
-        const upper = from.y < to.y ? from : to
-        const lower = from.y < to.y ? to : from
-        const x = upper.x + NODE_W / 2
-        const y1 = from === upper ? upper.y + NODE_H : lower.y
-        const y2 = from === upper ? lower.y : upper.y + NODE_H
-        d = `M${x},${y1} L${x},${y2}`
-        labelX = x + 8
+        // Same column (topic → subscription, api → api): loop out to the right
+        // so a link between non-adjacent rows never crosses the cards between.
+        const x1 = from.x + NODE_W
+        const x2 = to.x + NODE_W
+        const bend = x1 + SAME_COL_BEND
+        const y1 = from.y + NODE_H / 2
+        const y2 = to.y + NODE_H / 2
+        d = `M${x1},${y1} C${bend},${y1} ${bend},${y2} ${x2},${y2}`
+        labelX = bend + 4
         labelY = (y1 + y2) / 2 + 3
       } else {
         const leftToRight = from.x < to.x

@@ -178,6 +178,60 @@ describe("WorkspaceArch", () => {
     expect(labels).toContain("consume")
   })
 
+  // The canvas clips at its own width, so a node placed past it disappears
+  // apart from its 3px left border. Narrow graphs used to hit this.
+  it("keeps every node inside the canvas when the graph is narrower than the container", async () => {
+    const fixture = mount([
+      { name: "foo", kind: "Spa", namespace: "foo", spec: { host: "foo.example.com" } },
+    ])
+    await fixture.whenStable()
+    fixture.detectChanges()
+
+    const el: HTMLElement = fixture.nativeElement
+    const canvas = el.querySelector<HTMLElement>(".arch-canvas")!
+    const canvasW = parseFloat(canvas.style.width)
+    for (const node of el.querySelectorAll<HTMLElement>(".arch-node")) {
+      expect(parseFloat(node.style.left) + 176).toBeLessThanOrEqual(canvasW)
+    }
+  })
+
+  it("draws one edge per apiProxies path and per allowedCallers grant", async () => {
+    // Mirrors platform-connections-demo: one SPA proxying to two APIs, one of
+    // which is the only caller granted access to a third.
+    const fixture = mount([
+      {
+        name: "foo-spa",
+        kind: "Spa",
+        namespace: "foo",
+        spec: {
+          host: "foo.example.com",
+          apiProxies: [
+            { path: "/authorized/", upstream: "bar-api.foo.svc.cluster.local" },
+            { path: "/unauthorized/", upstream: "baz-api.foo.svc.cluster.local" },
+          ],
+        },
+      },
+      { name: "bar-api", kind: "Api", namespace: "foo", spec: {} },
+      { name: "baz-api", kind: "Api", namespace: "foo", spec: {} },
+      {
+        name: "qux-api",
+        kind: "Api",
+        namespace: "foo",
+        spec: {
+          provides: [{ name: "data", allowedCallers: [{ namespace: "foo", app: "bar-api" }] }],
+        },
+      },
+    ])
+    await fixture.whenStable()
+    fixture.detectChanges()
+
+    const el: HTMLElement = fixture.nativeElement
+    const labels = [...el.querySelectorAll(".arch-edge-label")].map((n) => n.textContent?.trim())
+    expect(labels).toContain("/authorized/")
+    expect(labels).toContain("/unauthorized/")
+    expect(labels).toContain("calls")
+  })
+
   it("shows the empty state when there are no resources", () => {
     const fixture = mount([])
     expect(fixture.nativeElement.textContent).toContain("No resources yet.")
