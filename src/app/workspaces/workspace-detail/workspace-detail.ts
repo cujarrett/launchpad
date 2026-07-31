@@ -433,18 +433,25 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     const workspaceName = this.route.snapshot.paramMap.get("name") ?? ""
     this.name.set(workspaceName)
 
+    // Set by the sandbox picker — the create commit is still in flight, so there is
+    // nothing to fetch yet. history.state outlives the page load, so clear it once
+    // read or a reload makes an old sandbox look brand new.
+    const fresh = (history.state as { fresh?: boolean } | null)?.fresh === true
+    if (fresh) history.replaceState({ ...history.state, fresh: false }, "")
+
     if (this.isGuest()) {
       this.tickInterval = setInterval(() => this.tick.set(this.tick() + 1), 1000)
-      // Load expiry from the workspaces list (already enriched by the API).
-      try {
-        const workspaces = await firstValueFrom(this.workspaceService.getWorkspaces())
-        const ws = workspaces.find((w) => w.name === workspaceName)
-        if (ws?.expiresAt) this.guestExpiresAt.set(ws.expiresAt)
-        if (ws?.phaseTimes) this.guestPhaseTimes.set(ws.phaseTimes)
-        if (ws?.doneAt) this.guestDoneAt.set(ws.doneAt)
-      } catch {
-        // Non-fatal — countdown shows '?' if unavailable.
-      }
+      // Optimistic expiry — off by the create round trip until the server's value lands.
+      if (fresh) this.guestExpiresAt.set(new Date(Date.now() + GUEST_TTL_MS).toISOString())
+      // Not awaited — the countdown must never gate rendering.
+      void this.loadGuestMeta(workspaceName)
+    }
+
+    if (fresh) {
+      this.resources.set([])
+      this.suppressLoadingIndicator = true
+      this.loading.set(false)
+      this.creating.set(true)
     }
 
     // Start SSE independently — don't block on resource loading.
@@ -484,8 +491,30 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.destroyed = true
     this.sseSub?.unsubscribe()
     clearInterval(this.tickInterval)
+  }
+
+  // Expiry and phase times come from /workspaces. A just-launched workspace isn't in
+  // that response yet, and one miss leaves the countdown on '?' for good — so keep asking.
+  private async loadGuestMeta(workspaceName: string) {
+    for (let attempt = 0; attempt < 6 && !this.destroyed; attempt++) {
+      try {
+        const workspaces = await firstValueFrom(this.workspaceService.getWorkspaces())
+        const ws = workspaces.find((w) => w.name === workspaceName)
+        if (ws) {
+          if (ws.expiresAt) this.guestExpiresAt.set(ws.expiresAt)
+          if (ws.phaseTimes) this.guestPhaseTimes.set(ws.phaseTimes)
+          if (ws.doneAt) this.guestDoneAt.set(ws.doneAt)
+          return
+        }
+      } catch {
+        // Non-fatal — countdown falls back to the optimistic expiry, or '?'.
+      }
+      // The API caches /workspaces, so retrying sooner just re-reads the same stale miss.
+      await new Promise((resolve) => setTimeout(resolve, 3000))
+    }
   }
 
   startCreateForKind(kind: ResourceKind) {
@@ -523,12 +552,14 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   }
 
   private initialLoadDone = false
+  private suppressLoadingIndicator = false
+  private destroyed = false
 
   async loadResources(suppressAutoCreate = false) {
     // Only show the loading indicator on the very first load — subsequent
     // refreshes (after create/delete) update resources silently so the pipeline
     // component isn't destroyed and recreated on every commit.
-    if (!this.initialLoadDone) this.loading.set(true)
+    if (!this.initialLoadDone && !this.suppressLoadingIndicator) this.loading.set(true)
 
     // On the very first load, the workspace's namespace.yaml/guest.yaml may not
     // have landed in Git yet — the list page now navigates here without waiting
@@ -546,7 +577,9 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
         break
       } catch (e) {
         lastErr = e
-        if (i < attempts - 1) await new Promise((resolve) => setTimeout(resolve, 1000))
+        // The commit normally lands within ~2s — poll fast for that, then drip.
+        if (i < attempts - 1)
+          await new Promise((resolve) => setTimeout(resolve, i < 6 ? 300 : 1000))
       }
     }
     if (resources === undefined) throw lastErr

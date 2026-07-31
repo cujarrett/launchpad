@@ -530,7 +530,11 @@ export class Workspaces implements OnInit, OnDestroy {
     // actually exists server-side, so there's no reason to block navigation
     // on the create request's network round trip.
     this.pickingGuestName.set(false)
-    await this.router.navigate(["/workspaces", `guest-${suggestion}`])
+    // fresh lets the destination page render its picker straight away instead of
+    // waiting on a resource list that cannot exist yet.
+    await this.router.navigate(["/workspaces", `guest-${suggestion}`], {
+      state: { fresh: true },
+    })
 
     try {
       await firstValueFrom(this.workspaceService.createGuestWorkspace(suggestion))
