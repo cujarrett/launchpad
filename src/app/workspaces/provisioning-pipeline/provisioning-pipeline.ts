@@ -101,7 +101,9 @@ function bindingDetail(
 }
 
 function fmt(ms: number): string {
-  const s = Math.floor(ms / 1000)
+  // Clamp: a negative duration is never meaningful, and s < 60 is true for
+  // negatives, so an unclamped value prints straight through as "-112281s".
+  const s = Math.max(0, Math.floor(ms / 1000))
   if (s < 60) return `${s}s`
   const m = Math.floor(s / 60)
   const r = s % 60
@@ -875,6 +877,10 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
   ngOnInit(): void {
     // localStorage as an immediate fallback — server data arrives later via effects above.
     this.restoreFromLocalStorage()
+    // Already finished when this mounted, so no phase was ever observed live. Phase times
+    // are only persisted server-side for guest workspaces, so for everything else there is
+    // nothing to fall back on and every duration would read 0s.
+    this.joinedAfterCompletion.set(this.isDone())
     this.ticker = setInterval(() => this.now.set(Date.now()), 1000)
   }
 
@@ -884,6 +890,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
 
   // Duration string for a phase. Reads signals so it must be called from a computed.
   private dur(phase: number): string {
+    if (!this.hasRealTiming()) return ""
     const times = this.phaseTimes()
     const start = times[phase]
     if (start === undefined) return ""
@@ -920,6 +927,15 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
   // localStorage/server on refresh) — avoids the "wrong active stage" flash while SSE catches up.
   protected readonly isDone = computed(() => this.phaseIdx() === 5 || this.doneTime() !== null)
 
+  private readonly joinedAfterCompletion = signal(false)
+
+  // Durations are only meaningful when the run was measured. The server records phase
+  // times for guest workspaces; for everything else the only source is watching it happen.
+  protected readonly hasRealTiming = computed(() => {
+    if (Object.keys(this.initialPhaseTimes()).length > 0) return true
+    return !this.joinedAfterCompletion()
+  })
+
   protected readonly pipelineNodes = PIPELINE_NODES
 
   protected readonly pipelineStates = computed<Array<"done" | "active" | "pending">>(() => {
@@ -941,6 +957,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
   })
 
   protected readonly totalDuration = computed(() => {
+    if (!this.hasRealTiming()) return null
     const times = this.phaseTimes()
     const starts = Object.values(times).filter((v): v is number => v !== undefined)
     if (starts.length === 0) return null
@@ -951,6 +968,10 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     if (validStarts.length === 0) return null
     const earliest = Math.min(...validStarts)
     const end = this.isDone() ? (this.doneTime() ?? this.now()) : this.now()
+    // A server-supplied doneTime can predate a locally-recorded phase start when
+    // localStorage carries timestamps from a later visit than the run that finished.
+    // Showing nothing beats showing a negative total.
+    if (end < earliest) return null
     return fmt(end - earliest)
   })
 
