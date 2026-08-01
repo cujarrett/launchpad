@@ -101,8 +101,8 @@ function bindingDetail(
 }
 
 function fmt(ms: number): string {
-  // Clamp: a negative duration is never meaningful, and s < 60 is true for
-  // negatives, so an unclamped value prints straight through as "-112281s".
+  // Clamp at zero. A negative satisfies the `s < 60` branch below and prints
+  // unchanged, so without this a bad input renders as "-112281s".
   const s = Math.max(0, Math.floor(ms / 1000))
   if (s < 60) return `${s}s`
   const m = Math.floor(s / 60)
