@@ -1,0 +1,408 @@
+<title>Launchpad — Identity</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface-alt: #22263a;
+    --border: #2e3347;
+    --text: #e2e8f0;
+    --muted: #8492a6;
+    --accent: #6366f1;
+    --accent-soft: #c7d2fe;
+    --bracket: #6366f1;
+    --arrow: #c7d2fe;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  :root[data-theme="light"] {
+    --bg: #f6f7fb;
+    --surface: #ffffff;
+    --surface-alt: #eef0f8;
+    --border: #d9dced;
+    --text: #171a26;
+    --muted: #656e85;
+    --accent: #4f46e5;
+    --accent-soft: #4f46e5;
+    --bracket: #a5b4fc;
+    --arrow: #4f46e5;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f6f7fb;
+      --surface: #ffffff;
+      --surface-alt: #eef0f8;
+      --border: #d9dced;
+      --text: #171a26;
+      --muted: #656e85;
+      --accent: #4f46e5;
+      --accent-soft: #4f46e5;
+      --bracket: #a5b4fc;
+      --arrow: #4f46e5;
+    }
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 940px;
+    margin: 0 auto;
+    padding: 72px 28px 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 88px;
+  }
+  section { display: flex; flex-direction: column; gap: 24px; }
+  h2 {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+  }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 0; text-wrap: balance; }
+  p { margin: 0; max-width: 64ch; color: var(--muted); }
+  p strong { color: var(--text); font-weight: 600; }
+  .rule { height: 1px; background: var(--border); }
+
+  /* hero */
+  .hero { align-items: center; text-align: center; gap: 32px; padding-top: 24px; }
+  .hero-mark { width: 148px; height: 118px; }
+  .lockup { display: flex; align-items: center; gap: 18px; }
+  .lockup svg { width: 46px; height: 37px; }
+  .wordmark {
+    font-family: var(--mono);
+    font-size: 1.6rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .wordmark b { font-weight: 600; color: var(--accent-soft); }
+  .thesis { font-size: 1.05rem; color: var(--muted); max-width: 46ch; text-wrap: balance; }
+
+  /* mark drawing */
+  .bracket { fill: none; stroke: var(--bracket); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+  .arrow { fill: var(--arrow); }
+
+  @keyframes draw { from { stroke-dashoffset: 120; } to { stroke-dashoffset: 0; } }
+  @keyframes rise { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .hero-mark .bracket { stroke-dasharray: 120; animation: draw 0.7s cubic-bezier(0.4, 0, 0.2, 1) both; }
+  .hero-mark .bracket:nth-of-type(2) { animation-delay: 0.1s; }
+  .hero-mark .arrow-g { animation: rise 0.6s cubic-bezier(0.34, 1.3, 0.64, 1) 0.55s both; }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-mark .bracket, .hero-mark .arrow-g { animation: none; stroke-dashoffset: 0; opacity: 1; transform: none; }
+  }
+
+  /* grids */
+  .grid { display: grid; gap: 16px; }
+  .cols-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 26px 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+  }
+  .card .cap { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); letter-spacing: 0.04em; }
+
+  /* size proof */
+  .sizes { display: flex; align-items: flex-end; gap: 44px; flex-wrap: wrap; }
+  .size { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .size .cap { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  /* grounds */
+  .grounds { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .ground {
+    border-radius: 14px;
+    height: 132px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+  }
+  .g-dark { background: #0f1117; }
+  .g-light { background: #f6f7fb; }
+  .g-solid { background: #6366f1; }
+  .g-surface { background: var(--surface-alt); }
+
+  /* in place */
+  .chrome {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .tabbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface);
+    border-radius: 8px 8px 0 0;
+    padding: 7px 14px;
+    font-size: 0.8rem;
+  }
+  .tab svg { width: 15px; height: 12px; }
+  .navbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 22px;
+  }
+  .navbar .lockup svg { width: 28px; height: 22px; }
+  .navbar .wordmark { font-size: 1.05rem; }
+  .signin {
+    font-size: 0.78rem; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px;
+  }
+
+  /* explorations */
+  .explore { display: flex; gap: 14px; flex-wrap: wrap; }
+  .ex {
+    flex: 1 1 130px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 12px 14px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    opacity: 0.72;
+  }
+  .ex svg { width: 40px; height: 40px; }
+  .ex .cap { font-family: var(--mono); font-size: 0.63rem; color: var(--muted); text-align: center; line-height: 1.4; }
+
+  /* code */
+  .code {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .code-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+  }
+  .code pre {
+    margin: 0; padding: 18px 16px;
+    overflow-x: auto;
+    font-family: var(--mono); font-size: 0.74rem; line-height: 1.7;
+    color: var(--text);
+  }
+  button.copy {
+    font-family: var(--mono); font-size: 0.68rem;
+    background: var(--surface-alt); color: var(--text);
+    border: 1px solid var(--border); border-radius: 7px;
+    padding: 5px 12px; cursor: pointer;
+  }
+  button.copy:hover { border-color: var(--accent); }
+  button.copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+
+  <section class="hero">
+    <svg class="hero-mark" viewBox="0 0 80 64" role="img" aria-label="Launchpad mark">
+      <path class="bracket" d="M27 10 H14 V54 H27" />
+      <path class="bracket" d="M53 10 H66 V54 H53" />
+      <g class="arrow-g">
+        <path class="arrow" d="M40 16.5 L53.5 32 H26.5 Z" />
+        <rect class="arrow" x="35.5" y="29" width="9" height="22" rx="4.5" />
+      </g>
+    </svg>
+    <div class="lockup">
+      <span class="wordmark">launch<b>pad</b></span>
+    </div>
+    <p class="thesis">You declare what you want. The platform puts it in the air.</p>
+  </section>
+
+  <section>
+    <h2>The idea</h2>
+    <h3>Brackets, not a rocket.</h3>
+    <p>A rocket is the thing you asked to get away from — it's what the stock emoji already says, and it describes cargo rather than the product. Launchpad isn't the vehicle; it's the <strong>declaration</strong> that puts something in the air. So the mark is a pair of brackets — the punctuation of every manifest the platform commits — holding an arrow on its way up.</p>
+    <p>It reads three ways at once: <strong>declaration</strong> (the brackets), <strong>deployment</strong> (the arrow), and <strong>containment</strong> — the platform's actual promise, that the thing going up is held inside guardrails you didn't have to build.</p>
+  </section>
+
+  <section>
+    <h2>It survives the tab bar</h2>
+    <p>A favicon is where most marks die. The weight contrast does the work: hairline brackets, heavy arrow — so even at 18&nbsp;px the silhouette stays two distinct shapes instead of one grey smudge.</p>
+    <div class="sizes">
+      <div class="size">
+        <svg viewBox="0 0 80 64" width="96" height="77" role="img" aria-label="Mark at 96 pixels">
+          <path class="bracket" d="M27 10 H14 V54 H27" /><path class="bracket" d="M53 10 H66 V54 H53" />
+          <path class="arrow" d="M40 16.5 L53.5 32 H26.5 Z" /><rect class="arrow" x="35.5" y="29" width="9" height="22" rx="4.5" />
+        </svg>
+        <span class="cap">96</span>
+      </div>
+      <div class="size">
+        <svg viewBox="0 0 80 64" width="40" height="32" role="img" aria-label="Mark at 40 pixels">
+          <path class="bracket" d="M27 10 H14 V54 H27" /><path class="bracket" d="M53 10 H66 V54 H53" />
+          <path class="arrow" d="M40 16.5 L53.5 32 H26.5 Z" /><rect class="arrow" x="35.5" y="29" width="9" height="22" rx="4.5" />
+        </svg>
+        <span class="cap">40</span>
+      </div>
+      <div class="size">
+        <svg viewBox="0 0 80 64" width="26" height="21" role="img" aria-label="Mark at 26 pixels">
+          <path class="bracket" d="M27 10 H14 V54 H27" /><path class="bracket" d="M53 10 H66 V54 H53" />
+          <path class="arrow" d="M40 16.5 L53.5 32 H26.5 Z" /><rect class="arrow" x="35.5" y="29" width="9" height="22" rx="4.5" />
+        </svg>
+        <span class="cap">26</span>
+      </div>
+      <div class="size">
+        <svg viewBox="0 0 80 64" width="18" height="14" role="img" aria-label="Mark at 18 pixels">
+          <path class="bracket" d="M27 10 H14 V54 H27" /><path class="bracket" d="M53 10 H66 V54 H53" />
+          <path class="arrow" d="M40 16.5 L53.5 32 H26.5 Z" /><rect class="arrow" x="35.5" y="29" width="9" height="22" rx="4.5" />
+        </svg>
+        <span class="cap">18</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>On any ground</h2>
+    <div class="grounds">
+      <div class="ground g-dark">
+        <svg viewBox="0 0 80 64" width="72" height="58" role="img" aria-label="Mark on dark">
+          <g fill="none" stroke="#6366f1" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M27 10 H14 V54 H27" /><path d="M53 10 H66 V54 H53" /></g>
+          <g fill="#c7d2fe"><path d="M40 16.5 L53.5 32 H26.5 Z" /><rect x="35.5" y="29" width="9" height="22" rx="4.5" /></g>
+        </svg>
+      </div>
+      <div class="ground g-light">
+        <svg viewBox="0 0 80 64" width="72" height="58" role="img" aria-label="Mark on light">
+          <g fill="none" stroke="#a5b4fc" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M27 10 H14 V54 H27" /><path d="M53 10 H66 V54 H53" /></g>
+          <g fill="#4f46e5"><path d="M40 16.5 L53.5 32 H26.5 Z" /><rect x="35.5" y="29" width="9" height="22" rx="4.5" /></g>
+        </svg>
+      </div>
+      <div class="ground g-solid">
+        <svg viewBox="0 0 80 64" width="72" height="58" role="img" aria-label="Mark knocked out of accent">
+          <g fill="none" stroke="#c7d2fe" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity="0.72"><path d="M27 10 H14 V54 H27" /><path d="M53 10 H66 V54 H53" /></g>
+          <g fill="#ffffff"><path d="M40 16.5 L53.5 32 H26.5 Z" /><rect x="35.5" y="29" width="9" height="22" rx="4.5" /></g>
+        </svg>
+      </div>
+      <div class="ground g-surface">
+        <svg viewBox="0 0 80 64" width="72" height="58" style="color: var(--text)" role="img" aria-label="Single colour mark">
+          <g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"><path d="M27 10 H14 V54 H27" /><path d="M53 10 H66 V54 H53" /></g>
+          <g fill="currentColor"><path d="M40 16.5 L53.5 32 H26.5 Z" /><rect x="35.5" y="29" width="9" height="22" rx="4.5" /></g>
+        </svg>
+      </div>
+    </div>
+    <p>Duotone on dark, deepened on light, knocked out of the accent, and a single-colour cut for anywhere colour isn't available.</p>
+  </section>
+
+  <section>
+    <h2>In place</h2>
+    <div class="chrome">
+      <div class="tabbar">
+        <div class="tab">
+          <svg viewBox="0 0 80 64" role="img" aria-label="Favicon">
+            <path class="bracket" d="M27 10 H14 V54 H27" /><path class="bracket" d="M53 10 H66 V54 H53" />
+            <path class="arrow" d="M40 16.5 L53.5 32 H26.5 Z" /><rect class="arrow" x="35.5" y="29" width="9" height="22" rx="4.5" />
+          </svg>
+          <span>Launchpad</span>
+        </div>
+      </div>
+      <div class="navbar">
+        <div class="lockup">
+          <svg viewBox="0 0 80 64" role="img" aria-label="Launchpad">
+            <path class="bracket" d="M27 10 H14 V54 H27" /><path class="bracket" d="M53 10 H66 V54 H53" />
+            <path class="arrow" d="M40 16.5 L53.5 32 H26.5 Z" /><rect class="arrow" x="35.5" y="29" width="9" height="22" rx="4.5" />
+          </svg>
+          <span class="wordmark">launch<b>pad</b></span>
+        </div>
+        <span class="signin">Sign in</span>
+      </div>
+    </div>
+    <p>The wordmark is set in the same monospace the app already uses for every resource name — the product's own voice, rather than a display face borrowed from somewhere else. The tonal shift on <b style="color:var(--accent-soft);font-weight:600">pad</b> marks the half that matters.</p>
+  </section>
+
+  <section>
+    <h2>What it beat</h2>
+    <p>Four rounds. The whole "shape resting on a bar" family — the obvious way to draw a launch pad — had to be abandoned outright: every version collapsed into the <strong>eject symbol</strong> once it hit favicon size.</p>
+    <div class="explore">
+      <div class="ex">
+        <svg viewBox="0 0 80 80" aria-hidden="true">
+          <path d="M16 46 L40 22 L64 46" fill="none" stroke="#8492a6" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 66 H68" fill="none" stroke="#8492a6" stroke-width="8" stroke-linecap="round"/>
+        </svg>
+        <span class="cap">chevron on pad<br>= eject</span>
+      </div>
+      <div class="ex">
+        <svg viewBox="0 0 80 80" aria-hidden="true">
+          <rect x="8" y="8" width="64" height="64" rx="18" fill="#8492a6" opacity="0.5"/>
+          <path d="M26 44 L40 30 L54 44" fill="none" stroke="#0f1117" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M24 58 H56" fill="none" stroke="#0f1117" stroke-width="7" stroke-linecap="round"/>
+        </svg>
+        <span class="cap">app tile<br>= eject button</span>
+      </div>
+      <div class="ex">
+        <svg viewBox="0 0 80 80" aria-hidden="true">
+          <path d="M12 66 H68" fill="none" stroke="#8492a6" stroke-width="8" stroke-linecap="round"/>
+          <path d="M20 48 H60" fill="none" stroke="#8492a6" stroke-width="8" stroke-linecap="round" opacity="0.7"/>
+          <path d="M28 30 H52" fill="none" stroke="#8492a6" stroke-width="8" stroke-linecap="round" opacity="0.45"/>
+          <circle cx="40" cy="12" r="6" fill="#8492a6"/>
+        </svg>
+        <span class="cap">rising stack<br>illegible small</span>
+      </div>
+      <div class="ex">
+        <svg viewBox="0 0 80 80" aria-hidden="true">
+          <path d="M40 14 A26 26 0 1 1 22 21" fill="none" stroke="#8492a6" stroke-width="8" stroke-linecap="round"/>
+          <rect x="30" y="34" width="20" height="20" rx="5" transform="rotate(45 40 44)" fill="#8492a6"/>
+        </svg>
+        <span class="cap">orbit<br>= loading spinner</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The alternate</h2>
+    <div class="grid cols-3">
+      <div class="card">
+        <svg viewBox="0 0 80 72" width="86" height="77" role="img" aria-label="Trajectory alternate">
+          <rect x="10" y="52" width="20" height="20" rx="5" fill="var(--accent)"/>
+          <path d="M20 54 Q 28 20, 60 16" fill="none" stroke="var(--accent)" stroke-width="8" stroke-linecap="round"/>
+          <circle cx="60" cy="16" r="9" fill="var(--accent-soft)"/>
+        </svg>
+        <span class="cap">trajectory</span>
+      </div>
+      <div style="display:flex;flex-direction:column;justify-content:center;gap:12px;grid-column:span 2">
+        <h3>If you want warmth over precision.</h3>
+        <p>A payload leaving a pad on an arc. Softer and more optimistic than the brackets, and it holds up small — but it trades away the declarative idea, and an arc reads as generic motion in a way brackets never do. Worth keeping on the shelf; not what I'd ship.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>Take it</h2>
+    <div class="code">
+      <div class="code-head">
+        <span>launchpad-mark.svg</span>
+        <button class="copy" type="button" onclick="navigator.clipboard.writeText(document.getElementById('svgsrc').textContent).then(()=>{this.textContent='copied';setTimeout(()=>this.textContent='copy',1400)})">copy</button>
+      </div>
+      <pre id="svgsrc">&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 64" role="img" aria-label="Launchpad"&gt;
+  &lt;g fill="none" stroke="#6366f1" stroke-width="6"
+     stroke-linecap="round" stroke-linejoin="round"&gt;
+    &lt;path d="M27 10 H14 V54 H27" /&gt;
+    &lt;path d="M53 10 H66 V54 H53" /&gt;
+  &lt;/g&gt;
+  &lt;g fill="#c7d2fe"&gt;
+    &lt;path d="M40 16.5 L53.5 32 H26.5 Z" /&gt;
+    &lt;rect x="35.5" y="29" width="9" height="22" rx="4.5" /&gt;
+  &lt;/g&gt;
+&lt;/svg&gt;</pre>
+    </div>
+    <p>Swap <code style="font-family:var(--mono);font-size:0.85em;color:var(--text)">#6366f1</code> for <code style="font-family:var(--mono);font-size:0.85em;color:var(--text)">#a5b4fc</code> and <code style="font-family:var(--mono);font-size:0.85em;color:var(--text)">#c7d2fe</code> for <code style="font-family:var(--mono);font-size:0.85em;color:var(--text)">#4f46e5</code> for the light-ground cut, or set both to <code style="font-family:var(--mono);font-size:0.85em;color:var(--text)">currentColor</code> for the single-colour one.</p>
+  </section>
+
+</div>

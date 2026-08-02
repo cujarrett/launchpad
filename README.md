@@ -49,3 +49,7 @@ npm start   # proxies /api → localhost:8080 via proxy.conf.json
 ```
 
 [launchpad-api](https://github.com/cujarrett/launchpad-api) must be running locally for any real functionality. Set `ENTRA_AUTH_DISABLED=true` there to skip JWT validation during local dev.
+
+## Brand
+
+The mark, the wordmark, and the rules for using them live in [brand/](brand/).
