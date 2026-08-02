@@ -114,6 +114,9 @@ function pickGuestName(
     <div class="page">
       @if (!roleService.isContributor() && !pickingGuestName() && !savingGuestWorkspace()) {
         <div class="sandbox-cta">
+          <p class="sandbox-hero">
+            You declare what you want.<span>The platform puts it in the air.</span>
+          </p>
           @if (guestCount() >= guestMax) {
             <p class="muted" style="font-size:0.85rem">{{ sandboxFullMessage() }}</p>
           } @else {
@@ -324,6 +327,26 @@ function pickGuestName(
         margin-bottom: 0.25rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         text-align: center;
+      }
+      .sandbox-hero {
+        margin: 0 0 0.75rem;
+        font-size: clamp(1.4rem, 3.4vw, 2.15rem);
+        font-weight: 600;
+        line-height: 1.25;
+        letter-spacing: -0.02em;
+        color: var(--color-text);
+        text-wrap: balance;
+      }
+      /* Second sentence drops to its own line while there's room for it, then
+         reflows inline rather than breaking mid-thought on a phone. */
+      .sandbox-hero span {
+        display: block;
+        color: var(--color-text-muted);
+      }
+      @media (max-width: 30rem) {
+        .sandbox-hero span {
+          display: inline;
+        }
       }
       .sandbox-btn {
         font-size: 1.05rem;

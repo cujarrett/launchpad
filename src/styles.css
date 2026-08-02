@@ -101,7 +101,8 @@ h3 {
   letter-spacing: -0.01em;
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.75rem;
+  --mark-size: 2.75rem;
 }
 
 /* Set in the same mono as every resource name in the app — the wordmark speaks
@@ -111,6 +112,7 @@ h3 {
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.03em;
+  line-height: 1.1;
 }
 .app-nav-wordmark b {
   font-weight: 600;
@@ -119,16 +121,6 @@ h3 {
 .app-nav-logo:hover {
   text-decoration: none;
   opacity: 0.8;
-}
-
-.app-nav-tagline {
-  font-size: 0.75rem;
-  font-weight: 400;
-  color: var(--color-text-muted);
-  letter-spacing: 0.02em;
-  font-style: italic;
-  transition: opacity 0.4s ease;
-  padding-left: 2.5rem; /* align with the wordmark, past the mark */
 }
 
 .app-nav-user {
