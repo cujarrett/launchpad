@@ -7,6 +7,7 @@ export type FieldKind =
   | "boolean"
   | "select"
   | "array"
+  | "object-array" // array of objects (consumes, provides, apiProxies) — shown, not edited
   | "display" // read-only value shown as a link/label, not an input
   | "resource-ref" // *Ref objects — rendered as a dropdown of existing tenant resources
   | "sub-object" // nested object (e.g. cache, apiProxy) — rendered as a toggled sub-group
@@ -118,6 +119,11 @@ function classifyField(key: string, schema: Record<string, unknown>, required: b
   }
 
   if (schema["type"] === "array") {
+    // Arrays of objects (consumes, provides, apiProxies) can't survive the
+    // newline-joined textarea a scalar array uses — join() would stringify each
+    // entry to "[object Object]" and saving would write that back to the XR.
+    const items = (schema["items"] ?? {}) as Record<string, unknown>
+    if (items["type"] === "object") return { ...base, kind: "object-array" }
     return { ...base, kind: "array" }
   }
 

@@ -403,6 +403,23 @@ import { WorkspaceService } from "../../core/services/workspace.service"
                 placeholder="One entry per line"
               ></textarea>
             }
+            @case ("object-array") {
+              @let entries = objectEntries(fullControlName);
+              @if (entries.length === 0) {
+                <p class="obj-empty">None declared</p>
+              } @else {
+                <ul class="obj-list">
+                  @for (entry of entries; track $index) {
+                    <li>
+                      <span class="obj-main">{{ entry.main }}</span>
+                      @if (entry.detail) {
+                        <span class="obj-detail">{{ entry.detail }}</span>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+            }
             @case ("resource-ref") {
               <select [formControlName]="controlName">
                 <option value="">— select —</option>
@@ -626,6 +643,11 @@ export class DynamicForm implements OnInit {
     return this.existingResources().filter((r) => r.kind === kind)
   }
 
+  protected objectEntries(controlName: string): ObjectEntry[] {
+    const value = this.formSig().get(controlName)?.value
+    return Array.isArray(value) ? value.map(summariseEntry) : []
+  }
+
   protected addConnection(key: string) {
     const field = this.connectionFields().find((f) => f.key === key)!
     if (field.kind === "sub-object") {
@@ -739,11 +761,65 @@ function buildForm(
   return new FormGroup(controls)
 }
 
+export interface ObjectEntry {
+  main: string
+  detail: string
+}
+
+// One readable line per entry of an object-array. Covers the three shapes the
+// XRDs actually define; anything new falls back to key: value rather than the
+// "[object Object]" a plain join would give.
+export function summariseEntry(raw: unknown): ObjectEntry {
+  if (raw === null || typeof raw !== "object") return { main: String(raw), detail: "" }
+  const e = raw as Record<string, unknown>
+
+  // apiProxies — a path prefix routed to an in-cluster service
+  if (e["path"] && e["upstream"]) {
+    return { main: `${e["path"]} → ${e["upstream"]}`, detail: "" }
+  }
+
+  // consumes — an off-platform host, or another workload on the platform
+  if (e["host"]) {
+    const port = e["port"] ? `:${e["port"]}` : ""
+    return { main: `${e["host"]}${port}`, detail: (e["protocol"] as string) ?? "" }
+  }
+  if (e["app"]) {
+    return { main: String(e["app"]), detail: e["namespace"] ? `in ${e["namespace"]}` : "" }
+  }
+
+  // provides — a named interface and the workloads granted it
+  if (e["name"]) {
+    const callers = Array.isArray(e["allowedCallers"])
+      ? (e["allowedCallers"] as Record<string, unknown>[]).map(
+          (c) => `${c["app"]} in ${c["namespace"]}`,
+        )
+      : []
+    const scope = [
+      Array.isArray(e["methods"]) ? (e["methods"] as string[]).join(" ") : "",
+      Array.isArray(e["paths"]) ? (e["paths"] as string[]).join(" ") : "",
+    ]
+      .filter(Boolean)
+      .join(" ")
+    const detail = [scope, callers.length ? `callable by ${callers.join(", ")}` : ""]
+      .filter(Boolean)
+      .join(" · ")
+    return { main: String(e["name"]), detail }
+  }
+
+  const pairs = Object.entries(e).map(
+    ([k, v]) => `${k}: ${typeof v === "object" && v !== null ? JSON.stringify(v) : v}`,
+  )
+  return { main: pairs.join(", "), detail: "" }
+}
+
 function makeControl(field: FieldDef, initialValue?: unknown): FormControl {
   let v: unknown
   if (initialValue !== undefined && initialValue !== null) {
     if (field.kind === "array" && Array.isArray(initialValue)) {
       v = initialValue.join("\n")
+    } else if (field.kind === "object-array") {
+      // Held as-is so it round-trips untouched — there is no editor for it.
+      v = initialValue
     } else if (field.kind === "resource-ref" && Array.isArray(initialValue)) {
       v = (initialValue[0] as Record<string, unknown> | undefined)?.["name"] ?? ""
     } else if (field.kind === "resource-ref" && typeof initialValue === "object") {
@@ -782,6 +858,8 @@ function buildParams(raw: Record<string, unknown>, fields: FieldDef[]): Record<s
         if (cv !== "" && cv !== null && cv !== undefined) sub[child.key] = cv
       }
       if (Object.keys(sub).length > 0) params[field.key] = sub
+    } else if (field.kind === "object-array") {
+      if (Array.isArray(val) && val.length > 0) params[field.key] = val
     } else if (field.kind === "array") {
       const lines = (val as string)
         .split("\n")
