@@ -100,8 +100,21 @@ h3 {
   text-decoration: none;
   letter-spacing: -0.01em;
   display: flex;
-  flex-direction: column;
-  gap: 0.05rem;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+/* Set in the same mono as every resource name in the app — the wordmark speaks
+   the product's own voice. The tonal shift marks the half that carries meaning. */
+.app-nav-wordmark {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+.app-nav-wordmark b {
+  font-weight: 600;
+  color: #c7d2fe;
 }
 .app-nav-logo:hover {
   text-decoration: none;
@@ -115,7 +128,7 @@ h3 {
   letter-spacing: 0.02em;
   font-style: italic;
   transition: opacity 0.4s ease;
-  padding-left: 2.5rem; /* align with the "L" in Launchpad, past the 🚀 emoji */
+  padding-left: 2.5rem; /* align with the wordmark, past the mark */
 }
 
 .app-nav-user {
