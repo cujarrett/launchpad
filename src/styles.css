@@ -342,7 +342,9 @@ form {
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  /* min() so the track collapses to the container on phones — a bare 360px
+     floor overflows a 393px viewport and pushes the tiles off-centre. */
+  grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
   gap: 1rem;
 }
 
