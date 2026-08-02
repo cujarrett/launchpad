@@ -69,6 +69,15 @@ export class WorkspaceService {
       .subscribe({ error: () => {} })
   }
 
+  resetGuestPhases(workspace: string): void {
+    this.http
+      .post<void>(`${environment.apiUrl}/guest/workspaces/${workspace}/phases`, {
+        phase: "",
+        reset: true,
+      })
+      .subscribe({ error: () => {} })
+  }
+
   patchGuestResourceRefs(
     workspace: string,
     resource: string,

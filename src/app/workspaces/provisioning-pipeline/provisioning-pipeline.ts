@@ -753,12 +753,18 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     }
   }
 
+  // Raised to "now" when a failed commit is discarded, so the reset survives the
+  // window where the server is still serving the abandoned attempt's times.
+  private readonly phaseFloor = signal<number | null>(null)
+
   // Drops any phase timestamp earlier than minPhaseTime (the workspace's real createdAt).
   // Applied wherever phaseTimes can be populated from a source other than "record it now"
   // (localStorage, server data) — both can carry a stale value from an earlier workspace
   // that reused the same name.
   private clampPhaseTimes(times: Partial<Record<number, number>>): Partial<Record<number, number>> {
-    const min = this.minPhaseTime()
+    const floor = this.phaseFloor()
+    const bound = this.minPhaseTime()
+    const min = floor === null ? bound : bound === null ? floor : Math.max(bound, floor)
     if (min === null) return times
     const clamped: Partial<Record<number, number>> = {}
     for (const [k, v] of Object.entries(times)) {
@@ -789,6 +795,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
       if (this.trackedWorkspace !== null && this.trackedWorkspace !== ws) {
         this.phaseTimes.set({})
         this.doneTime.set(null)
+        this.phaseFloor.set(null)
         this.expanded.set(false)
         this.restoreFromLocalStorage()
       }
@@ -832,6 +839,11 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
             } catch {
               /* ignore */
             }
+            // Server phase times are write-once and get reapplied on the next
+            // poll, so clearing only the local copy leaves the failed attempt's
+            // clock to come straight back.
+            this.workspaceService.resetGuestPhases(ws)
+            this.phaseFloor.set(Date.now())
           }
           return updated
         })
