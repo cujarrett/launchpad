@@ -12,6 +12,7 @@ import { Router, RouterLink } from "@angular/router"
 import { FormsModule } from "@angular/forms"
 import { firstValueFrom } from "rxjs"
 import { WorkspaceService } from "../core/services/workspace.service"
+import { httpErrorMessage } from "../core/http-error"
 import { RoleService } from "../core/services/role.service"
 import { Workspace } from "../core/models/workspace.model"
 
@@ -468,15 +469,7 @@ export class Workspaces implements OnInit, OnDestroy {
       this.workspaces.set(updated)
       this.cancelNewWorkspace()
     } catch (err: unknown) {
-      const msg =
-        err instanceof HttpErrorResponse
-          ? typeof err.error === "string" && err.error.trim()
-            ? err.error.trim()
-            : `HTTP ${err.status}`
-          : err instanceof Error
-            ? err.message
-            : "Failed to create workspace"
-      this.createWorkspaceError.set(msg)
+      this.createWorkspaceError.set(httpErrorMessage(err, "Failed to create workspace"))
     } finally {
       this.savingWorkspace.set(false)
     }
@@ -551,15 +544,7 @@ export class Workspaces implements OnInit, OnDestroy {
         this.rerollGuestName()
         this.createGuestError.set("That name was just taken — try another one!")
       } else {
-        const msg =
-          err instanceof HttpErrorResponse
-            ? typeof err.error === "string" && err.error.trim()
-              ? err.error.trim()
-              : `HTTP ${err.status}`
-            : err instanceof Error
-              ? err.message
-              : "Failed to create sandbox workspace"
-        this.createGuestError.set(msg)
+        this.createGuestError.set(httpErrorMessage(err, "Failed to create sandbox workspace"))
       }
     } finally {
       this.savingGuestWorkspace.set(false)

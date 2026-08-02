@@ -9,8 +9,8 @@ import {
 } from "@angular/core"
 import { ActivatedRoute, Router, RouterLink } from "@angular/router"
 import { firstValueFrom, Subscription } from "rxjs"
-import { HttpErrorResponse } from "@angular/common/http"
 import { WorkspaceService } from "../../core/services/workspace.service"
+import { httpErrorMessage } from "../../core/http-error"
 import { RoleService } from "../../core/services/role.service"
 import {
   Resource,
@@ -598,15 +598,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
       await firstValueFrom(this.workspaceService.deleteWorkspace(this.name()))
       await this.router.navigate(["/"])
     } catch (err: unknown) {
-      const msg =
-        err instanceof HttpErrorResponse
-          ? typeof err.error === "string" && err.error.trim()
-            ? err.error.trim()
-            : `HTTP ${err.status}`
-          : err instanceof Error
-            ? err.message
-            : "Failed to delete workspace"
-      this.deleteWorkspaceError.set(msg)
+      this.deleteWorkspaceError.set(httpErrorMessage(err, "Failed to delete workspace"))
     } finally {
       this.deletingWorkspace.set(false)
     }

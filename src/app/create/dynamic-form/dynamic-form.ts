@@ -13,8 +13,8 @@ import { toSignal, toObservable } from "@angular/core/rxjs-interop"
 import { NgTemplateOutlet } from "@angular/common"
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from "@angular/forms"
 import { firstValueFrom, switchMap, catchError, of, timeout } from "rxjs"
-import { HttpErrorResponse } from "@angular/common/http"
 import { FieldDef, FieldKind } from "../../core/models/field.model"
+import { httpErrorMessage } from "../../core/http-error"
 import { Resource, ResourceKind } from "../../core/models/workspace.model"
 import { SchemaService } from "../../core/services/schema.service"
 import { WorkspaceService } from "../../core/services/workspace.service"
@@ -699,14 +699,7 @@ export class DynamicForm implements OnInit {
       }
       this.created.emit()
     } catch (err: unknown) {
-      const detail =
-        err instanceof HttpErrorResponse
-          ? typeof err.error === "string" && err.error.trim()
-            ? err.error.trim()
-            : `HTTP ${err.status}`
-          : err instanceof Error
-            ? err.message
-            : ""
+      const detail = httpErrorMessage(err, "")
       this.saveError.set(
         detail ? `Save failed: ${detail}` : "Save failed. Check your inputs and try again.",
       )

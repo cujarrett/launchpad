@@ -9,8 +9,8 @@ import {
 } from "@angular/core"
 import { inject } from "@angular/core"
 import { firstValueFrom } from "rxjs"
-import { HttpErrorResponse } from "@angular/common/http"
 import { WorkspaceService } from "../../core/services/workspace.service"
+import { httpErrorMessage } from "../../core/http-error"
 import {
   Resource,
   ResourceKind,
@@ -541,11 +541,7 @@ export class GuestCreate implements OnInit {
       )
       this.created.emit()
     } catch (e) {
-      if (e instanceof HttpErrorResponse) {
-        this.error.set(e.error ?? e.message)
-      } else {
-        this.error.set("Unexpected error creating resource")
-      }
+      this.error.set(httpErrorMessage(e, "Unexpected error creating resource"))
     } finally {
       this.saving.set(false)
       this.commitPlanChange.emit([])
