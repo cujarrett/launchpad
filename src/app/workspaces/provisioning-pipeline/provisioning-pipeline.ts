@@ -11,6 +11,7 @@ import {
 } from "@angular/core"
 import { Resource, ResourceStatus } from "../../core/models/workspace.model"
 import { WorkspaceService } from "../../core/services/workspace.service"
+import { NodeState, PIPELINE_NODES, PipelineNodes } from "./pipeline-nodes"
 
 type RowStatus = "pending" | "active" | "done"
 
@@ -24,15 +25,6 @@ interface StatusRow {
 }
 
 // Friendly labels for service binding and health check rows
-// Compact node pipeline — mirrors main branch but at ~65% size
-const PIPELINE_NODES = [
-  { icon: "📦", label: "Committed" },
-  { icon: "🔄", label: "Syncing" },
-  { icon: "⚙️", label: "Provisioning" },
-  { icon: "🔌", label: "Connecting" },
-  { icon: "✨", label: "Live" },
-]
-
 const KIND_LABEL: Partial<Record<string, string>> = {
   Api: "API",
   Spa: "Frontend",
@@ -124,36 +116,12 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
 
 @Component({
   selector: "app-provisioning-pipeline",
+  imports: [PipelineNodes],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (rows().length > 0) {
       <div class="status-list" [class.status-list--done]="isDone()">
-        <div class="pipeline-mini" [class.pipeline-mini--done]="isDone()">
-          @for (node of pipelineNodes; track node.label; let i = $index) {
-            <div class="pm-stage">
-              <div
-                class="pm-node"
-                [class.pm-node--done]="pipelineStates()[i] === 'done'"
-                [class.pm-node--active]="pipelineStates()[i] === 'active'"
-                [class.pm-node--pending]="pipelineStates()[i] === 'pending'"
-              >
-                <div class="pm-pulse"></div>
-                <span class="pm-icon">{{ pipelineStates()[i] === "done" ? "✓" : node.icon }}</span>
-              </div>
-              <span class="pm-label" [class.pm-label--active]="pipelineStates()[i] === 'active'">{{
-                node.label
-              }}</span>
-            </div>
-            @if (i < pipelineNodes.length - 1) {
-              <div
-                class="pm-connector"
-                [class.pm-connector--done]="pipelineStates()[i] === 'done'"
-                [class.pm-connector--active]="pipelineStates()[i] === 'active'"
-                [class.pm-connector--pending]="pipelineStates()[i] === 'pending'"
-              ></div>
-            }
-          }
-        </div>
+        <app-pipeline-nodes [states]="pipelineStates()" [done]="isDone()" />
         <div class="list-header">
           @if (totalDuration()) {
             <span class="total-duration"
@@ -287,9 +255,11 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
       .row--pending {
         opacity: 0.3;
       }
+
       .row--done {
         opacity: 0.5;
       }
+
       .row--active {
         opacity: 1;
       }
@@ -433,7 +403,6 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
         color: #22c55e;
         animation: check-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
       }
-
       @keyframes check-pop {
         from {
           transform: scale(0);
@@ -462,15 +431,11 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
         animation: spin 0.7s linear infinite;
         box-shadow: 0 0 5px rgba(124, 58, 237, 0.35);
       }
-
       @keyframes spin {
         to {
           transform: rotate(360deg);
         }
       }
-
-      /* ── Row entrance ── */
-
       @keyframes row-in {
         from {
           opacity: 0;
@@ -486,9 +451,6 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
       .item-row {
         animation: row-in 0.22s ease-out backwards;
       }
-
-      /* ── Active section: sweeping text shimmer ── */
-
       @keyframes shimmer {
         0% {
           background-position: 150% center;
@@ -506,9 +468,6 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
         -webkit-text-fill-color: transparent;
         animation: shimmer 2.8s ease-in-out infinite;
       }
-
-      /* ── Pulsing detail text on in-progress items ── */
-
       @keyframes pulse-opacity {
         0%,
         100% {
@@ -521,172 +480,6 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
 
       .row--active .item-detail {
         animation: pulse-opacity 2s ease-in-out infinite;
-      }
-
-      /* ── Mini pipeline nodes ── */
-
-      .pipeline-mini {
-        display: flex;
-        align-items: flex-start;
-        padding: 0.5rem 0 0.9rem;
-        overflow: hidden;
-        max-height: 100px;
-        opacity: 1;
-        transition:
-          opacity 0.4s ease,
-          max-height 0.5s ease,
-          padding 0.5s ease;
-      }
-
-      .pipeline-mini--done {
-        opacity: 0;
-        max-height: 0;
-        padding: 0;
-        pointer-events: none;
-      }
-
-      .pm-stage {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.3rem;
-        flex-shrink: 0;
-        min-width: 44px;
-      }
-
-      .pm-node {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.72rem;
-        position: relative;
-        border: 1.5px solid rgba(255, 255, 255, 0.12);
-        background: rgba(255, 255, 255, 0.05);
-        transition:
-          background 0.3s,
-          border-color 0.3s;
-      }
-
-      .pm-node--done {
-        background: rgba(34, 197, 94, 0.15);
-        border-color: #22c55e;
-        color: #22c55e;
-        font-size: 0.62rem;
-        font-weight: 700;
-      }
-
-      .pm-node--active {
-        background: rgba(124, 58, 237, 0.2);
-        border-color: #7c3aed;
-        animation: pulse-node 1.8s ease-in-out infinite;
-      }
-
-      .pm-node--pending {
-        opacity: 0.25;
-      }
-
-      @keyframes pulse-node {
-        0%,
-        100% {
-          box-shadow: 0 0 6px rgba(124, 58, 237, 0.3);
-        }
-        50% {
-          box-shadow: 0 0 16px rgba(124, 58, 237, 0.65);
-        }
-      }
-
-      .pm-pulse {
-        display: none;
-      }
-
-      .pm-node--active .pm-pulse {
-        display: block;
-        position: absolute;
-        inset: -5px;
-        border-radius: 50%;
-        border: 1.5px solid rgba(124, 58, 237, 0.45);
-        animation: pulse-ring 1.8s ease-out infinite;
-        pointer-events: none;
-      }
-
-      @keyframes pulse-ring {
-        0% {
-          transform: scale(1);
-          opacity: 0.7;
-        }
-        100% {
-          transform: scale(1.6);
-          opacity: 0;
-        }
-      }
-
-      .pm-icon {
-        line-height: 1;
-      }
-
-      .pm-label {
-        font-size: 0.58rem;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        opacity: 0.3;
-        text-align: center;
-        white-space: nowrap;
-      }
-
-      .pm-label--active {
-        opacity: 0.7;
-        color: #c4b5fd;
-      }
-
-      /* ── Mini pipeline connectors ── */
-
-      .pm-connector {
-        flex: 1;
-        height: 1.5px;
-        margin-top: 13px;
-        align-self: flex-start;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .pm-connector--done {
-        background: #22c55e;
-      }
-      .pm-connector--pending {
-        background: rgba(255, 255, 255, 0.1);
-      }
-      .pm-connector--active {
-        background: rgba(124, 58, 237, 0.2);
-      }
-
-      .pm-connector--active::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: -20px;
-        right: 0;
-        background: repeating-linear-gradient(
-          90deg,
-          #7c3aed 0,
-          #7c3aed 8px,
-          transparent 8px,
-          transparent 18px
-        );
-        animation: flow-dots 0.55s linear infinite;
-      }
-
-      @keyframes flow-dots {
-        from {
-          transform: translateX(0);
-        }
-        to {
-          transform: translateX(20px);
-        }
       }
     `,
   ],
@@ -948,9 +741,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     return !this.joinedAfterCompletion()
   })
 
-  protected readonly pipelineNodes = PIPELINE_NODES
-
-  protected readonly pipelineStates = computed<Array<"done" | "active" | "pending">>(() => {
+  protected readonly pipelineStates = computed<NodeState[]>(() => {
     const phase = this.phaseIdx()
     const committed = this.phaseTimes()[0] !== undefined
     // Map phase to active node index; -1 = all done
