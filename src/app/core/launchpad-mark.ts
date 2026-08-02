@@ -12,8 +12,8 @@ import { ChangeDetectionStrategy, Component, input } from "@angular/core"
         <path d="M53 10 H66 V54 H53" />
       </g>
       <g class="arrow">
-        <path d="M40 50 V22" />
-        <path d="M31.5 30.5 L40 20 L48.5 30.5" />
+        <path d="M40 16.5 L53.5 32 H26.5 Z" />
+        <rect x="35.5" y="29" width="9" height="22" rx="4.5" />
       </g>
     </svg>
   `,
@@ -34,12 +34,10 @@ import { ChangeDetectionStrategy, Component, input } from "@angular/core"
         stroke-linecap: round;
         stroke-linejoin: round;
       }
-      .arrow path {
-        fill: none;
-        stroke: var(--mark-arrow, #c7d2fe);
-        stroke-width: 8.5;
-        stroke-linecap: round;
-        stroke-linejoin: round;
+      /* Filled, not stroked — round linejoins on a short chevron blob out into a
+         mushroom once the mark is rendered large. */
+      .arrow {
+        fill: var(--mark-arrow, #c7d2fe);
       }
 
       /* Brackets draw themselves, then the payload lifts into the gap. */

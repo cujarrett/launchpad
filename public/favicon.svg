@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <style>
     .bracket { fill: none; stroke: #a5b4fc; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
-    .arrow { fill: none; stroke: #4f46e5; stroke-width: 8.5; stroke-linecap: round; stroke-linejoin: round; }
+    .arrow { fill: #4f46e5; }
     @media (prefers-color-scheme: dark) {
       .bracket { stroke: #6366f1; }
-      .arrow { stroke: #c7d2fe; }
+      .arrow { fill: #c7d2fe; }
     }
   </style>
   <path class="bracket" d="M19 10 H6 V54 H19" />
   <path class="bracket" d="M45 10 H58 V54 H45" />
-  <path class="arrow" d="M32 50 V22" />
-  <path class="arrow" d="M23.5 30.5 L32 20 L40.5 30.5" />
+  <path class="arrow" d="M32 16.5 L45.5 32 H18.5 Z" />
+  <rect class="arrow" x="27.5" y="29" width="9" height="22" rx="4.5" />
 </svg>
