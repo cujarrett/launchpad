@@ -29,7 +29,7 @@ import { WorkspaceService } from "../../core/services/workspace.service"
     } @else {
       @if (valuesLoadError() && mode() === "edit") {
         <p class="field-error" style="margin-bottom:0.75rem">
-          Could not load live values from cluster — form is showing last-committed defaults.
+          Could not load live values from cluster - form is showing last-committed defaults.
         </p>
       }
       <form [formGroup]="formSig()" (ngSubmit)="submit()">
@@ -60,7 +60,7 @@ import { WorkspaceService } from "../../core/services/workspace.service"
                     <code class="ci-field-code">{{ val }}</code>
                   }
                 } @else {
-                  <span class="muted">—</span>
+                  <span class="muted">-</span>
                 }
               </div>
             }
@@ -88,7 +88,7 @@ import { WorkspaceService } from "../../core/services/workspace.service"
                             @case ("select") {
                               <select [formControlName]="child.key">
                                 @if (!child.required) {
-                                  <option value="">— none —</option>
+                                  <option value="">- none -</option>
                                 }
                                 @for (opt of child.enum ?? []; track opt; let i = $index) {
                                   <option [value]="opt">{{ child.enumLabels?.[i] ?? opt }}</option>
@@ -178,7 +178,7 @@ import { WorkspaceService } from "../../core/services/workspace.service"
                 <div class="connection-row">
                   <span class="connection-type">{{ field.label }}</span>
                   <select [formControlName]="field.key">
-                    <option value="">— select —</option>
+                    <option value="">- select -</option>
                     @for (r of refsFor(field.refKind!); track r.name) {
                       <option [value]="r.name">{{ r.name }}</option>
                     }
@@ -378,7 +378,7 @@ import { WorkspaceService } from "../../core/services/workspace.service"
             @case ("select") {
               <select [formControlName]="controlName">
                 @if (!field.required) {
-                  <option value="">— none —</option>
+                  <option value="">- none -</option>
                 }
                 @for (opt of field.enum ?? []; track opt; let i = $index) {
                   <option [value]="opt">{{ field.enumLabels?.[i] ?? opt }}</option>
@@ -422,7 +422,7 @@ import { WorkspaceService } from "../../core/services/workspace.service"
             }
             @case ("resource-ref") {
               <select [formControlName]="controlName">
-                <option value="">— select —</option>
+                <option value="">- select -</option>
                 @for (r of refsFor(field.refKind!); track r.name) {
                   <option [value]="r.name">{{ r.name }}</option>
                 }
@@ -438,7 +438,7 @@ import { WorkspaceService } from "../../core/services/workspace.service"
                 formSig().get(fullControlName)?.hasError("pattern") &&
                 formSig().get(fullControlName)?.touched
               ) {
-                <span class="field-error">Invalid format — e.g. {{ field.default }}</span>
+                <span class="field-error">Invalid format - e.g. {{ field.default }}</span>
               }
             }
           }
@@ -471,7 +471,7 @@ export class DynamicForm implements OnInit {
   private readonly schemaService = inject(SchemaService)
   private readonly workspaceService = inject(WorkspaceService)
 
-  // Schema fields loaded via toSignal — properly integrated with Angular's zoneless scheduler
+  // Schema fields loaded via toSignal - properly integrated with Angular's zoneless scheduler
   protected readonly fields = toSignal(
     toObservable(this.kind).pipe(
       switchMap((kind) =>
@@ -773,12 +773,12 @@ export function summariseEntry(raw: unknown): ObjectEntry {
   if (raw === null || typeof raw !== "object") return { main: String(raw), detail: "" }
   const e = raw as Record<string, unknown>
 
-  // apiProxies — a path prefix routed to an in-cluster service
+  // apiProxies - a path prefix routed to an in-cluster service
   if (e["path"] && e["upstream"]) {
     return { main: `${e["path"]} → ${e["upstream"]}`, detail: "" }
   }
 
-  // consumes — an off-platform host, or another workload on the platform
+  // consumes - an off-platform host, or another workload on the platform
   if (e["host"]) {
     const port = e["port"] ? `:${e["port"]}` : ""
     return { main: `${e["host"]}${port}`, detail: (e["protocol"] as string) ?? "" }
@@ -787,7 +787,7 @@ export function summariseEntry(raw: unknown): ObjectEntry {
     return { main: String(e["app"]), detail: e["namespace"] ? `in ${e["namespace"]}` : "" }
   }
 
-  // provides — a named interface and the workloads granted it
+  // provides - a named interface and the workloads granted it
   if (e["name"]) {
     const callers = Array.isArray(e["allowedCallers"])
       ? (e["allowedCallers"] as Record<string, unknown>[]).map(
@@ -818,7 +818,7 @@ function makeControl(field: FieldDef, initialValue?: unknown): FormControl {
     if (field.kind === "array" && Array.isArray(initialValue)) {
       v = initialValue.join("\n")
     } else if (field.kind === "object-array") {
-      // Held as-is so it round-trips untouched — there is no editor for it.
+      // Held as-is so it round-trips untouched - there is no editor for it.
       v = initialValue
     } else if (field.kind === "resource-ref" && Array.isArray(initialValue)) {
       v = (initialValue[0] as Record<string, unknown> | undefined)?.["name"] ?? ""

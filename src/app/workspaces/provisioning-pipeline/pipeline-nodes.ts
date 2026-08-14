@@ -11,7 +11,7 @@ export const PIPELINE_NODES = [
 ]
 
 // The node strip above the status list. Split out from ProvisioningPipeline
-// because together their styles blew the anyComponentStyle budget — nothing
+// because together their styles blew the anyComponentStyle budget - nothing
 // here reads the parent's state, it just renders the states it's handed.
 @Component({
   selector: "app-pipeline-nodes",

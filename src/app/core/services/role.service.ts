@@ -10,7 +10,7 @@ export class RoleService implements OnDestroy {
   private readonly broadcast = inject(MsalBroadcastService)
   private readonly sub: Subscription
 
-  // Reactive account — updated by MSAL broadcast events.
+  // Reactive account - updated by MSAL broadcast events.
   private readonly account = signal<AccountInfo | null>(this.msal.instance.getActiveAccount())
 
   readonly isAuthenticated = computed(() => !!this.account())
@@ -36,7 +36,7 @@ export class RoleService implements OnDestroy {
         if (e.eventType === EventType.LOGOUT_SUCCESS) {
           this.account.set(null)
         } else {
-          // Use the payload's account — it carries fresh idTokenClaims from the
+          // Use the payload's account - it carries fresh idTokenClaims from the
           // token response. getActiveAccount() returns the cache entity which may
           // not have idTokenClaims populated on older cached accounts.
           const payload = e.payload as AuthenticationResult | null

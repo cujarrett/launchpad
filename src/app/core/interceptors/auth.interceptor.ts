@@ -21,7 +21,7 @@ export function authInterceptor(
 
   const msal = inject(MsalService)
   // getActiveAccount() can be null after a page refresh if setActiveAccount
-  // wasn't called yet — fall back to any cached account as a safety net.
+  // wasn't called yet - fall back to any cached account as a safety net.
   const account = msal.instance.getActiveAccount() ?? msal.instance.getAllAccounts()[0] ?? null
 
   if (!account) {
@@ -51,7 +51,7 @@ export function authInterceptor(
         return EMPTY
       }
       console.error("[authInterceptor] acquireTokenSilent failed, sending unauthenticated:", error)
-      return next(req) // read-only — pass through unauthenticated (API allows it)
+      return next(req) // read-only - pass through unauthenticated (API allows it)
     }),
   )
 }

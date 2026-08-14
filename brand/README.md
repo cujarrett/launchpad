@@ -4,7 +4,7 @@ The Launchpad mark is a pair of brackets holding an ascending arrow.
 
 <img src="launchpad-mark.svg" alt="Launchpad mark" width="120">
 
-Brackets because Launchpad isn't the vehicle — it's the *declaration* that puts something in the air, and brackets are the punctuation of every manifest it commits. The mark reads three ways at once: declaration, deployment, and containment.
+Brackets because Launchpad isn't the vehicle - it's the *declaration* that puts something in the air, and brackets are the punctuation of every manifest it commits. The mark reads three ways at once: declaration, deployment, and containment.
 
 A rocket was the obvious choice and the wrong one. It describes cargo rather than the product, and it's what the stock emoji already said.
 
@@ -14,10 +14,10 @@ A rocket was the obvious choice and the wrong one. It describes cargo rather tha
 |---|---|
 | [launchpad-mark.svg](launchpad-mark.svg) | Dark grounds. Indigo brackets, pale arrow. |
 | [launchpad-mark-light.svg](launchpad-mark-light.svg) | Light grounds. Tint flips so the arrow stays the darker shape. |
-| [launchpad-mark-mono.svg](launchpad-mark-mono.svg) | Single colour via `currentColor`. Must be inlined — see below. |
-| [identity.html](identity.html) | The full presentation — size proofs, ground tests, and the directions that were rejected. Open it in a browser. |
+| [launchpad-mark-mono.svg](launchpad-mark-mono.svg) | Single colour via `currentColor`. Must be inlined - see below. |
+| [identity.html](identity.html) | The full presentation - size proofs, ground tests, and the directions that were rejected. Open it in a browser. |
 
-In the app the mark is a component, not a file — see [launchpad-mark.ts](../src/app/core/launchpad-mark.ts). It takes `--mark-size` from the parent and animates on load. The favicon is a separate copy at [public/favicon.svg](../public/favicon.svg) with a `prefers-color-scheme` block, because a favicon has to survive both a light and a dark browser chrome.
+In the app the mark is a component, not a file - see [launchpad-mark.ts](../src/app/core/launchpad-mark.ts). It takes `--mark-size` from the parent and animates on load. The favicon is a separate copy at [public/favicon.svg](../public/favicon.svg) with a `prefers-color-scheme` block, because a favicon has to survive both a light and a dark browser chrome.
 
 ## Rules
 
@@ -37,7 +37,7 @@ Lowercase `launchpad` in the same monospace the app uses for every resource name
 <span class="app-nav-wordmark">launch<b>pad</b></span>
 ```
 
-Mono because that's the product's own voice — every resource name in Launchpad is already set in it — rather than a display face borrowed from somewhere else.
+Mono because that's the product's own voice - every resource name in Launchpad is already set in it - rather than a display face borrowed from somewhere else.
 
 ## Colour
 

@@ -14,7 +14,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms"
       <label>Replicas <input type="number" formControlName="replicas" /></label>
 
       <fieldset>
-        <legend>Integrations (optional — enter resource names)</legend>
+        <legend>Integrations (optional - enter resource names)</legend>
         <label>SQL ref <input formControlName="sqlRef" /></label>
         <label>NoSQL ref <input formControlName="nosqlRef" /></label>
         <label>Object Storage ref <input formControlName="objectStorageRef" /></label>

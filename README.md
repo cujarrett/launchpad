@@ -6,7 +6,7 @@ Live at [launchpad.mattjarrett.dev](https://launchpad.mattjarrett.dev).
 
 ## How it works
 
-Launchpad is a thin UI over a GitOps loop. It never talks to Kubernetes directly — it talks to [launchpad-api](https://github.com/cujarrett/launchpad-api), which commits platform XR YAML to GitHub. ArgoCD picks it up, Crossplane provisions the resources, and status flows back to the browser over SSE.
+Launchpad is a thin UI over a GitOps loop. It never talks to Kubernetes directly - it talks to [launchpad-api](https://github.com/cujarrett/launchpad-api), which commits platform XR YAML to GitHub. ArgoCD picks it up, Crossplane provisions the resources, and status flows back to the browser over SSE.
 
 ```mermaid
 %%{init: {'flowchart': {'nodeSpacing': 40, 'rankSpacing': 55}}}%%
@@ -30,16 +30,16 @@ The write path is GitHub. The read path is a Kubernetes watch over SSE. They nev
 
 ## Guest sandbox
 
-No login required. Click **Try a Sandbox**, pick a name, choose resources — an API, database, cache, object storage — and watch a real workload provision against the cluster in real time. Sandboxes expire after 10 minutes and clean themselves up.
+No login required. Click **Try a Sandbox**, pick a name, choose resources - an API, database, cache, object storage - and watch a real workload provision against the cluster in real time. Sandboxes expire after 10 minutes and clean themselves up.
 
 Each sandbox gets a dedicated namespace, its own service bindings, and (for AWS resources) scoped IAM roles via workload identity. It's the full platform, not a demo mode.
 
 ## Architecture
 
-- **Angular standalone components** — no NgModules
-- **Signals + zoneless change detection** — no Zone.js, no async pipe
-- **MSAL PKCE** — auth via Azure Entra ID; tokens never touch the server except as Bearer headers
-- **SSE for live updates** — one persistent connection per browser tab; no polling
+- **Angular standalone components** - no NgModules
+- **Signals + zoneless change detection** - no Zone.js, no async pipe
+- **MSAL PKCE** - auth via Azure Entra ID; tokens never touch the server except as Bearer headers
+- **SSE for live updates** - one persistent connection per browser tab; no polling
 
 ## Local dev
 
@@ -60,14 +60,14 @@ CI builds an ARM64 image, pushes it to GHCR, then commits the new tag to the `la
 
 ### Rotating `HOMELAB_PAT`
 
-The `deploy` job authenticates to `cujarrett/homelab-workspaces` with `HOMELAB_PAT`, a repo-level Actions secret holding a fine-grained PAT. `cujarrett` is a personal account, not an org, so secrets cannot be shared — other repos define a secret by the same name holding their own token, and rotating one does not affect the others.
+The `deploy` job authenticates to `cujarrett/homelab-workspaces` with `HOMELAB_PAT`, a repo-level Actions secret holding a fine-grained PAT. `cujarrett` is a personal account, not an org, so secrets cannot be shared - other repos define a secret by the same name holding their own token, and rotating one does not affect the others.
 
 When the token expires, `deploy` fails on `Bad credentials (HTTP 401)` while `test` and `build-and-push` stay green. Images keep building and the cluster keeps running the old tag, so nothing looks broken until someone checks what is actually deployed.
 
 ```bash
 # 1. Mint a replacement at https://github.com/settings/personal-access-tokens
-#    Repository access — cujarrett/homelab-workspaces only
-#    Permissions — Contents: Read and write
+#    Repository access - cujarrett/homelab-workspaces only
+#    Permissions - Contents: Read and write
 
 # 2. Replace the secret
 print -n "Paste new token: "

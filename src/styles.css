@@ -105,7 +105,7 @@ h3 {
   --mark-size: 2.75rem;
 }
 
-/* Set in the same mono as every resource name in the app — the wordmark speaks
+/* Set in the same mono as every resource name in the app - the wordmark speaks
    the product's own voice. The tonal shift marks the half that carries meaning. */
 .app-nav-wordmark {
   font-family: var(--font-mono);
@@ -342,7 +342,7 @@ form {
 
 .card-grid {
   display: grid;
-  /* min() so the track collapses to the container on phones — a bare 360px
+  /* min() so the track collapses to the container on phones - a bare 360px
      floor overflows a 393px viewport and pushes the tiles off-centre. */
   grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
   gap: 1rem;
@@ -770,7 +770,7 @@ fieldset.sub-group label {
   margin-top: 0.15rem;
 }
 
-/* Array-of-object fields (consumes, provides, apiProxies). Shown, not edited —
+/* Array-of-object fields (consumes, provides, apiProxies). Shown, not edited -
    they round-trip untouched, so this reads like a value, not an empty input. */
 .obj-list {
   list-style: none;
@@ -846,7 +846,7 @@ input.readonly {
   cursor: default;
 }
 
-/* CI-managed context strip (image, repo) — read-only, above the editable form grid */
+/* CI-managed context strip (image, repo) - read-only, above the editable form grid */
 .ci-context {
   display: flex;
   flex-wrap: wrap;
@@ -1125,7 +1125,7 @@ details.advanced-fields .form-fields {
 
 /* Fade the edges so a diagram wider than the screen reads as scrollable
    instead of abruptly clipped. Only applied when the diagram actually
-   overflows its container — otherwise it would needlessly clip content
+   overflows its container - otherwise it would needlessly clip content
    that already fits. */
 .arch-wrap--overflow {
   -webkit-mask-image: linear-gradient(

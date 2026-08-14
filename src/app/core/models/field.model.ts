@@ -7,10 +7,10 @@ export type FieldKind =
   | "boolean"
   | "select"
   | "array"
-  | "object-array" // array of objects (consumes, provides, apiProxies) — shown, not edited
+  | "object-array" // array of objects (consumes, provides, apiProxies) - shown, not edited
   | "display" // read-only value shown as a link/label, not an input
-  | "resource-ref" // *Ref objects — rendered as a dropdown of existing tenant resources
-  | "sub-object" // nested object (e.g. cache, apiProxy) — rendered as a toggled sub-group
+  | "resource-ref" // *Ref objects - rendered as a dropdown of existing tenant resources
+  | "sub-object" // nested object (e.g. cache, apiProxy) - rendered as a toggled sub-group
 
 export interface FieldDef {
   key: string
@@ -51,7 +51,7 @@ const HIDDEN_WHEN: Record<string, { key: string; value: unknown }> = {
 // Fields excluded from the Launchpad UI entirely.
 // CI-managed or platform-internal fields that app developers never need to touch.
 // secretRef is omitted: binding arbitrary Kubernetes Secrets via the UI is too
-// sensitive — set it directly in the YAML if needed.
+// sensitive - set it directly in the YAML if needed.
 // tlsSecret is omitted: pre-provisioned cert Secrets exist only for the guest
 // demo slots, where the server wires them up itself. Everyone else uses tlsIssuer.
 const HIDDEN_KEYS = new Set(["namespace", "scrapeInterval", "secretRef", "tlsSecret"])
@@ -69,7 +69,7 @@ export function parseSchema(paramsSchema: Record<string, unknown>): FieldDef[] {
 
 // Display labels for enum fields, keyed by field name then by value.
 // Value-keyed so any subset of an enum (e.g. [sm, md, lg] vs [xs, sm, md, lg]) gets correct labels.
-// This is a UI-layer decision — do not add x-enumLabels to XRDs.
+// This is a UI-layer decision - do not add x-enumLabels to XRDs.
 const ENUM_LABEL_OVERRIDES: Record<string, Record<string, string>> = {
   size: { xs: "Extra Small", sm: "Small", md: "Medium", lg: "Large" },
   tlsIssuer: {
@@ -79,7 +79,7 @@ const ENUM_LABEL_OVERRIDES: Record<string, Record<string, string>> = {
 }
 
 // Fields treated as advanced (hidden behind "Advanced" toggle) in Launchpad.
-// This is a UI-layer decision — do not add x-advanced to XRDs.
+// This is a UI-layer decision - do not add x-advanced to XRDs.
 const ADVANCED_KEYS = new Set(["contentSecurityPolicy", "metricsPort"])
 
 function classifyField(key: string, schema: Record<string, unknown>, required: boolean): FieldDef {
@@ -120,7 +120,7 @@ function classifyField(key: string, schema: Record<string, unknown>, required: b
 
   if (schema["type"] === "array") {
     // Arrays of objects (consumes, provides, apiProxies) can't survive the
-    // newline-joined textarea a scalar array uses — join() would stringify each
+    // newline-joined textarea a scalar array uses - join() would stringify each
     // entry to "[object Object]" and saving would write that back to the XR.
     const items = (schema["items"] ?? {}) as Record<string, unknown>
     if (items["type"] === "object") return { ...base, kind: "object-array" }

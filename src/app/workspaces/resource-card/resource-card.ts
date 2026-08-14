@@ -151,7 +151,7 @@ export class ResourceCard {
   readonly resource = input.required<Resource>()
   readonly workspace = input.required<string>()
   readonly status = input<ResourceStatus | null>(null)
-  /** Controlled by the parent — true when this card is the active expanded one. */
+  /** Controlled by the parent - true when this card is the active expanded one. */
   readonly expanded = input<boolean>(false)
   readonly canEdit = input<boolean>(true)
   /** When true, the Resource Integrations section is editable (guest sandbox Api only). */
@@ -170,7 +170,7 @@ export class ResourceCard {
   protected readonly pendingRefs = signal<{ withSql: boolean; withCache: boolean } | null>(null)
   protected readonly connectionsSaving = signal(false)
   protected readonly previewVisible = signal(false)
-  // Set true after saving integrations — suppresses probe re-confirmation until
+  // Set true after saving integrations - suppresses probe re-confirmation until
   // status cycles through not-ready (pod restarted), then clears itself.
   protected readonly awaitingRedeploy = signal(false)
   protected readonly effectiveReady = computed(
@@ -195,14 +195,14 @@ export class ResourceCard {
       if (ready && probeUrl && !this.previewVisible() && !awaiting) {
         this.startProbing(probeUrl)
       } else if (ready && !probeUrl && this.isInternalHost() && !awaiting) {
-        // Internal hosts use self-signed certs — browser can't probe them.
+        // Internal hosts use self-signed certs - browser can't probe them.
         // Mark visible immediately once Crossplane says ready.
         this.previewVisible.set(true)
         this.previewReady.emit(this.resource().name)
       } else if (!ready) {
         this.stopProbing()
         this.previewVisible.set(false)
-        this.awaitingRedeploy.set(false) // status cycled — allow probing on next ready
+        this.awaitingRedeploy.set(false) // status cycled - allow probing on next ready
       }
     })
     this.destroyRef.onDestroy(() => this.stopProbing())
@@ -216,7 +216,7 @@ export class ResourceCard {
   })
 
   // Probe /readyz for Api (returns 503 until all integrations are connected)
-  // and /healthz for Spa (nginx liveness only — API readiness is handled by
+  // and /healthz for Spa (nginx liveness only - API readiness is handled by
   // dependencyReady). Cloudflare error pages have no CORS header so they throw
   // rather than resolve, preventing dead links while TLS is still provisioning.
   private readonly probeUrl = computed(() => {
@@ -333,7 +333,7 @@ export class ResourceCard {
         this.workspaceService.patchGuestResourceRefs(this.workspace(), this.resource().name, refs),
       )
       this.pendingRefs.set(null)
-      // Immediately drop the preview link — the pod is about to restart.
+      // Immediately drop the preview link - the pod is about to restart.
       // awaitingRedeploy blocks the probe from re-confirming the old pod;
       // it clears itself once status cycles through not-ready.
       this.stopProbing()

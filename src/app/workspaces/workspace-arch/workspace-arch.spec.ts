@@ -2,7 +2,7 @@ import { TestBed } from "@angular/core/testing"
 import { WorkspaceArch } from "./workspace-arch"
 import { Resource, ResourceStatus } from "../../core/models/workspace.model"
 
-// jsdom has no layout engine — give the wrap element a real width so the
+// jsdom has no layout engine - give the wrap element a real width so the
 // component can compute the diagram geometry.
 const origGetBoundingClientRect = Element.prototype.getBoundingClientRect
 

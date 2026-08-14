@@ -37,9 +37,9 @@ const KIND_LABEL: Partial<Record<string, string>> = {
   Wordpress: "WordPress",
 }
 
-// What each XR creates — abstracted names, no cloud-vendor specifics
+// What each XR creates - abstracted names, no cloud-vendor specifics
 // Returns a faded inline detail for the subsection row describing what the XR manages.
-// XR ready status covers all listed items — no separate rows needed.
+// XR ready status covers all listed items - no separate rows needed.
 function resourceDetail(r: { kind: string; spec: Record<string, unknown> }): string {
   const backend = (r.spec as { parameters?: { backend?: string } }).parameters?.backend
   switch (r.kind) {
@@ -66,7 +66,7 @@ const BINDING_LABEL: Record<string, string> = {
 // What each binding secret contains. nosql/object-storage are always real AWS
 // resources, so they always carry an IAM role. sql/cache are in-cluster by
 // default (backend: private-cloud) and only get an IAM role when explicitly
-// switched to backend: public-cloud — must match the binding secret shape in
+// switched to backend: public-cloud - must match the binding secret shape in
 // platform/sql/composition.yaml and platform/cache/composition.yaml, not just
 // guess based on resource kind.
 const BINDING_DETAIL_PRIVATE: Record<string, string> = {
@@ -333,7 +333,7 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
         white-space: nowrap;
       }
 
-      /* Subsection checkmarks are muted white — not green.
+      /* Subsection checkmarks are muted white - not green.
          Green is reserved for section-level milestones. */
       .subsection-row .check {
         color: rgba(255, 255, 255, 0.55);
@@ -491,10 +491,10 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
   readonly allPreviewsReady = input.required<boolean>()
   readonly commitPlan = input<string[]>([])
   readonly workspace = input<string>("")
-  // Server-persisted phase times — wins over localStorage so any browser sees the same data.
+  // Server-persisted phase times - wins over localStorage so any browser sees the same data.
   readonly initialPhaseTimes = input<Record<string, string>>({})
   readonly initialDoneTime = input<string | null>(null)
-  // Earliest legitimate phase timestamp (epoch ms) — the workspace's own createdAt. Guards
+  // Earliest legitimate phase timestamp (epoch ms) - the workspace's own createdAt. Guards
   // against a stale localStorage entry from a previous workspace that happened to reuse the
   // same name (the guest name pool is finite; collisions across sessions do happen). No phase
   // can legitimately start before the workspace itself was created, so anything earlier is
@@ -510,7 +510,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
   private readonly now = signal(Date.now())
   private ticker?: ReturnType<typeof setInterval>
 
-  // Tracks which workspace's data currently occupies phaseTimes/doneTime — null means
+  // Tracks which workspace's data currently occupies phaseTimes/doneTime - null means
   // "not yet initialized" (distinct from the default "" workspace value) so the reset
   // effect below doesn't wipe the very first load.
   private trackedWorkspace: string | null = null
@@ -519,7 +519,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     return `pipeline-${suffix}-${this.workspace()}`
   }
 
-  // Restores an immediate fallback from localStorage — used on first mount and again
+  // Restores an immediate fallback from localStorage - used on first mount and again
   // whenever the workspace changes underneath a reused component instance, since
   // ngOnInit only runs once per component lifetime but the router can swap `workspace`
   // without destroying this component (only the `:name` route param changes).
@@ -552,7 +552,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
 
   // Drops any phase timestamp earlier than minPhaseTime (the workspace's real createdAt).
   // Applied wherever phaseTimes can be populated from a source other than "record it now"
-  // (localStorage, server data) — both can carry a stale value from an earlier workspace
+  // (localStorage, server data) - both can carry a stale value from an earlier workspace
   // that reused the same name.
   private clampPhaseTimes(times: Partial<Record<number, number>>): Partial<Record<number, number>> {
     const floor = this.phaseFloor()
@@ -580,7 +580,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     // Reset phase-timing state when the displayed workspace actually changes. The router
     // reuses this component instance across `workspaces/:name` navigations (only the param
     // changes, no destroy/recreate), so without this reset the phaseTimes/doneTime signals
-    // from whichever workspace was viewed previously leak into the newly-displayed one —
+    // from whichever workspace was viewed previously leak into the newly-displayed one -
     // showing wrong per-step durations, and a hidden Total once totalDuration()'s own
     // minPhaseTime guard (correctly) filters the stale values out entirely.
     effect(() => {
@@ -595,7 +595,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
       this.trackedWorkspace = ws
     })
     // Record start time the first time each phase becomes active, persist to server + localStorage.
-    // Phase 5 is the "done" sentinel — skip it so it can't pollute totalDuration.
+    // Phase 5 is the "done" sentinel - skip it so it can't pollute totalDuration.
     effect(() => {
       const phase = this.phaseIdx()
       if (phase < 0 || phase === 5) return
@@ -658,7 +658,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
         }
       }
     })
-    // Apply server-side phase times reactively — initialPhaseTimes arrives async (after
+    // Apply server-side phase times reactively - initialPhaseTimes arrives async (after
     // getWorkspaces() resolves) so ngOnInit reads it too early. This effect re-fires when
     // the input updates and overwrites any localStorage data with the ground truth.
     effect(() => {
@@ -680,7 +680,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // localStorage as an immediate fallback — server data arrives later via effects above.
+    // localStorage as an immediate fallback - server data arrives later via effects above.
     this.restoreFromLocalStorage()
     // Already finished when this mounted, so no phase was ever observed live. Phase times
     // are only persisted server-side for guest workspaces, so for everything else there is
@@ -729,7 +729,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
   })
 
   // Done if SSE confirms all ready, OR if we already know doneTime (restored from
-  // localStorage/server on refresh) — avoids the "wrong active stage" flash while SSE catches up.
+  // localStorage/server on refresh) - avoids the "wrong active stage" flash while SSE catches up.
   protected readonly isDone = computed(() => this.phaseIdx() === 5 || this.doneTime() !== null)
 
   private readonly joinedAfterCompletion = signal(false)
@@ -824,7 +824,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
 
     if (!allReady) return rows
 
-    // Derived once — needed by both binding and health sections.
+    // Derived once - needed by both binding and health sections.
     const hasApi = resources.some((r) => r.kind === "Api")
     const hasSpa = resources.some((r) => r.kind === "Spa")
     const hasCloudBindings = resources.some((r) => {

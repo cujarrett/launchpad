@@ -27,7 +27,7 @@ import { ProvisioningPipeline } from "../provisioning-pipeline/provisioning-pipe
 import { SseService } from "../../core/services/sse.service"
 import { environment } from "../../../environments/environment"
 
-// Must match guestTTL in launchpad-api's guest.go — used only to derive the workspace's
+// Must match guestTTL in launchpad-api's guest.go - used only to derive the workspace's
 // createdAt from its expiresAt for the provisioning-pipeline's stale-data bound check.
 const GUEST_TTL_MS = 10 * 60 * 1000
 
@@ -77,7 +77,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
           <div class="guest-banner" [class.expiring]="isExpiringSoon()">
             🧪 Sandbox workspace
             @if (guestExpiresAt()) {
-              — auto-deletes in
+              - auto-deletes in
               <strong>{{ guestCountdown() }}</strong>
               @if (isExpiringSoon()) {
                 &nbsp;⚠️
@@ -190,7 +190,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
         <p class="muted">Loading...</p>
       } @else if (loadError()) {
         <p class="field-error">
-          Still waiting on your workspace — this is taking longer than usual.
+          Still waiting on your workspace - this is taking longer than usual.
           <button type="button" (click)="retryLoadResources()">Retry</button>
         </p>
       } @else {
@@ -228,7 +228,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
         </div>
       }
       <!-- Pipeline is outside the loading gate so it stays mounted across resource refreshes.
-           Hidden (not removed) in Arch view once provisioning finishes — the diagram shows live
+           Hidden (not removed) in Arch view once provisioning finishes - the diagram shows live
            health itself, so the collapsed "Details" summary is redundant there. Still shown
            while pipelineActive(), since that's also what gates the arch diagram from rendering
            at all (see above), so hiding it too would leave the tab blank during provisioning. -->
@@ -382,7 +382,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     return previewable.every((r) => confirmed.has(r.name))
   })
 
-  // True while the pipeline list has something to show — cards are hidden during this time.
+  // True while the pipeline list has something to show - cards are hidden during this time.
   protected readonly pipelineActive = computed(() => {
     if (this.commitPlan().length > 0) return true
     const resources = this.resources()
@@ -433,7 +433,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     const workspaceName = this.route.snapshot.paramMap.get("name") ?? ""
     this.name.set(workspaceName)
 
-    // Set by the sandbox picker — the create commit is still in flight, so there is
+    // Set by the sandbox picker - the create commit is still in flight, so there is
     // nothing to fetch yet. history.state outlives the page load, so clear it once
     // read or a reload makes an old sandbox look brand new.
     const fresh = (history.state as { fresh?: boolean } | null)?.fresh === true
@@ -441,9 +441,9 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
 
     if (this.isGuest()) {
       this.tickInterval = setInterval(() => this.tick.set(this.tick() + 1), 1000)
-      // Optimistic expiry — off by the create round trip until the server's value lands.
+      // Optimistic expiry - off by the create round trip until the server's value lands.
       if (fresh) this.guestExpiresAt.set(new Date(Date.now() + GUEST_TTL_MS).toISOString())
-      // Not awaited — the countdown must never gate rendering.
+      // Not awaited - the countdown must never gate rendering.
       void this.loadGuestMeta(workspaceName)
     }
 
@@ -454,7 +454,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
       this.creating.set(true)
     }
 
-    // Start SSE independently — don't block on resource loading.
+    // Start SSE independently - don't block on resource loading.
     this.sseSub = this.sseService.watchStatus(`${environment.apiUrl}/status/watch`).subscribe({
       next: (s) => {
         if (s.workspace !== workspaceName) return
@@ -463,7 +463,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
           return
         }
         if (s.ready) this.seenReady.add(s.name)
-        // Suppress ERROR until the resource has been seen ready at least once —
+        // Suppress ERROR until the resource has been seen ready at least once -
         // avoids the jarring ERROR flash on initial SSE connect during Crossplane sync.
         const status = !s.synced && !this.seenReady.has(s.name) ? { ...s, synced: true } : s
         this.statusMap.update((m) => ({ ...m, [s.name]: status }))
@@ -497,7 +497,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   }
 
   // Expiry and phase times come from /workspaces. A just-launched workspace isn't in
-  // that response yet, and one miss leaves the countdown on '?' for good — so keep asking.
+  // that response yet, and one miss leaves the countdown on '?' for good - so keep asking.
   private async loadGuestMeta(workspaceName: string) {
     for (let attempt = 0; attempt < 6 && !this.destroyed; attempt++) {
       try {
@@ -510,7 +510,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
           return
         }
       } catch {
-        // Non-fatal — countdown falls back to the optimistic expiry, or '?'.
+        // Non-fatal - countdown falls back to the optimistic expiry, or '?'.
       }
       // The API caches /workspaces, so retrying sooner just re-reads the same stale miss.
       await new Promise((resolve) => setTimeout(resolve, 3000))
@@ -556,16 +556,16 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   private destroyed = false
 
   async loadResources(suppressAutoCreate = false) {
-    // Only show the loading indicator on the very first load — subsequent
+    // Only show the loading indicator on the very first load - subsequent
     // refreshes (after create/delete) update resources silently so the pipeline
     // component isn't destroyed and recreated on every commit.
     if (!this.initialLoadDone && !this.suppressLoadingIndicator) this.loading.set(true)
 
     // On the very first load, the workspace's namespace.yaml/guest.yaml may not
-    // have landed in Git yet — the list page now navigates here without waiting
+    // have landed in Git yet - the list page now navigates here without waiting
     // for that request to finish. GitHub's API is occasionally slow enough that
     // a short retry window isn't always enough, so retry generously (up to
-    // ~25s) rather than surfacing a hard error — and stay in the loading state
+    // ~25s) rather than surfacing a hard error - and stay in the loading state
     // the whole time so it never looks like a silent failure requiring a
     // manual refresh.
     const attempts = this.initialLoadDone ? 1 : 25
@@ -577,7 +577,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
         break
       } catch (e) {
         lastErr = e
-        // The commit normally lands within ~2s — poll fast for that, then drip.
+        // The commit normally lands within ~2s - poll fast for that, then drip.
         if (i < attempts - 1)
           await new Promise((resolve) => setTimeout(resolve, i < 6 ? 300 : 1000))
       }

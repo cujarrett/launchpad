@@ -1,4 +1,4 @@
-// Production values — safe to commit to a public repo.
+// Production values - safe to commit to a public repo.
 //
 // WHY THE MSAL VALUES ARE NOT SECRETS:
 // Azure Entra ID uses the OAuth 2.0 PKCE flow for SPAs. The tenant ID, client ID, and

@@ -4,7 +4,7 @@ import { test, expect } from "@playwright/test"
 // workspace, add an Api with every add-on (SQL, NoSQL, object storage,
 // cache, SPA), and confirm the resource cards render without needing a
 // manual refresh. Requires launchpad-api port-forwarded to localhost:8080
-// (see playwright.config.ts) — this hits the real backend and creates a
+// (see playwright.config.ts) - this hits the real backend and creates a
 // real, short-lived guest sandbox.
 test("creating a fully-loaded sandbox renders cards without a refresh", async ({ page }) => {
   await page.goto("/")
@@ -31,7 +31,7 @@ test("creating a fully-loaded sandbox renders cards without a refresh", async ({
   // Assert every expected card shows up, and that a manual reload isn't
   // needed to see them. Matched against the card's .kind label specifically
   // (icon + label text, no whitespace separator in the DOM) rather than the
-  // whole card's flattened text — "API" would otherwise also match
+  // whole card's flattened text - "API" would otherwise also match
   // "APIfuzzy-tornado-api", and "SQL Database" is itself a suffix of
   // "NoSQL Database" so needs an explicit exclusion, not just an end anchor.
   const kindPatterns: Record<string, RegExp> = {

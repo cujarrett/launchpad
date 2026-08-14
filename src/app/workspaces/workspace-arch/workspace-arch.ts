@@ -18,7 +18,7 @@ import {
   RESOURCE_KIND_COLORS,
 } from "../../core/models/workspace.model"
 
-// Fixed geometry — layout is computed from data, never measured from the DOM.
+// Fixed geometry - layout is computed from data, never measured from the DOM.
 const NODE_W = 176
 const NODE_H = 84
 const ROW_GAP = 32
@@ -30,7 +30,7 @@ const PAD_BOTTOM = 16
 // Room to the right of a column for its same-column edges to loop through.
 const SAME_COL_BEND = 22
 const SAME_COL_GUTTER = 64
-// Below this, node text stops being legible — beyond it, fall back to
+// Below this, node text stops being legible - beyond it, fall back to
 // horizontal scroll rather than keep shrinking.
 const MIN_SCALE = 0.6
 
@@ -324,7 +324,7 @@ export class WorkspaceArch {
     }
 
     // Entry point: browsers reach whichever tier has a public host.
-    // Internal .local.lab hosts are LAN-only — no internet users.
+    // Internal .local.lab hosts are LAN-only - no internet users.
     const isPublicHost = (r: Resource) => {
       const host = r.spec["host"]
       return typeof host === "string" && host !== "" && !host.endsWith(".local.lab")
@@ -420,7 +420,7 @@ export class WorkspaceArch {
     const n = columns.length
     const spread = n > 1 ? (containerW - 2 * PAD_X - n * NODE_W) / (n - 1) : 0
     const colGap = Math.max(MIN_COL_GAP, Math.min(MAX_COL_GAP, spread))
-    // No horizontal centering offset here — .arch-scaler is margin: 0 auto and
+    // No horizontal centering offset here - .arch-scaler is margin: 0 auto and
     // clips at this width, so shifting nodes right would crop the last column.
     const gridW = 2 * PAD_X + n * NODE_W + (n - 1) * colGap
     // Same-column edges loop out past the right edge of their column, so the

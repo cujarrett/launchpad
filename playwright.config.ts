@@ -1,6 +1,6 @@
 import { defineConfig } from "@playwright/test"
 
-// Runs against the real launchpad-api backend — not a mock. Before running,
+// Runs against the real launchpad-api backend - not a mock. Before running,
 // port-forward the cluster service so the dev server's proxy has something to
 // talk to:
 //   kubectl port-forward -n launchpad svc/launchpad-api 8080:80

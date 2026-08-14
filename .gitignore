@@ -46,5 +46,5 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
-# Local environment overrides — never commit real values
+# Local environment overrides - never commit real values
 src/environments/*.local.ts

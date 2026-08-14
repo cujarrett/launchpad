@@ -29,7 +29,7 @@ export const RESOURCE_KIND_LABELS: Record<ResourceKind, string> = {
   Wordpress: "WordPress",
 }
 
-// MUI 2014 Material Design palette — 500 shades
+// MUI 2014 Material Design palette - 500 shades
 export const RESOURCE_KIND_COLORS: Record<ResourceKind, string> = {
   Spa: "#3f51b5", // indigo[500]
   Api: "#00bcd4", // cyan[500]

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest"
 import { summariseEntry } from "./dynamic-form"
 
-// Shapes taken from real XRs in homelab-workspaces — these are what the field
+// Shapes taken from real XRs in homelab-workspaces - these are what the field
 // actually receives, not invented examples.
 describe("summariseEntry", () => {
   it("renders an apiProxies entry as path → upstream", () => {

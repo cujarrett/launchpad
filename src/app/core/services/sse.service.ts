@@ -24,7 +24,7 @@ export class SseService {
   // there, every access log and proxy it transits). Instead, exchange the
   // real token for a short-lived, single-use ticket over a normal
   // header-authenticated request (authInterceptor attaches the Bearer token),
-  // and pass that ticket in the URL instead — worthless if logged or leaked.
+  // and pass that ticket in the URL instead - worthless if logged or leaked.
   private acquireTicket(url: string): Observable<string | null> {
     const account = this.msal.instance.getActiveAccount() ?? this.msal.instance.getAllAccounts()[0]
     if (!account) return of(null)
@@ -43,7 +43,7 @@ export class SseService {
         try {
           observer.next(JSON.parse(event.data) as ResourceStatus)
         } catch {
-          // malformed event — skip
+          // malformed event - skip
         }
       }
 

@@ -78,7 +78,7 @@ function pickRandom<T>(arr: T[]): T {
 const GUEST_NAME_MAX_WORD_LENGTH = 15
 
 // pickGuestName avoids both full-name collisions (used) and reusing a word
-// that's already part of another active sandbox's name (excludeWords1/2) —
+// that's already part of another active sandbox's name (excludeWords1/2) -
 // two sandboxes named e.g. "silver-turtle" and "blue-turtle" are confusingly
 // similar even though the full names differ. Falls back to the unfiltered
 // word lists if excluding active words would leave nothing to pick from.
@@ -441,7 +441,7 @@ export class Workspaces implements OnInit, OnDestroy {
   protected readonly guestCount = computed(() => this.workspaces().filter((w) => w.isGuest).length)
   protected readonly slotsRemaining = computed(() => this.guestMax - this.guestCount())
   protected readonly sandboxFullMessage = computed(() => {
-    return `All ${this.guestMax} sandbox slots are in use — try again in a few minutes`
+    return `All ${this.guestMax} sandbox slots are in use - try again in a few minutes`
   })
 
   async ngOnInit() {
@@ -449,7 +449,7 @@ export class Workspaces implements OnInit, OnDestroy {
     try {
       this.workspaces.set(await firstValueFrom(this.workspaceService.getWorkspaces()))
     } catch {
-      this.error.set("Could not load workspaces — check API connectivity and reload.")
+      this.error.set("Could not load workspaces - check API connectivity and reload.")
     } finally {
       this.loading.set(false)
     }
@@ -460,7 +460,7 @@ export class Workspaces implements OnInit, OnDestroy {
   }
 
   protected countdown(expiresAt: string): string {
-    this.tick() // reactive dependency — re-runs every tick
+    this.tick() // reactive dependency - re-runs every tick
     const remaining = new Date(expiresAt).getTime() - Date.now()
     if (remaining <= 0) return "Expired"
     const m = Math.floor(remaining / 60_000)
@@ -539,7 +539,7 @@ export class Workspaces implements OnInit, OnDestroy {
     this.savingGuestWorkspace.set(true)
     this.createGuestError.set(null)
 
-    // Navigate immediately — the name is already reserved client-side against
+    // Navigate immediately - the name is already reserved client-side against
     // the current workspace list, and the backend commits to this exact name
     // on success (validated in-memory before any slow Git writes happen). The
     // destination page tolerates the brief window before the workspace
@@ -555,7 +555,7 @@ export class Workspaces implements OnInit, OnDestroy {
     try {
       await firstValueFrom(this.workspaceService.createGuestWorkspace(suggestion))
     } catch (err: unknown) {
-      // Creation failed after navigating away — bounce back and surface the error.
+      // Creation failed after navigating away - bounce back and surface the error.
       await this.router.navigate(["/"])
       this.startGuestNamePicker()
       if (err instanceof HttpErrorResponse && err.status === 409) {
@@ -565,7 +565,7 @@ export class Workspaces implements OnInit, OnDestroy {
           /* ignore reload errors */
         }
         this.rerollGuestName()
-        this.createGuestError.set("That name was just taken — try another one!")
+        this.createGuestError.set("That name was just taken - try another one!")
       } else {
         this.createGuestError.set(httpErrorMessage(err, "Failed to create sandbox workspace"))
       }

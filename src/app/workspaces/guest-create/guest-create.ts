@@ -18,7 +18,7 @@ import {
   RESOURCE_KIND_LABELS,
 } from "../../core/models/workspace.model"
 
-// Kinds available to guests — Wordpress excluded (production data risk),
+// Kinds available to guests - Wordpress excluded (production data risk),
 // Subscription excluded (requires existing topic).
 // Sql, NoSql, ObjectStorage are only available as Api add-ons, not as standalone options.
 export const GUEST_KINDS: ResourceKind[] = ["Api", "Spa"]
@@ -526,7 +526,7 @@ export class GuestCreate implements OnInit {
     this.error.set(null)
     try {
       // All requested resources (add-ons plus the API/SPA itself) are created
-      // in one request and one atomic Git commit server-side — no more
+      // in one request and one atomic Git commit server-side - no more
       // sequential round trips per add-on, and no risk of a partially created
       // workspace if this request is interrupted.
       await firstValueFrom(

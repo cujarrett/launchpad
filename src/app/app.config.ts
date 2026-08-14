@@ -45,7 +45,7 @@ export const appConfig: ApplicationConfig = {
           authRequest: { scopes: [environment.msalApiScope] },
         },
         {
-          // protectedResourceMap is unused — authInterceptor handles token attachment.
+          // protectedResourceMap is unused - authInterceptor handles token attachment.
           interactionType: InteractionType.Redirect,
           protectedResourceMap: new Map(),
         },

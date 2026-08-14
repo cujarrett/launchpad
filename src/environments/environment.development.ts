@@ -1,4 +1,4 @@
-// Placeholder values — replaced at build/deploy time.
+// Placeholder values - replaced at build/deploy time.
 // Local dev: copy environment.local.ts.example → environment.local.ts and fill in values.
 // CI/CD: generate environment.local.ts from pipeline secrets before ng build.
 export const environment = {
