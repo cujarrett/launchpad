@@ -25,7 +25,7 @@
     "@angular/platform-browser": "^22.1.4",
     "@angular/router": "^22.1.4",
     "@azure/msal-angular": "~6.2.0",
-    "@azure/msal-browser": "~5.20.0",
+    "@azure/msal-browser": "~5.21.0",
     "rxjs": "~7.8.2",
     "tslib": "^2.8.1"
   },
