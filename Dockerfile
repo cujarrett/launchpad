@@ -11,6 +11,6 @@ RUN npm run build
 # Production image - nginx serves the built SPA.
 # The Spa Crossplane composition mounts its own nginx config over
 # /etc/nginx/conf.d/default.conf, so only the static files matter here.
-FROM nginx:1.29-alpine
+FROM nginx:1.31-alpine
 COPY --from=build /app/dist/launchpad/browser /usr/share/nginx/html
 EXPOSE 80
