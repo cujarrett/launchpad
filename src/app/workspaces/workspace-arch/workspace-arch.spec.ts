@@ -195,9 +195,9 @@ describe("WorkspaceArch", () => {
     }
   })
 
-  it("draws one edge per apiProxies path and per allowedCallers grant", async () => {
+  it("draws one edge per apiProxies path and per consumes entry", async () => {
     // Mirrors platform-connections-demo: one SPA proxying to two APIs, one of
-    // which is the only caller granted access to a third.
+    // which declares a call to a third.
     const fixture = mount([
       {
         name: "foo-spa",
@@ -206,19 +206,30 @@ describe("WorkspaceArch", () => {
         spec: {
           host: "foo.example.com",
           apiProxies: [
-            { path: "/authorized/", upstream: "bar-api.foo.svc.cluster.local" },
-            { path: "/unauthorized/", upstream: "baz-api.foo.svc.cluster.local" },
+            { path: "/authorized/", app: "bar-api" },
+            { path: "/unauthorized/", app: "baz-api" },
           ],
         },
       },
-      { name: "bar-api", kind: "Api", namespace: "foo", spec: {} },
+      {
+        name: "bar-api",
+        kind: "Api",
+        namespace: "foo",
+        spec: { consumes: [{ namespace: "foo", app: "qux-api" }] },
+      },
       { name: "baz-api", kind: "Api", namespace: "foo", spec: {} },
       {
         name: "qux-api",
         kind: "Api",
         namespace: "foo",
         spec: {
-          provides: [{ name: "data", allowedCallers: [{ namespace: "foo", app: "bar-api" }] }],
+          provides: [
+            {
+              name: "data",
+              auth: "workload",
+              allowedCallers: [{ namespace: "foo", app: "baz-api" }],
+            },
+          ],
         },
       },
     ])

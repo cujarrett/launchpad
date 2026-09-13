@@ -353,10 +353,10 @@ export class WorkspaceArch {
     // pair is assumed to talk to each other (guest workspaces declare none).
     const apiResources = byKind("Api")
     for (const r of byKind("Spa")) {
-      const proxies = (r.spec["apiProxies"] as { path?: string; upstream?: string }[]) ?? []
+      const proxies = (r.spec["apiProxies"] as { path?: string; app?: string }[]) ?? []
       let drew = false
       for (const p of proxies) {
-        const target = apiResources.find((a) => (p.upstream ?? "").includes(a.name))
+        const target = apiResources.find((a) => a.name === p.app)
         if (target) {
           addEdge(r.name, target.name, p.path ?? "/api")
           drew = true
@@ -365,13 +365,12 @@ export class WorkspaceArch {
       if (!drew && apiResources.length === 1) addEdge(r.name, apiResources[0].name, "rest")
     }
 
-    // API → API: a provider names who may call it, so the grant is the edge.
+    // API → API: a call exists only when the caller declares it in consumes, so
+    // that is the edge. A provides grant alone connects nothing.
     for (const r of apiResources) {
-      const provides = (r.spec["provides"] as { allowedCallers?: { app?: string }[] }[]) ?? []
-      for (const p of provides) {
-        for (const c of p.allowedCallers ?? []) {
-          if (c.app && c.app !== r.name) addEdge(c.app, r.name, "calls")
-        }
+      const consumes = (r.spec["consumes"] as { app?: string }[]) ?? []
+      for (const c of consumes) {
+        if (c.app && c.app !== r.name) addEdge(r.name, c.app, "calls")
       }
     }
 
