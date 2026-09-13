@@ -35,30 +35,16 @@ describe("summariseEntry", () => {
     )
   })
 
-  it("renders a provides entry with its allowed callers", () => {
+  it("renders a provides entry with its auth and the callers granted it", () => {
     expect(
       summariseEntry({
-        name: "demo",
-        allowedCallers: [{ namespace: "platform-connections-demo", app: "connections-demo" }],
-      }),
-    ).toEqual({
-      main: "demo",
-      detail: "callable by connections-demo in platform-connections-demo",
-    })
-  })
-
-  it("includes methods and paths when a provides entry narrows them", () => {
-    expect(
-      summariseEntry({
-        name: "records",
-        methods: ["GET", "POST"],
-        paths: ["/api/v1/records/*"],
+        name: "Data.Read",
+        auth: "workload",
         allowedCallers: [{ namespace: "platform-connections-demo", app: "authorized-api" }],
       }),
     ).toEqual({
-      main: "records",
-      detail:
-        "GET POST /api/v1/records/* · callable by authorized-api in platform-connections-demo",
+      main: "Data.Read",
+      detail: "workload · granted to authorized-api in platform-connections-demo",
     })
   })
 

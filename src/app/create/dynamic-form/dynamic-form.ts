@@ -794,13 +794,10 @@ export function summariseEntry(raw: unknown): ObjectEntry {
           (c) => `${c["app"]} in ${c["namespace"]}`,
         )
       : []
-    const scope = [
-      Array.isArray(e["methods"]) ? (e["methods"] as string[]).join(" ") : "",
-      Array.isArray(e["paths"]) ? (e["paths"] as string[]).join(" ") : "",
+    const detail = [
+      e["auth"] ? String(e["auth"]) : "",
+      callers.length ? `granted to ${callers.join(", ")}` : "",
     ]
-      .filter(Boolean)
-      .join(" ")
-    const detail = [scope, callers.length ? `callable by ${callers.join(", ")}` : ""]
       .filter(Boolean)
       .join(" · ")
     return { main: String(e["name"]), detail }
