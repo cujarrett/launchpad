@@ -58,7 +58,7 @@ The mark, the wordmark, and the rules for using them live in [brand/](brand/).
 
 CI builds an ARM64 image, pushes it to GHCR, then commits the new tag to the `launchpad` workspace in [homelab-workspaces](https://github.com/cujarrett/homelab-workspaces). ArgoCD deploys from there.
 
-### Rotating `HOMELAB_PAT`
+### Rotating `HOMELAB_WORKSPACES_PAT`
 
 Shared across all `homelab-workspaces`-deploying repos and rotated centrally - see
 [GitHub Tokens](https://github.com/cujarrett/homelab/blob/main/docs/github-tokens.md) in the
