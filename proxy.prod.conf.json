@@ -1,0 +1,7 @@
+{
+  "/api": {
+    "target": "https://launchpad.mattjarrett.dev",
+    "secure": true,
+    "changeOrigin": true
+  }
+}

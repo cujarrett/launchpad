@@ -119,8 +119,14 @@ function pickGuestName(
           </p>
           @if (guestCount() >= guestMax) {
             <p class="muted" style="font-size:0.85rem">{{ sandboxFullMessage() }}</p>
+            <a class="how-btn" routerLink="/how-it-works">How it works</a>
           } @else {
-            <button class="sandbox-btn" (click)="startGuestNamePicker()">🧪 Try the Sandbox</button>
+            <div class="cta-actions">
+              <button class="sandbox-btn" (click)="startGuestNamePicker()">
+                🧪 Try the Sandbox
+              </button>
+              <a class="how-btn" routerLink="/how-it-works">How it works</a>
+            </div>
             <p class="sandbox-tagline">Real infrastructure. Powered by Kubernetes and AWS.</p>
             @if (guestCount() > 0) {
               <span class="muted" style="font-size:0.7rem"
@@ -135,7 +141,10 @@ function pickGuestName(
         <div>
           <h1>Workspaces</h1>
         </div>
-        <div style="display:flex;gap:0.5rem">
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          @if (roleService.isContributor()) {
+            <a class="how-link" routerLink="/how-it-works">How it works</a>
+          }
           @if (roleService.isContributor() && !creatingWorkspace() && !savingGuestWorkspace()) {
             <button (click)="creatingWorkspace.set(true)">+ New Workspace</button>
           }
@@ -207,12 +216,15 @@ function pickGuestName(
           <p class="section-label">🧪 Active sandboxes</p>
           <div class="card-grid">
             @for (workspace of guestWorkspaces(); track workspace.name) {
-              <a class="workspace-tile guest-tile" [routerLink]="['/workspaces', workspace.name]">
-                <span class="guest-badge">🧪 sandbox</span>
-                {{ workspace.name.replace("guest-", "") }}
+              <a
+                class="workspace-tile guest-tile"
+                [class.expired]="!!workspace.expiresAt && isExpired(workspace.expiresAt)"
+                [routerLink]="['/workspaces', workspace.name]"
+              >
+                <span class="guest-name">{{ workspace.name.replace("guest-", "") }}</span>
                 @if (workspace.expiresAt) {
                   <span class="guest-ttl" [class.expiring]="isExpiringSoon(workspace.expiresAt)">
-                    ⏱ {{ countdown(workspace.expiresAt) }}
+                    {{ countdown(workspace.expiresAt) }}
                   </span>
                 }
               </a>
@@ -234,6 +246,16 @@ function pickGuestName(
   `,
   styles: [
     `
+      /* Three across and tighter tiles keep the whole list, footer included, on
+         one laptop screen. Names are short, so the tiles never need the width. */
+      .card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+        gap: 0.75rem;
+      }
+      .workspace-tile {
+        padding: 0.85rem 1.25rem;
+      }
+
       .guest-tile {
         background: linear-gradient(
           135deg,
@@ -242,6 +264,20 @@ function pickGuestName(
         );
         border: 1px dashed #7c3aed;
         position: relative;
+        display: flex;
+        align-items: baseline;
+        gap: 0.6rem;
+      }
+      .guest-name {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      /* Teardown lags expiry by a minute or two and the slot stays taken until it
+         finishes, so an expired tile reads as on its way out rather than broken. */
+      .guest-tile.expired {
+        opacity: 0.5;
       }
       .section-label {
         font-size: 0.7rem;
@@ -254,24 +290,20 @@ function pickGuestName(
       .section-label:first-of-type {
         margin-top: 0;
       }
-      .guest-badge {
-        display: block;
-        font-size: 0.65rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #7c3aed;
-        font-weight: 700;
-        margin-bottom: 0.2rem;
-      }
       .guest-ttl {
-        display: block;
+        flex: none;
+        margin-left: auto;
         font-size: 0.75rem;
-        margin-top: 0.25rem;
+        font-variant-numeric: tabular-nums;
         opacity: 0.75;
       }
       .guest-ttl.expiring {
         color: #f59e0b;
         font-weight: 600;
+      }
+      .expired .guest-ttl {
+        color: inherit;
+        font-weight: inherit;
       }
       .guest-picker {
         border: 1px dashed #7c3aed;
@@ -384,6 +416,38 @@ function pickGuestName(
       .sandbox-btn:hover {
         color: #c4b5fd;
       }
+      .cta-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.75rem;
+      }
+      .how-btn {
+        display: inline-flex;
+        align-items: center;
+        font-size: 1.05rem;
+        font-weight: 600;
+        padding: 0.8rem 1.75rem;
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        color: var(--color-text-muted);
+        transition:
+          color 0.2s,
+          border-color 0.2s;
+      }
+      /* The map is 1250 units wide and unreadable at phone width, so the way in
+         is hidden there rather than leading to a page nobody can use. */
+      @media (max-width: 767px) {
+        .how-btn,
+        .how-link {
+          display: none;
+        }
+      }
+      .how-btn:hover {
+        color: var(--color-text);
+        border-color: var(--color-text-muted);
+        text-decoration: none;
+      }
       .sandbox-tagline {
         font-size: 0.88rem;
         opacity: 0.65;
@@ -462,10 +526,15 @@ export class Workspaces implements OnInit, OnDestroy {
   protected countdown(expiresAt: string): string {
     this.tick() // reactive dependency - re-runs every tick
     const remaining = new Date(expiresAt).getTime() - Date.now()
-    if (remaining <= 0) return "Expired"
+    if (remaining <= 0) return "Cleaning up"
     const m = Math.floor(remaining / 60_000)
     const s = Math.floor((remaining % 60_000) / 1000)
     return `${m}:${s.toString().padStart(2, "0")}`
+  }
+
+  protected isExpired(expiresAt: string): boolean {
+    this.tick()
+    return new Date(expiresAt).getTime() <= Date.now()
   }
 
   protected isExpiringSoon(expiresAt: string): boolean {

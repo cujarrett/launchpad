@@ -11,6 +11,10 @@ export const routes: Routes = [
       import("./workspaces/workspace-detail/workspace-detail").then((m) => m.WorkspaceDetail),
   },
   {
+    path: "how-it-works",
+    loadComponent: () => import("./how-it-works/how-it-works").then((m) => m.HowItWorks),
+  },
+  {
     path: "signed-out",
     loadComponent: () => import("./signed-out/signed-out").then((m) => m.SignedOut),
   },
