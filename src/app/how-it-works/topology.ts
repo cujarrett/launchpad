@@ -677,8 +677,7 @@ export class Topology implements AfterViewInit, OnDestroy {
 
   protected pick(i: number): void {
     this.si.set(i)
-    this.step.set(0)
-    this.startedAt = performance.now()
+    this.restart()
   }
 
   protected jump(k: number): void {
