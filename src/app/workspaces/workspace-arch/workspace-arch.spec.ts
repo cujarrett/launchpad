@@ -1,6 +1,6 @@
 import { TestBed } from "@angular/core/testing"
 import { WorkspaceArch } from "./workspace-arch"
-import { Resource, ResourceStatus } from "../../core/models/workspace.model"
+import { Resource, ResourceStatus, statusKey } from "../../core/models/workspace.model"
 
 // jsdom has no layout engine - give the wrap element a real width so the
 // component can compute the diagram geometry.
@@ -36,9 +36,9 @@ const guestResources: Resource[] = [
   },
 ]
 
-const readyStatus = (name: string): ResourceStatus => ({
+const readyStatus = (kind: string, name: string): ResourceStatus => ({
   workspace: "guest-magic-pretzel",
-  kind: "X",
+  kind,
   name,
   synced: true,
   ready: true,
@@ -113,7 +113,9 @@ describe("WorkspaceArch", () => {
 
     const allReady = mount(
       guestResources,
-      Object.fromEntries(guestResources.map((r) => [r.name, readyStatus(r.name)])),
+      Object.fromEntries(
+        guestResources.map((r) => [statusKey(r.kind, r.name), readyStatus(r.kind, r.name)]),
+      ),
     )
     await allReady.whenStable()
     allReady.detectChanges()

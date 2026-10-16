@@ -17,14 +17,14 @@ import {
   ResourceStatus,
   RESOURCE_KIND_LABELS,
   RESOURCE_KIND_COLORS,
-  RESOURCE_KIND_ICONS,
 } from "../../core/models/workspace.model"
 import { WorkspaceService } from "../../core/services/workspace.service"
+import { KindIcon } from "../../core/kind-icon/kind-icon"
 import { DynamicForm } from "../../create/dynamic-form/dynamic-form"
 
 @Component({
   selector: "app-resource-card",
-  imports: [DynamicForm],
+  imports: [DynamicForm, KindIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { "[class.expanded]": "expanded()" },
   template: `
@@ -39,8 +39,9 @@ import { DynamicForm } from "../../create/dynamic-form/dynamic-form"
           [style.color]="kindColor(resource().kind)"
           [style.background-color]="kindBgColor(resource().kind)"
         >
-          <span class="kind-icon">{{ kindIcon(resource().kind) }}</span
-          >{{ kindLabel(resource().kind) }}</span
+          <app-kind-icon class="kind-icon" [kind]="resource().kind" />{{
+            kindLabel(resource().kind)
+          }}</span
         >
         <span class="name" [title]="resource().name">{{ resource().name }}</span>
         <span
@@ -303,7 +304,6 @@ export class ResourceCard {
     RESOURCE_KIND_COLORS[kind as keyof typeof RESOURCE_KIND_COLORS] ?? "#6366f1"
   kindBgColor = (kind: string) =>
     (RESOURCE_KIND_COLORS[kind as keyof typeof RESOURCE_KIND_COLORS] ?? "#6366f1") + "20"
-  kindIcon = (kind: string) => RESOURCE_KIND_ICONS[kind as keyof typeof RESOURCE_KIND_ICONS] ?? ""
 
   integrationChips(): string[] {
     const spec = this.resource().spec

@@ -9,7 +9,7 @@ import {
   input,
   signal,
 } from "@angular/core"
-import { Resource, ResourceStatus } from "../../core/models/workspace.model"
+import { Resource, ResourceStatus, statusKey } from "../../core/models/workspace.model"
 import { WorkspaceService } from "../../core/services/workspace.service"
 import { NodeState, PIPELINE_NODES, PipelineNodes } from "./pipeline-nodes"
 
@@ -35,6 +35,8 @@ const KIND_LABEL: Partial<Record<string, string>> = {
   Topic: "Topic",
   Subscription: "Subscription",
   Wordpress: "WordPress",
+  GraphApi: "Graph API",
+  FederatedGraph: "Federated graph",
 }
 
 // What each XR creates - abstracted names, no cloud-vendor specifics
@@ -720,8 +722,8 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     const resources = this.resources()
     if (resources.length === 0) return -1
     const statusMap = this.statusMap()
-    if (resources.some((r) => !statusMap[r.name])) return 1
-    if (!resources.every((r) => statusMap[r.name]?.ready)) return 2
+    if (resources.some((r) => !statusMap[statusKey(r.kind, r.name)])) return 1
+    if (!resources.every((r) => statusMap[statusKey(r.kind, r.name)]?.ready)) return 2
     const pods = Object.values(this.podStatusMap())
     if (pods.some((p) => p?.initContainers?.some((ic) => !ic.completed))) return 3
     if (!this.allPreviewsReady()) return 4
@@ -807,7 +809,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     if (syncActive) return rows
 
     // ── Provisioning infrastructure ────────────────────────────────────────
-    const allReady = resources.every((r) => statusMap[r.name]?.ready)
+    const allReady = resources.every((r) => statusMap[statusKey(r.kind, r.name)]?.ready)
     const provActive = phase === 2
     rows.push(
       sec("s-prov", "Provisioning infrastructure", allReady ? "done" : "active", this.dur(2)),
@@ -815,7 +817,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     // Only expand detail rows while this phase is active
     if (provActive) {
       for (const r of resources) {
-        const s = statusMap[r.name]
+        const s = statusMap[statusKey(r.kind, r.name)]
         const rStatus: RowStatus = !s ? "pending" : s.ready ? "done" : "active"
         rows.push(subsec(r.name, KIND_LABEL[r.kind] ?? r.kind, rStatus, resourceDetail(r)))
       }
@@ -892,7 +894,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
 
     rows.push(sec("s-prov", "Provisioning infrastructure", "done", this.dur(2)))
     for (const r of resources) {
-      const s = statusMap[r.name]
+      const s = statusMap[statusKey(r.kind, r.name)]
       rows.push(
         subsec(
           r.name,

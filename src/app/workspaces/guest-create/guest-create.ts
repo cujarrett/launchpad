@@ -9,14 +9,10 @@ import {
 } from "@angular/core"
 import { inject } from "@angular/core"
 import { firstValueFrom } from "rxjs"
+import { KindIcon } from "../../core/kind-icon/kind-icon"
 import { WorkspaceService } from "../../core/services/workspace.service"
 import { httpErrorMessage } from "../../core/http-error"
-import {
-  Resource,
-  ResourceKind,
-  RESOURCE_KIND_ICONS,
-  RESOURCE_KIND_LABELS,
-} from "../../core/models/workspace.model"
+import { Resource, ResourceKind, RESOURCE_KIND_LABELS } from "../../core/models/workspace.model"
 
 // Kinds available to guests - Wordpress excluded (production data risk),
 // Subscription excluded (requires existing topic).
@@ -33,10 +29,13 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
   Topic: "",
   Subscription: "",
   Wordpress: "",
+  GraphApi: "",
+  FederatedGraph: "",
 }
 
 @Component({
   selector: "app-guest-create",
+  imports: [KindIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="guest-create-panel">
@@ -48,7 +47,7 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
             <span class="section-label">Already in this workspace:</span>
             <div class="existing-chips">
               @for (r of existingResources(); track r.name) {
-                <span class="chip">{{ icons[r.kind] }} {{ labels[r.kind] }}</span>
+                <span class="chip"><app-kind-icon [kind]="r.kind" /> {{ labels[r.kind] }}</span>
               }
             </div>
           </div>
@@ -65,7 +64,7 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
               [class.selected]="selectedKind() === k"
               (click)="selectedKind.set(k)"
             >
-              <span class="kind-icon">{{ icons[k] }}</span>
+              <app-kind-icon class="kind-icon" [kind]="k" />
               <span class="kind-name">{{ labels[k] }}</span>
               <span class="kind-desc">{{ kindDesc[k] }}</span>
             </button>
@@ -454,7 +453,6 @@ export class GuestCreate implements OnInit {
 
   protected readonly guestKinds = GUEST_KINDS
   protected readonly labels = RESOURCE_KIND_LABELS
-  protected readonly icons = RESOURCE_KIND_ICONS
   protected readonly kindDesc = GUEST_KIND_DESC
 
   protected readonly selectedKind = signal<ResourceKind | "">("")

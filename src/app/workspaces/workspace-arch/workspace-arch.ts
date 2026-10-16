@@ -14,9 +14,10 @@ import {
   ResourceKind,
   ResourceStatus,
   RESOURCE_KIND_LABELS,
-  RESOURCE_KIND_ICONS,
   RESOURCE_KIND_COLORS,
+  statusKey,
 } from "../../core/models/workspace.model"
+import { KindIcon } from "../../core/kind-icon/kind-icon"
 
 // Fixed geometry - layout is computed from data, never measured from the DOM.
 const NODE_W = 176
@@ -38,7 +39,9 @@ interface DiagramNode {
   id: string
   label: string
   kindLabel: string
+  // A resource kind draws its SVG icon; the users node has no kind and uses text.
   icon: string
+  iconKind?: ResourceKind
   color: string
   host?: string
   // Resource name whose SSE status this node reflects. Derived nodes (cache,
@@ -86,6 +89,7 @@ const colIndexOf = (columns: DiagramColumn[], id: string) =>
 
 @Component({
   selector: "app-workspace-arch",
+  imports: [KindIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="arch-view">
@@ -181,7 +185,13 @@ const colIndexOf = (columns: DiagramColumn[], id: string) =>
                   (mouseleave)="hovered.set(null)"
                 >
                   <div class="arch-node-top">
-                    <span class="arch-node-icon">{{ node.icon }}</span>
+                    <span class="arch-node-icon">
+                      @if (node.iconKind) {
+                        <app-kind-icon [kind]="node.iconKind" />
+                      } @else {
+                        {{ node.icon }}
+                      }
+                    </span>
                     <span class="arch-node-kind">{{ node.kindLabel }}</span>
                     @if (status !== null) {
                       <span
@@ -258,7 +268,7 @@ export class WorkspaceArch {
   protected readonly readyCount = computed(() => {
     const statusMap = this.statusMap()
     return this.resources().filter((r) => {
-      const s = statusMap[r.name]
+      const s = statusMap[statusKey(r.kind, r.name)]
       return s?.synced && s?.ready
     }).length
   })
@@ -273,14 +283,15 @@ export class WorkspaceArch {
       id: r.name,
       label: r.name,
       kindLabel: RESOURCE_KIND_LABELS[r.kind] ?? r.kind,
-      icon: RESOURCE_KIND_ICONS[r.kind] ?? "",
+      icon: "",
+      iconKind: r.kind,
       color: RESOURCE_KIND_COLORS[r.kind] ?? "#888",
       host: typeof r.spec["host"] === "string" ? (r.spec["host"] as string) : undefined,
-      statusName: r.name,
+      statusName: statusKey(r.kind, r.name),
     })
 
-    const frontend = byKind("Spa", "Wordpress").map(toNode)
-    const apis = byKind("Api").map(toNode)
+    const frontend = byKind("Spa", "Wordpress", "FederatedGraph").map(toNode)
+    const apis = byKind("Api", "GraphApi").map(toNode)
     // Topics before subscriptions so publish→deliver→consume reads top-down.
     const messaging = [...byKind("Topic"), ...byKind("Subscription")].map(toNode)
     const data = byKind("Sql", "NoSql", "ObjectStorage", "Cache").map(toNode)
@@ -301,9 +312,10 @@ export class WorkspaceArch {
           id,
           label: id,
           kindLabel: RESOURCE_KIND_LABELS["Cache"],
-          icon: RESOURCE_KIND_ICONS["Cache"],
+          icon: "",
+          iconKind: "Cache",
           color: RESOURCE_KIND_COLORS["Cache"],
-          statusName: r.name,
+          statusName: statusKey(r.kind, r.name),
         })
         nodeIds.add(id)
         addEdge(r.name, id, "cache")
@@ -315,9 +327,10 @@ export class WorkspaceArch {
         id,
         label: id,
         kindLabel: "MariaDB",
-        icon: RESOURCE_KIND_ICONS["Sql"],
+        icon: "",
+        iconKind: "Sql",
         color: RESOURCE_KIND_COLORS["Sql"],
-        statusName: r.name,
+        statusName: statusKey(r.kind, r.name),
       })
       nodeIds.add(id)
       addEdge(r.name, id, "sql")

@@ -16,6 +16,8 @@ export type ResourceKind =
   | "Topic"
   | "Subscription"
   | "Wordpress"
+  | "GraphApi"
+  | "FederatedGraph"
 
 export const RESOURCE_KIND_LABELS: Record<ResourceKind, string> = {
   Spa: "SPA",
@@ -27,6 +29,8 @@ export const RESOURCE_KIND_LABELS: Record<ResourceKind, string> = {
   Topic: "Topic",
   Subscription: "Subscription",
   Wordpress: "WordPress",
+  GraphApi: "Graph API",
+  FederatedGraph: "Federated Graph",
 }
 
 // MUI 2014 Material Design palette - 500 shades
@@ -40,18 +44,23 @@ export const RESOURCE_KIND_COLORS: Record<ResourceKind, string> = {
   Topic: "#9c27b0", // purple[500]
   Subscription: "#e91e63", // pink[500]
   Wordpress: "#21759b", // WordPress blue
+  GraphApi: "#673ab7", // deep-purple[500]
+  FederatedGraph: "#8bc34a", // light-green[500]
 }
 
+// File names in public/icons. Lucide (ISC) for generic kinds, Simple Icons (CC0) for brands.
 export const RESOURCE_KIND_ICONS: Record<ResourceKind, string> = {
-  Spa: "🌐",
-  Api: "⚡",
-  Sql: "🗄️",
-  NoSql: "📋",
-  ObjectStorage: "🗂️",
-  Cache: "⚡",
-  Topic: "📢",
-  Subscription: "🔔",
-  Wordpress: "📝",
+  Spa: "app-window",
+  Api: "zap",
+  Sql: "database",
+  NoSql: "braces",
+  ObjectStorage: "archive",
+  Cache: "memory-stick",
+  Topic: "megaphone",
+  Subscription: "bell",
+  Wordpress: "wordpress",
+  GraphApi: "graphql",
+  FederatedGraph: "network",
 }
 
 export interface Resource {
@@ -67,6 +76,10 @@ export interface InitContainerStatus {
   completed: boolean
   finishedAt?: string
 }
+
+// Keyed by kind as well as name because a GraphApi and the Api it composes
+// share a name and both stream status.
+export const statusKey = (kind: string, name: string) => `${kind}/${name}`
 
 export interface ResourceStatus {
   workspace: string

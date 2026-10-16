@@ -604,7 +604,11 @@ export class DynamicForm implements OnInit {
     const valuesPromise: Promise<Record<string, unknown>> =
       this.mode() === "edit" && this.resourceName() && !this.skipLiveValues()
         ? firstValueFrom(
-            this.workspaceService.getResourceValues(this.workspace(), this.resourceName()!),
+            this.workspaceService.getResourceValues(
+              this.workspace(),
+              this.resourceName()!,
+              this.kind(),
+            ),
           ).catch((): Record<string, unknown> => {
             this.valuesLoadError.set(true)
             return {}

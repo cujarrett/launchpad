@@ -24,9 +24,14 @@ export class WorkspaceService {
     return this.http.delete<void>(`${environment.apiUrl}/workspaces/${tenant}/resources/${name}`)
   }
 
-  getResourceValues(tenant: string, name: string): Observable<Record<string, unknown>> {
+  getResourceValues(
+    tenant: string,
+    name: string,
+    kind: string,
+  ): Observable<Record<string, unknown>> {
     return this.http.get<Record<string, unknown>>(
       `${environment.apiUrl}/workspaces/${tenant}/resources/${name}/values`,
+      { params: { kind } },
     )
   }
 

@@ -9,6 +9,7 @@ import {
 } from "@angular/core"
 import { ActivatedRoute, Router, RouterLink } from "@angular/router"
 import { firstValueFrom, Subscription } from "rxjs"
+import { KindIcon } from "../../core/kind-icon/kind-icon"
 import { WorkspaceService } from "../../core/services/workspace.service"
 import { httpErrorMessage } from "../../core/http-error"
 import { RoleService } from "../../core/services/role.service"
@@ -17,7 +18,7 @@ import {
   ResourceKind,
   ResourceStatus,
   RESOURCE_KIND_LABELS,
-  RESOURCE_KIND_ICONS,
+  statusKey,
 } from "../../core/models/workspace.model"
 import { ResourceCard } from "../resource-card/resource-card"
 import { CreateResource } from "../../create/create-resource"
@@ -52,11 +53,14 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
   Topic: "Async messaging topic with JetStream.",
   Subscription: "Durable message subscription wired to a topic.",
   Wordpress: "Managed WordPress site with MariaDB.",
+  GraphApi: "API whose schema joins a federated graph.",
+  FederatedGraph: "One GraphQL endpoint joining every subgraph.",
 }
 
 @Component({
   selector: "app-workspace-detail",
   imports: [
+    KindIcon,
     ResourceCard,
     CreateResource,
     WorkspaceArch,
@@ -165,7 +169,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
               <div class="kind-grid">
                 @for (k of platformKinds; track k) {
                   <button class="kind-card" type="button" (click)="selectedKind.set(k)">
-                    <span class="kind-icon">{{ icons[k] }}</span>
+                    <app-kind-icon class="kind-icon" [kind]="k" />
                     <span class="kind-name">{{ labels[k] }}</span>
                     <span class="kind-desc">{{ kindDesc[k] }}</span>
                   </button>
@@ -204,7 +208,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
               <app-resource-card
                 [resource]="resource"
                 [workspace]="name()"
-                [status]="statusMap()[resource.name] ?? null"
+                [status]="statusMap()[statusKey(resource.kind, resource.name)] ?? null"
                 [expanded]="expandedResource() === resource.name"
                 [canEdit]="roleService.isContributor()"
                 [canEditConnections]="isGuest() && resource.kind === 'Api'"
@@ -388,7 +392,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     const resources = this.resources()
     if (resources.length === 0) return false
     const statusMap = this.statusMap()
-    if (!resources.every((r) => statusMap[r.name]?.ready)) return true
+    if (!resources.every((r) => statusMap[statusKey(r.kind, r.name)]?.ready)) return true
     const pods = Object.values(this.podStatusMap())
     if (pods.some((p) => p?.initContainers?.some((ic) => !ic.completed))) return true
     return !this.allPreviewsReady()
@@ -396,8 +400,8 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
 
   readonly platformKinds = PLATFORM_KINDS
   readonly labels = RESOURCE_KIND_LABELS
-  readonly icons = RESOURCE_KIND_ICONS
   readonly kindDesc = PLATFORM_KIND_DESC
+  protected readonly statusKey = statusKey
 
   protected isGuest(): boolean {
     return this.name().startsWith("guest-")
@@ -462,11 +466,12 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
           this.podStatusMap.update((m) => ({ ...m, [s.name]: s }))
           return
         }
-        if (s.ready) this.seenReady.add(s.name)
+        const key = statusKey(s.kind, s.name)
+        if (s.ready) this.seenReady.add(key)
         // Suppress ERROR until the resource has been seen ready at least once -
         // avoids the jarring ERROR flash on initial SSE connect during Crossplane sync.
-        const status = !s.synced && !this.seenReady.has(s.name) ? { ...s, synced: true } : s
-        this.statusMap.update((m) => ({ ...m, [s.name]: status }))
+        const status = !s.synced && !this.seenReady.has(key) ? { ...s, synced: true } : s
+        this.statusMap.update((m) => ({ ...m, [key]: status }))
       },
       error: (e) => console.error("[WorkspaceDetail] SSE error", e),
     })
