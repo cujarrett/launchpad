@@ -517,6 +517,13 @@ export class Workspaces implements OnInit, OnDestroy {
     } finally {
       this.loading.set(false)
     }
+    // Set by a sandbox create that failed after leaving this page. The picker reopens
+    // with a fresh name, checked against the list just loaded.
+    const guestError: unknown = history.state?.guestError
+    if (typeof guestError === "string") {
+      this.startGuestNamePicker()
+      this.createGuestError.set(guestError)
+    }
   }
 
   ngOnDestroy() {
@@ -624,20 +631,13 @@ export class Workspaces implements OnInit, OnDestroy {
     try {
       await firstValueFrom(this.workspaceService.createGuestWorkspace(suggestion))
     } catch (err: unknown) {
-      // Creation failed after navigating away - bounce back and surface the error.
-      await this.router.navigate(["/"])
-      this.startGuestNamePicker()
-      if (err instanceof HttpErrorResponse && err.status === 409) {
-        try {
-          this.workspaces.set(await firstValueFrom(this.workspaceService.getWorkspaces()))
-        } catch {
-          /* ignore reload errors */
-        }
-        this.rerollGuestName()
-        this.createGuestError.set("That name was just taken - try another one!")
-      } else {
-        this.createGuestError.set(httpErrorMessage(err, "Failed to create sandbox workspace"))
-      }
+      // Creation failed after navigating away, so this component is already gone.
+      // The error rides along in navigation state for the new home page to show.
+      const guestError =
+        err instanceof HttpErrorResponse && err.status === 409
+          ? "That name was just taken - try another one!"
+          : httpErrorMessage(err, "Failed to create sandbox workspace")
+      await this.router.navigate(["/"], { state: { guestError } })
     } finally {
       this.savingGuestWorkspace.set(false)
     }
