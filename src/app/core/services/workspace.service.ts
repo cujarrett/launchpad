@@ -43,6 +43,10 @@ export class WorkspaceService {
     return this.http.delete<void>(`${environment.apiUrl}/workspaces/${name}`)
   }
 
+  getGuestLocations(): Observable<{ lat: number; lon: number }[]> {
+    return this.http.get<{ lat: number; lon: number }[]>(`${environment.apiUrl}/guest/locations`)
+  }
+
   createGuestWorkspace(name: string): Observable<{ name: string; expiresAt: string }> {
     return this.http.post<{ name: string; expiresAt: string }>(
       `${environment.apiUrl}/guest/workspaces`,

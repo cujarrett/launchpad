@@ -15,6 +15,7 @@ import { WorkspaceService } from "../core/services/workspace.service"
 import { httpErrorMessage } from "../core/http-error"
 import { RoleService } from "../core/services/role.service"
 import { Workspace } from "../core/models/workspace.model"
+import { SandboxMap } from "../sandbox-map/sandbox-map"
 
 const GUEST_MAX = 5
 
@@ -108,7 +109,7 @@ function pickGuestName(
 
 @Component({
   selector: "app-workspaces",
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, SandboxMap],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -242,6 +243,8 @@ function pickGuestName(
           </div>
         }
       }
+
+      <app-sandbox-map />
     </div>
   `,
   styles: [
