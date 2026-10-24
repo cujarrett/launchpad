@@ -215,6 +215,11 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
       .guest-create-panel {
         padding: 1.5rem;
       }
+      @media (max-width: 480px) {
+        .guest-create-panel {
+          padding: 0.5rem 0 1rem;
+        }
+      }
       h3 {
         margin: 0 0 1rem;
       }
@@ -307,7 +312,8 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
       }
       .options-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        /* Two columns on desktop, one on phones. */
+        grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
         gap: 0.5rem;
       }
       .option-card {

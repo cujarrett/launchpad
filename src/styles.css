@@ -168,6 +168,7 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   margin-bottom: 1.75rem;
   gap: 1rem;
 }
@@ -191,6 +192,17 @@ h3 {
 .breadcrumb-sep {
   color: var(--color-text-muted);
   font-size: 0.9375rem;
+}
+
+@media (max-width: 480px) {
+  .app-nav,
+  .page {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .page-header {
+    margin-bottom: 1.25rem;
+  }
 }
 
 /* ── Buttons ────────────────────────────────────────────── */
@@ -500,6 +512,24 @@ app-resource-card.expanded {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Phones: the name drops to its own line so it isn't cut to a few letters. */
+@media (max-width: 480px) {
+  .resource-card-row {
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+  }
+  .resource-card .name {
+    order: 1;
+    flex-basis: 100%;
+  }
+  .resource-card .status {
+    margin-right: auto;
+  }
+  .resource-card .resource-card-row .preview-link {
+    margin-left: 0;
+  }
 }
 
 .resource-card .status {
@@ -1087,6 +1117,7 @@ details.advanced-fields .form-fields {
 /* ── View toggle ────────────────────────────────────────── */
 .page-header-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
 }

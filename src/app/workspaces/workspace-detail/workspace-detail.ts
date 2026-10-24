@@ -269,6 +269,11 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
       .create-panel {
         padding: 1.5rem;
       }
+      @media (max-width: 480px) {
+        .create-panel {
+          padding: 0.5rem 0 1rem;
+        }
+      }
       .create-heading {
         margin: 0 0 1rem;
       }
