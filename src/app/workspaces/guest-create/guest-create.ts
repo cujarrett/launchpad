@@ -17,7 +17,8 @@ import { Resource, ResourceKind, RESOURCE_KIND_LABELS } from "../../core/models/
 // Kinds available to guests - Wordpress excluded (production data risk),
 // Subscription excluded (requires existing topic).
 // Sql, NoSql, ObjectStorage are only available as Api add-ons, not as standalone options.
-export const GUEST_KINDS: ResourceKind[] = ["Api", "Spa"]
+// Workflow brings its own Api, so it is a sandbox of its own.
+export const GUEST_KINDS: ResourceKind[] = ["Api", "Spa", "Workflow"]
 
 const GUEST_KIND_DESC: Record<ResourceKind, string> = {
   Api: "REST API with HTTPS, cache, and database add-ons.",
@@ -31,6 +32,7 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
   Wordpress: "",
   GraphApi: "",
   FederatedGraph: "",
+  Workflow: "An order that finishes even when its worker dies.",
 }
 
 @Component({
@@ -473,7 +475,11 @@ export class GuestCreate implements OnInit {
 
   protected readonly availableKinds = computed(() => {
     const existing = new Set(this.existingResources().map((r) => r.kind))
-    return this.guestKinds.filter((k) => !existing.has(k))
+    // The Workflow demo's Api takes the sandbox's one API hostname.
+    if (existing.has("Workflow")) return []
+    return this.guestKinds.filter(
+      (k) => !existing.has(k) && !(k === "Workflow" && existing.size > 0),
+    )
   })
 
   protected readonly offerStorage = computed(() => {
@@ -516,7 +522,8 @@ export class GuestCreate implements OnInit {
     if (this.withNoSql() && kind === "Api") steps.push("NoSQL database")
     if (this.withSpa() && kind === "Api" && this.offerSpa()) steps.push("Frontend")
     if (kind === "Spa" && this.offerApi()) steps.push("API")
-    steps.push(kind === "Api" ? "API" : "Frontend")
+    if (kind === "Workflow") steps.push("Workflow")
+    steps.push(kind === "Spa" ? "Frontend" : "API")
     return steps
   }
 

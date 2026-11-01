@@ -18,6 +18,7 @@ export type ResourceKind =
   | "Wordpress"
   | "GraphApi"
   | "FederatedGraph"
+  | "Workflow"
 
 export const RESOURCE_KIND_LABELS: Record<ResourceKind, string> = {
   Spa: "SPA",
@@ -31,6 +32,7 @@ export const RESOURCE_KIND_LABELS: Record<ResourceKind, string> = {
   Wordpress: "WordPress",
   GraphApi: "Graph API",
   FederatedGraph: "Federated Graph",
+  Workflow: "Workflow",
 }
 
 // MUI 2014 Material Design palette - 500 shades
@@ -46,6 +48,7 @@ export const RESOURCE_KIND_COLORS: Record<ResourceKind, string> = {
   Wordpress: "#21759b", // WordPress blue
   GraphApi: "#673ab7", // deep-purple[500]
   FederatedGraph: "#8bc34a", // light-green[500]
+  Workflow: "#2196f3", // blue[500]
 }
 
 // File names in public/icons. Lucide (ISC) for generic kinds, Simple Icons (CC0) for brands.
@@ -61,6 +64,7 @@ export const RESOURCE_KIND_ICONS: Record<ResourceKind, string> = {
   Wordpress: "wordpress",
   GraphApi: "graphql",
   FederatedGraph: "network",
+  Workflow: "workflow",
 }
 
 export interface Resource {

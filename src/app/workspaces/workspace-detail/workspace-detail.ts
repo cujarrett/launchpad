@@ -55,6 +55,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
   Wordpress: "Managed WordPress site with MariaDB.",
   GraphApi: "API whose schema joins a federated graph.",
   FederatedGraph: "One GraphQL endpoint joining every subgraph.",
+  Workflow: "Durable steps that survive a worker dying.",
 }
 
 @Component({
