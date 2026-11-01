@@ -115,6 +115,11 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
                   class="toggle"
                   [class.on]="withSql()"
                   [disabled]="withSql() && lastData()"
+                  [attr.title]="
+                    withSql() && lastData()
+                      ? 'Every API keeps at least one place to store data'
+                      : null
+                  "
                   (click)="withSql.set(!withSql())"
                 >
                   <app-kind-icon kind="Sql" /><span>Postgres</span><span class="switch"></span>
@@ -126,6 +131,11 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
                   class="toggle"
                   [class.on]="withNoSql()"
                   [disabled]="withNoSql() && lastData()"
+                  [attr.title]="
+                    withNoSql() && lastData()
+                      ? 'Every API keeps at least one place to store data'
+                      : null
+                  "
                   (click)="withNoSql.set(!withNoSql())"
                 >
                   <app-kind-icon kind="NoSql" /><span>DynamoDB</span><span class="switch"></span>
@@ -137,6 +147,11 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
                   class="toggle"
                   [class.on]="withStorage()"
                   [disabled]="withStorage() && lastData()"
+                  [attr.title]="
+                    withStorage() && lastData()
+                      ? 'Every API keeps at least one place to store data'
+                      : null
+                  "
                   (click)="withStorage.set(!withStorage())"
                 >
                   <app-kind-icon kind="ObjectStorage" /><span>S3 bucket</span
@@ -307,8 +322,13 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
       .toggle.locked {
         cursor: default;
       }
+      /* The last data store is locked on. It stays bright, because it is on. */
       .toggle:disabled {
+        opacity: 1;
         cursor: not-allowed;
+      }
+      .toggle span:not(.switch):not(.included) {
+        white-space: nowrap;
       }
       .included {
         margin-left: auto;
@@ -324,7 +344,7 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
       }
       .toggles {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
         gap: 0.5rem;
       }
       .toggle {

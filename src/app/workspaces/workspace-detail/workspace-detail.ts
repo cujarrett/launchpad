@@ -157,7 +157,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
         </div>
       </div>
 
-      @if (creating() || guestNeedsPick()) {
+      @if ((creating() || guestNeedsPick()) && !(isGuest() && isExpired())) {
         @if (isGuest()) {
           <app-guest-create
             style="display:block;margin-bottom:1.5rem"
