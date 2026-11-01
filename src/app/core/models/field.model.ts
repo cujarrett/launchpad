@@ -78,9 +78,16 @@ const ENUM_LABEL_OVERRIDES: Record<string, Record<string, string>> = {
   },
 }
 
-// Fields treated as advanced (hidden behind "Advanced" toggle) in Launchpad.
+// Fields behind the "Advanced" toggle. Each has a safe default, or needs the platform team.
 // This is a UI-layer decision - do not add x-advanced to XRDs.
-const ADVANCED_KEYS = new Set(["contentSecurityPolicy", "metricsPort"])
+const ADVANCED_KEYS = new Set([
+  "contentSecurityPolicy",
+  "metricsPort",
+  "readinessCheckPath",
+  "callsClusterApi",
+  "port",
+  "configFrom",
+])
 
 function classifyField(key: string, schema: Record<string, unknown>, required: boolean): FieldDef {
   const base = {
