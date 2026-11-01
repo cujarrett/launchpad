@@ -26,6 +26,7 @@ import { WorkspaceArch } from "../workspace-arch/workspace-arch"
 import { GuestCreate, GUEST_KINDS } from "../guest-create/guest-create"
 import { ProvisioningPipeline } from "../provisioning-pipeline/provisioning-pipeline"
 import { PlatformMade } from "../platform-made/platform-made"
+import { TryWorkflow } from "../try-workflow/try-workflow"
 import { SseService } from "../../core/services/sse.service"
 import { environment } from "../../../environments/environment"
 
@@ -69,6 +70,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
     GuestCreate,
     ProvisioningPipeline,
     PlatformMade,
+    TryWorkflow,
     RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -252,6 +254,13 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
           [commitPlan]="commitPlan()"
         />
       </div>
+      @if (workflowDemo(); as demo) {
+        <app-try-workflow
+          [host]="demo.host"
+          [apiName]="demo.apiName"
+          [podStatusMap]="podStatusMap()"
+        />
+      }
       <app-platform-made
         [workspace]="name()"
         [resources]="resources()"
@@ -410,6 +419,15 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     const pods = Object.values(this.podStatusMap())
     if (pods.some((p) => p?.initContainers?.some((ic) => !ic.completed))) return true
     return !this.allPreviewsReady()
+  })
+
+  // A Workflow sandbox's Api runs the demo. Shown once that Api is Ready.
+  protected readonly workflowDemo = computed(() => {
+    const resources = this.resources()
+    if (!resources.some((r) => r.kind === "Workflow")) return null
+    const api = resources.find((r) => r.kind === "Api" && typeof r.spec["host"] === "string")
+    if (!api || !this.statusMap()[statusKey(api.kind, api.name)]?.ready) return null
+    return { host: api.spec["host"] as string, apiName: api.name }
   })
 
   readonly platformKinds = PLATFORM_KINDS

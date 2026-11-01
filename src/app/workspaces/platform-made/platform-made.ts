@@ -67,10 +67,7 @@ interface Cleanup {
             <li [class.ready]="c.status === 'running'">
               <span class="dot"></span>
               <span class="title">Cleanup</span>
-              <span class="kinds">
-                Temporal workflow {{ c.workflowId }} in {{ c.namespace }} is {{ c.status }}. It
-                deletes this sandbox when time runs out, even if Launchpad restarts.
-              </span>
+              <span class="kinds"> Temporal workflow {{ c.workflowId }}, {{ c.status }} </span>
             </li>
           }
         </ul>
