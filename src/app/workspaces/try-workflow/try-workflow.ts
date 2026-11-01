@@ -46,7 +46,7 @@ const MARK: Record<string, string> = { done: "✓", running: "●", stuck: "✗"
       </div>
       <p class="bridge">
         Your Workflow runs on <b class="tech">Temporal</b>, which records every step as it happens.
-        Each order below runs both ways.
+        Each order you place runs twice, side by side: once without Temporal and once with it.
       </p>
 
       <div class="bar">
