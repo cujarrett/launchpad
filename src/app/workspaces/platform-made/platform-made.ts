@@ -137,6 +137,9 @@ export class PlatformMade {
   readonly isGuest = input(false)
   // Time left before the sandbox is deleted, such as "7:10". Empty outside a sandbox.
   readonly cleanupIn = input("")
+  // True once the rollout finished. A later blip, such as a demo worker restarting,
+  // then leaves everything shown as made.
+  readonly settled = input(false)
 
   private readonly workspaceService = inject(WorkspaceService)
   protected readonly techParts = techParts
@@ -161,7 +164,9 @@ export class PlatformMade {
     this.statuses().reduce((n, s) => n + (s.composed?.length ?? 0), 0),
   )
 
-  protected readonly allReady = computed(() => this.statuses().every((s) => s.ready))
+  protected readonly allReady = computed(
+    () => this.settled() || this.statuses().every((s) => s.ready),
+  )
 
   protected readonly rows = computed<Row[]>(() => {
     const api = this.resources().find((r) => r.kind === "Api")
@@ -174,7 +179,7 @@ export class PlatformMade {
       for (const s of this.statuses()) {
         const mine = (s.composed ?? []).filter((k) => kinds.includes(k))
         mine.forEach((k) => found.add(k))
-        if (mine.length && !s.ready) ready = false
+        if (mine.length && !s.ready && !this.settled()) ready = false
       }
       if (found.size === 0) return null
       return { title, kinds: [...found].sort(), ready, text: text((k) => found.has(k)) }

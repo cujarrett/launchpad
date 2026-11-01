@@ -2,10 +2,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   OnDestroy,
   OnInit,
   signal,
+  untracked,
 } from "@angular/core"
 import { ActivatedRoute, Router, RouterLink } from "@angular/router"
 import { firstValueFrom, Subscription } from "rxjs"
@@ -271,6 +273,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
             [podStatusMap]="podStatusMap()"
             [allPreviewsReady]="allPreviewsReady()"
             [commitPlan]="commitPlan()"
+            [settled]="!pipelineActive()"
           />
         </div>
         <!-- The demo appears once the sandbox is ready, and is then the thing to do. -->
@@ -287,6 +290,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
           [statusMap]="statusMap()"
           [isGuest]="isGuest()"
           [cleanupIn]="isGuest() ? guestCountdown() : ''"
+          [settled]="!pipelineActive()"
         />
       </div>
     </div>
@@ -493,7 +497,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   })
 
   // True while the pipeline list has something to show - cards are hidden during this time.
-  protected readonly pipelineActive = computed(() => {
+  private readonly rolloutRunning = computed(() => {
     if (this.commitPlan().length > 0) return true
     const resources = this.resources()
     if (resources.length === 0) return false
@@ -502,6 +506,24 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     const pods = Object.values(this.podStatusMap())
     if (pods.some((p) => p?.initContainers?.some((ic) => !ic.completed))) return true
     return !this.allPreviewsReady()
+  })
+
+  // Resources that have finished one rollout. A later blip, such as a demo worker
+  // restarting after an unplug, is not a new rollout. Adding a resource is.
+  private readonly settled = signal<Set<string>>(new Set())
+  private readonly recordSettled = effect(() => {
+    const resources = this.resources()
+    if (resources.length > 0 && !this.rolloutRunning()) {
+      untracked(() => this.settled.set(new Set(resources.map((r) => statusKey(r.kind, r.name)))))
+    }
+  })
+
+  protected readonly pipelineActive = computed(() => {
+    if (this.commitPlan().length > 0) return true
+    const settled = this.settled()
+    const allSettled =
+      settled.size > 0 && this.resources().every((r) => settled.has(statusKey(r.kind, r.name)))
+    return allSettled ? false : this.rolloutRunning()
   })
 
   // The payoff of a sandbox. Shown once the readiness probe passes.

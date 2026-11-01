@@ -139,7 +139,14 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
             </button>
           }
         </div>
-        @for (row of isDone() && expanded() ? fullDoneRows() : rows(); track row.key) {
+        @for (
+          row of isDone() && expanded()
+            ? fullDoneRows()
+            : settled() && isDone()
+              ? doneSections()
+              : rows();
+          track row.key
+        ) {
           @if (row.kind === "section") {
             <div
               class="section-row"
@@ -503,6 +510,9 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
   readonly podStatusMap = input<Partial<Record<string, ResourceStatus>>>({})
   readonly allPreviewsReady = input.required<boolean>()
   readonly commitPlan = input<string[]>([])
+  // True once the page counts this rollout as finished. A later readiness blip then
+  // leaves the finished steps alone instead of redrawing them as in progress.
+  readonly settled = input(false)
   readonly workspace = input<string>("")
   // Server-persisted phase times - wins over localStorage so any browser sees the same data.
   readonly initialPhaseTimes = input<Record<string, string>>({})
@@ -744,6 +754,10 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
   // Done if SSE confirms all ready, OR if we already know doneTime (restored from
   // localStorage/server on refresh) - avoids the "wrong active stage" flash while SSE catches up.
   protected readonly isDone = computed(() => this.phaseIdx() === 5 || this.doneTime() !== null)
+
+  protected readonly doneSections = computed(() =>
+    this.fullDoneRows().filter((r) => r.kind === "section"),
+  )
 
   private readonly joinedAfterCompletion = signal(false)
 
