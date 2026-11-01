@@ -240,6 +240,20 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
       <!-- Building: the rollout steps lead. Done: they move to the bottom as a receipt.
            CSS order moves them without remounting. -->
       <div class="story">
+        @if (liveApp(); as app) {
+          <a
+            class="live-cta"
+            [href]="'https://' + app.host"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="live-text">
+              <span class="live-title">Your app is live</span>
+              <span class="live-sub">{{ app.sub }}</span>
+            </span>
+            <span class="live-btn">Open {{ app.host }} ↗</span>
+          </a>
+        }
         <!-- Outside the loading gate, so it stays mounted across resource refreshes.
            Once done it collapses to each step's time. Arch view hides it then, because the
            diagram shows live health itself. -->
@@ -349,6 +363,52 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
         display: flex;
         flex-direction: column;
       }
+      .live-cta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1.5rem;
+        padding: 1.25rem 1.5rem;
+        border-radius: 14px;
+        border: 1px solid #34d399;
+        background: linear-gradient(120deg, rgba(16, 185, 129, 0.18), rgba(99, 102, 241, 0.12));
+        box-shadow: 0 8px 30px rgba(16, 185, 129, 0.2);
+        color: inherit;
+        text-decoration: none;
+      }
+      .live-cta:hover {
+        border-color: #6ee7b7;
+      }
+      .live-text {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+      }
+      .live-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+      }
+      .live-sub {
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
+      .live-btn {
+        padding: 0.65rem 1.1rem;
+        border-radius: 10px;
+        background: #10b981;
+        color: #04261b;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      @media (max-width: 600px) {
+        .live-btn {
+          width: 100%;
+          text-align: center;
+          white-space: normal;
+        }
+      }
     `,
   ],
 })
@@ -442,6 +502,24 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     const pods = Object.values(this.podStatusMap())
     if (pods.some((p) => p?.initContainers?.some((ic) => !ic.completed))) return true
     return !this.allPreviewsReady()
+  })
+
+  // The payoff of a sandbox. Shown once the readiness probe passes.
+  // Workflow sandboxes show their demo panel instead.
+  protected readonly liveApp = computed(() => {
+    const resources = this.resources()
+    if (!this.allPreviewsReady() || resources.some((r) => r.kind === "Workflow")) return null
+    const withHost = (kind: string) =>
+      resources.find((r) => r.kind === kind && typeof r.spec["host"] === "string")
+    const spa = withHost("Spa")
+    const target = spa ?? withHost("Api")
+    if (!target) return null
+    return {
+      host: target.spec["host"] as string,
+      sub: spa
+        ? "See your page call your API, and your API reach every service you added."
+        : "See your API answer, and reach every service you added.",
+    }
   })
 
   // A Workflow sandbox's Api runs the demo.

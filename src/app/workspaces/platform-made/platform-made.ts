@@ -57,13 +57,8 @@ const GROUP_KINDS: Record<string, string[]> = {
               <span class="dot"></span>
               <span class="title">{{ row.title }}</span>
               <span class="text">
-                @for (part of techParts(row.text); track $index) {
-                  @if (part.tech) {
-                    <b class="tech">{{ part.text }}</b>
-                  } @else {
-                    {{ part.text }}
-                  }
-                }
+                <!-- prettier-ignore -->
+                @for (part of techParts(row.text); track $index) {@if (part.tech) {<b class="tech">{{ part.text }}</b>} @else {{{ part.text }}}}
               </span>
             </li>
           }

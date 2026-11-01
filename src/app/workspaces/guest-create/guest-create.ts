@@ -88,13 +88,8 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
               /></span>
               <span class="card-title">{{ demo[k]?.title ?? labels[k] }}</span>
               <span class="card-desc">
-                @for (part of techParts(demo[k]?.desc ?? ""); track $index) {
-                  @if (part.tech) {
-                    <b class="tech">{{ part.text }}</b>
-                  } @else {
-                    {{ part.text }}
-                  }
-                }
+                <!-- prettier-ignore -->
+                @for (part of techParts(demo[k]?.desc ?? ""); track $index) {@if (part.tech) {<b class="tech">{{ part.text }}</b>} @else {{{ part.text }}}}
               </span>
               <span class="card-includes">{{ demo[k]?.includes }}</span>
             </button>
@@ -163,13 +158,8 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
 
         @if (selectedKind()) {
           <p class="summary">
-            @for (part of techParts(planSummary()); track $index) {
-              @if (part.tech) {
-                <b class="tech">{{ part.text }}</b>
-              } @else {
-                {{ part.text }}
-              }
-            }
+            <!-- prettier-ignore -->
+            @for (part of techParts(planSummary()); track $index) {@if (part.tech) {<b class="tech">{{ part.text }}</b>} @else {{{ part.text }}}}
           </p>
         }
         @if (error()) {
