@@ -233,13 +233,22 @@ export class PlatformMade {
   })
 
   constructor() {
-    // The cleanup workflow starts with the sandbox, so one read is enough.
-    effect(() => {
+    // The cleanup workflow starts a moment after a new sandbox, so a miss is retried a few times.
+    effect((onCleanup) => {
       if (!this.isGuest()) return
-      this.workspaceService.getGuestCleanup(this.workspace()).subscribe({
-        next: (c) => this.cleanupRunning.set(c.status === "running"),
-        error: () => this.cleanupRunning.set(false),
-      })
+      const workspace = this.workspace()
+      let tries = 0
+      let timer: ReturnType<typeof setTimeout> | undefined
+      const read = () =>
+        this.workspaceService.getGuestCleanup(workspace).subscribe({
+          next: (c) => this.cleanupRunning.set(c.status === "running"),
+          error: () => {
+            this.cleanupRunning.set(false)
+            if (++tries < 10) timer = setTimeout(read, 3000)
+          },
+        })
+      read()
+      onCleanup(() => clearTimeout(timer))
     })
   }
 }

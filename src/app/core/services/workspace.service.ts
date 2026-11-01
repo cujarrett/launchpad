@@ -1,4 +1,4 @@
-import { inject, Injectable } from "@angular/core"
+import { inject, Injectable, signal } from "@angular/core"
 import { HttpClient } from "@angular/common/http"
 import { Observable } from "rxjs"
 import { environment } from "../../../environments/environment"
@@ -7,6 +7,10 @@ import { Resource, Workspace } from "../models/workspace.model"
 @Injectable({ providedIn: "root" })
 export class WorkspaceService {
   private readonly http = inject(HttpClient)
+
+  // The sandbox page opens before its create call returns.
+  // Its picker waits on this, so nothing is built into a sandbox that does not exist yet.
+  readonly creatingGuest = signal<string | null>(null)
 
   getWorkspaces(): Observable<Workspace[]> {
     return this.http.get<Workspace[]>(`${environment.apiUrl}/workspaces`)

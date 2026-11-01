@@ -627,6 +627,7 @@ export class Workspaces implements OnInit, OnDestroy {
     this.pickingGuestName.set(false)
     // fresh lets the destination page render its picker straight away instead of
     // waiting on a resource list that cannot exist yet.
+    this.workspaceService.creatingGuest.set(`guest-${suggestion}`)
     await this.router.navigate(["/workspaces", `guest-${suggestion}`], {
       state: { fresh: true },
     })
@@ -643,6 +644,7 @@ export class Workspaces implements OnInit, OnDestroy {
       await this.router.navigate(["/"], { state: { guestError } })
     } finally {
       this.savingGuestWorkspace.set(false)
+      this.workspaceService.creatingGuest.set(null)
     }
   }
 }

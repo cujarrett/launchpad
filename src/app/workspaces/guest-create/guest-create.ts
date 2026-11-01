@@ -183,7 +183,13 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
 
         <div class="actions">
           @if (availableKinds().length > 0) {
-            <button class="build" [disabled]="!selectedKind()" (click)="submit()">Build it</button>
+            <button
+              class="build"
+              [disabled]="!selectedKind() || !sandboxReady()"
+              (click)="submit()"
+            >
+              {{ sandboxReady() ? "Build it" : "Setting up your sandbox…" }}
+            </button>
           } @else {
             <p class="existing">Everything this sandbox can hold is already here.</p>
           }
@@ -490,6 +496,10 @@ export class GuestCreate implements OnInit {
   )
 
   protected readonly techParts = techParts
+
+  protected readonly sandboxReady = computed(
+    () => this.workspaceService.creatingGuest() !== this.workspace(),
+  )
 
   // Data stores already in the sandbox count toward the one-store rule.
   private readonly hasExistingData = computed(() =>
