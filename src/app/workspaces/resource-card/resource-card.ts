@@ -245,11 +245,12 @@ export class ResourceCard {
       } catch {
         failCount++
       }
-      // Give up after 40 failed attempts (20 minutes)
-      if (failCount > 40) this.stopProbing()
+      // Gives up after about 200 seconds of failures, at one probe a second.
+      if (failCount > 200) this.stopProbing()
     }
     probe()
-    this.probeInterval = setInterval(probe, 5000)
+    // Each second of polling is a second a guest might wait after the app is up.
+    this.probeInterval = setInterval(probe, 1000)
   }
 
   private stopProbing(): void {

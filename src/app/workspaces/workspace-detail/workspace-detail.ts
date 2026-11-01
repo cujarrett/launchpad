@@ -23,7 +23,7 @@ import {
 import { ResourceCard } from "../resource-card/resource-card"
 import { CreateResource } from "../../create/create-resource"
 import { WorkspaceArch } from "../workspace-arch/workspace-arch"
-import { GuestCreate, GUEST_KINDS } from "../guest-create/guest-create"
+import { GuestCreate, guestAvailableKinds } from "../guest-create/guest-create"
 import { ProvisioningPipeline } from "../provisioning-pipeline/provisioning-pipeline"
 import { PlatformMade } from "../platform-made/platform-made"
 import { TryWorkflow } from "../try-workflow/try-workflow"
@@ -57,7 +57,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
   Wordpress: "Managed WordPress site with MariaDB.",
   GraphApi: "API whose schema joins a federated graph.",
   FederatedGraph: "One GraphQL endpoint joining every subgraph.",
-  Workflow: "Durable steps that survive a worker dying.",
+  Workflow: "Steps that finish even when a server dies. Runs on Temporal.",
 }
 
 @Component({
@@ -157,12 +157,13 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
         </div>
       </div>
 
-      @if (creating()) {
+      @if (creating() || guestNeedsPick()) {
         @if (isGuest()) {
           <app-guest-create
             style="display:block;margin-bottom:1.5rem"
             [workspace]="name()"
             [existingResources]="resources()"
+            [allowCancel]="resources().length > 0"
             (created)="onCreated()"
             (cancelled)="creating.set(false)"
             (commitPlanChange)="commitPlan.set($event)"
@@ -236,37 +237,44 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
           </div>
         </div>
       }
-      <!-- Pipeline is outside the loading gate so it stays mounted across resource refreshes.
-           Hidden (not removed) in Arch view once provisioning finishes - the diagram shows live
-           health itself, so the collapsed "Details" summary is redundant there. Still shown
-           while pipelineActive(), since that's also what gates the arch diagram from rendering
-           at all (see above), so hiding it too would leave the tab blank during provisioning. -->
-      <div [hidden]="viewMode() === 'arch' && !pipelineActive()">
-        <app-provisioning-pipeline
+      <!-- Building: the rollout steps lead. Done: they move to the bottom as a receipt.
+           CSS order moves them without remounting. -->
+      <div class="story">
+        <!-- Outside the loading gate, so it stays mounted across resource refreshes.
+           Once done it collapses to each step's time. Arch view hides it then, because the
+           diagram shows live health itself. -->
+        <div
+          [hidden]="viewMode() === 'arch' && !pipelineActive()"
+          [style.order]="pipelineActive() ? 0 : 3"
+        >
+          <app-provisioning-pipeline
+            [workspace]="name()"
+            [initialPhaseTimes]="guestPhaseTimes()"
+            [initialDoneTime]="guestDoneAt()"
+            [minPhaseTime]="guestMinPhaseTime()"
+            [resources]="resources()"
+            [statusMap]="statusMap()"
+            [podStatusMap]="podStatusMap()"
+            [allPreviewsReady]="allPreviewsReady()"
+            [commitPlan]="commitPlan()"
+          />
+        </div>
+        <!-- The demo appears once the sandbox is ready, and is then the thing to do. -->
+        @if (workflowDemo(); as demo) {
+          <app-try-workflow
+            [host]="demo.host"
+            [apiName]="demo.apiName"
+            [podStatusMap]="podStatusMap()"
+          />
+        }
+        <app-platform-made
           [workspace]="name()"
-          [initialPhaseTimes]="guestPhaseTimes()"
-          [initialDoneTime]="guestDoneAt()"
-          [minPhaseTime]="guestMinPhaseTime()"
           [resources]="resources()"
           [statusMap]="statusMap()"
-          [podStatusMap]="podStatusMap()"
-          [allPreviewsReady]="allPreviewsReady()"
-          [commitPlan]="commitPlan()"
+          [isGuest]="isGuest()"
+          [cleanupIn]="isGuest() ? guestCountdown() : ''"
         />
       </div>
-      @if (workflowDemo(); as demo) {
-        <app-try-workflow
-          [host]="demo.host"
-          [apiName]="demo.apiName"
-          [podStatusMap]="podStatusMap()"
-        />
-      }
-      <app-platform-made
-        [workspace]="name()"
-        [resources]="resources()"
-        [statusMap]="statusMap()"
-        [isGuest]="isGuest()"
-      />
     </div>
   `,
   styles: [
@@ -337,6 +345,10 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
         display: block;
         margin-top: 1.5rem;
       }
+      .story {
+        display: flex;
+        flex-direction: column;
+      }
     `,
   ],
 })
@@ -378,10 +390,21 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   protected readonly deleteWorkspaceError = signal<string | null>(null)
   private readonly tick = signal(0)
   private readonly confirmedPreviewSet = signal<ReadonlySet<string>>(new Set())
-  protected readonly guestHasAvailableKinds = computed(() => {
-    const existing = new Set(this.resources().map((r) => r.kind))
-    return GUEST_KINDS.some((k) => !existing.has(k))
-  })
+  // An empty, live sandbox always shows the picker, so a guest can't lose the next step.
+  // awaitingResources covers the gap between a create and its files loading.
+  protected readonly guestNeedsPick = computed(
+    () =>
+      this.isGuest() &&
+      !this.isExpired() &&
+      !this.loading() &&
+      !this.awaitingResources() &&
+      this.resources().length === 0,
+  )
+  private readonly awaitingResources = signal(false)
+
+  protected readonly guestHasAvailableKinds = computed(
+    () => guestAvailableKinds(this.resources().map((r) => r.kind)).length > 0,
+  )
 
   protected readonly sortedResources = computed(() =>
     [...this.resources()].sort((a, b) => {
@@ -421,12 +444,13 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     return !this.allPreviewsReady()
   })
 
-  // A Workflow sandbox's Api runs the demo. Shown once that Api is Ready.
+  // A Workflow sandbox's Api runs the demo.
   protected readonly workflowDemo = computed(() => {
     const resources = this.resources()
     if (!resources.some((r) => r.kind === "Workflow")) return null
     const api = resources.find((r) => r.kind === "Api" && typeof r.spec["host"] === "string")
-    if (!api || !this.statusMap()[statusKey(api.kind, api.name)]?.ready) return null
+    // Waits for the readiness probe, so the workers are serving before the panel appears.
+    if (!api || !this.allPreviewsReady()) return null
     return { host: api.spec["host"] as string, apiName: api.name }
   })
 
@@ -495,7 +519,10 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
       next: (s) => {
         if (s.workspace !== workspaceName) return
         if (s.kind === "Pod") {
-          this.podStatusMap.update((m) => ({ ...m, [s.name]: s }))
+          this.podStatusMap.update((m) => {
+            const { [s.name]: _gone, ...rest } = m
+            return s.deleted ? rest : { ...m, [s.name]: s }
+          })
           return
         }
         const key = statusKey(s.kind, s.name)
@@ -571,12 +598,16 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   }
 
   async onCreated() {
+    this.awaitingResources.set(true)
     this.cancelCreate()
     await this.loadResources(true)
     // GitHub Contents API can return a stale directory listing right after
     // sequential commits (e.g. Sql + Api). Reload once after a short delay
     // to catch any propagation lag.
-    setTimeout(() => this.loadResources(true), 1500)
+    setTimeout(async () => {
+      await this.loadResources(true)
+      this.awaitingResources.set(false)
+    }, 1500)
   }
 
   async handleDelete(name: string) {

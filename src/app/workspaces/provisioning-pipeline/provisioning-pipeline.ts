@@ -27,7 +27,7 @@ interface StatusRow {
 // Friendly labels for service binding and health check rows
 const KIND_LABEL: Partial<Record<string, string>> = {
   Api: "API",
-  Spa: "Frontend",
+  Spa: "Website",
   NoSql: "NoSQL database",
   Sql: "SQL database",
   ObjectStorage: "Object storage",
@@ -125,11 +125,14 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
       <div class="status-list" [class.status-list--done]="isDone()">
         <app-pipeline-nodes [states]="pipelineStates()" [done]="isDone()" />
         <div class="list-header">
-          @if (totalDuration()) {
-            <span class="total-duration"
-              >{{ isDone() ? "Total" : "Elapsed" }}: {{ totalDuration() }}</span
-            >
-          }
+          <h3 class="list-title">
+            Rollout
+            @if (totalDuration()) {
+              <span class="total-duration"
+                >{{ isDone() ? "took" : "so far" }} {{ totalDuration() }}</span
+              >
+            }
+          </h3>
           @if (isDone()) {
             <button class="collapse-btn" (click)="expanded.set(!expanded())">
               {{ expanded() ? "Collapse ▲" : "Details ▼" }}
@@ -223,6 +226,14 @@ function item(key: string, label: string, detail: string, status: RowStatus): St
         min-height: 1.5rem;
       }
 
+      .list-title {
+        margin: 0;
+        font-size: 1rem;
+      }
+      .list-title .total-duration {
+        margin-left: 0.4rem;
+        font-weight: 400;
+      }
       .total-duration {
         font-size: 0.7rem;
         opacity: 0.35;
@@ -863,18 +874,23 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     // ── Container startup ──────────────────────────────────────────────────
     if (hasApi || hasSpa) {
       const healthDone = this.allPreviewsReady()
+      // Workflow workers wait for Entra to accept their new app before they can serve.
+      const hasWorkflow = resources.some((r) => r.kind === "Workflow")
       rows.push(
         sec(
           "s-health",
-          "Waiting for container readiness probe",
+          hasWorkflow ? "Workers signing in to Temporal" : "Waiting for container readiness probe",
           healthDone ? "done" : "active",
           this.dur(4),
         ),
       )
       // Only expand while this phase is active
       if (!healthDone) {
+        if (hasWorkflow) {
+          rows.push(item("h-entra", "Entra", "accepting the new app's login, about 30s", "active"))
+        }
         if (hasApi) rows.push(item("h-api", "API", "polling…", "active"))
-        if (hasSpa) rows.push(item("h-spa", "Frontend", "polling…", "active"))
+        if (hasSpa) rows.push(item("h-spa", "Website", "polling…", "active"))
       }
     }
 
@@ -928,9 +944,13 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     }
 
     if (hasApi || hasSpa) {
-      rows.push(sec("s-health", "Waiting for container readiness probe", "done", this.dur(4)))
+      const hasWorkflow = resources.some((r) => r.kind === "Workflow")
+      const healthLabel = hasWorkflow
+        ? "Workers signing in to Temporal"
+        : "Waiting for container readiness probe"
+      rows.push(sec("s-health", healthLabel, "done", this.dur(4)))
       if (hasApi) rows.push(item("h-api", "API", "ready", "done"))
-      if (hasSpa) rows.push(item("h-spa", "Frontend", "ready", "done"))
+      if (hasSpa) rows.push(item("h-spa", "Website", "ready", "done"))
     }
 
     return rows

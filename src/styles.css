@@ -1437,3 +1437,13 @@ details.advanced-fields .form-fields {
   background: var(--color-accent);
   opacity: 0.7;
 }
+
+/* A product name in running text, such as Temporal or S3. Set by techParts. */
+.tech {
+  display: inline-block;
+  padding: 0 0.35em;
+  border-radius: 4px;
+  background: rgba(129, 140, 248, 0.18);
+  color: #c7d2fe;
+  font-weight: 600;
+}

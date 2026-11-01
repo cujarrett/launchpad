@@ -12,7 +12,13 @@ import { firstValueFrom } from "rxjs"
 import { KindIcon } from "../../core/kind-icon/kind-icon"
 import { WorkspaceService } from "../../core/services/workspace.service"
 import { httpErrorMessage } from "../../core/http-error"
-import { Resource, ResourceKind, RESOURCE_KIND_LABELS } from "../../core/models/workspace.model"
+import { techParts } from "../../core/tech-text"
+import {
+  Resource,
+  ResourceKind,
+  RESOURCE_KIND_COLORS,
+  RESOURCE_KIND_LABELS,
+} from "../../core/models/workspace.model"
 
 // Kinds available to guests - Wordpress excluded (production data risk),
 // Subscription excluded (requires existing topic).
@@ -20,432 +26,398 @@ import { Resource, ResourceKind, RESOURCE_KIND_LABELS } from "../../core/models/
 // Workflow brings its own Api, so it is a sandbox of its own.
 export const GUEST_KINDS: ResourceKind[] = ["Api", "Spa", "Workflow"]
 
-const GUEST_KIND_DESC: Record<ResourceKind, string> = {
-  Api: "REST API with HTTPS, cache, and database add-ons.",
-  Spa: "Static frontend app served over HTTPS.",
-  Sql: "Relational database.",
-  NoSql: "NoSQL key-value store. Fast lookups, flexible schemas.",
-  ObjectStorage: "Object storage for files, assets, and blobs.",
-  Cache: "",
-  Topic: "",
-  Subscription: "",
-  Wordpress: "",
-  GraphApi: "",
-  FederatedGraph: "",
-  Workflow: "An order that finishes even when its worker dies.",
+// The kinds a guest can still add. The page's Add button and this panel both use it.
+export function guestAvailableKinds(existingKinds: ResourceKind[]): ResourceKind[] {
+  const existing = new Set(existingKinds)
+  // The Workflow demo's Api takes the sandbox's one API hostname.
+  if (existing.has("Workflow")) return []
+  return GUEST_KINDS.filter((k) => !existing.has(k) && !(k === "Workflow" && existing.size > 0))
 }
+
+// What each demo card promises. Written as the outcome a guest sees, not the kind name.
+const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; includes: string }>> =
+  {
+    Api: {
+      title: "API with data",
+      desc: "A live API on real AWS and Postgres storage, with its own Single Page App.",
+      includes: "API · SPA · Postgres · DynamoDB · S3 · Redis",
+    },
+    Spa: {
+      title: "Single Page App",
+      desc: "A website that runs in the browser, on its own HTTPS address, calling its own API.",
+      includes: "SPA · API",
+    },
+    Workflow: {
+      title: "Crash-proof order",
+      desc: "Unplug a server mid-order and watch Temporal finish the order anyway.",
+      includes: "Temporal · Entra · 2 workers",
+    },
+  }
 
 @Component({
   selector: "app-guest-create",
   imports: [KindIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="guest-create-panel">
-      @if (!saving()) {
-        <h3>What do you want to build?</h3>
+    @if (!saving()) {
+      <div class="picker">
+        <h3>What do you want to try?</h3>
+        <p class="lede">Each demo builds real infrastructure in about a minute.</p>
 
         @if (existingResources().length > 0) {
-          <div class="existing-section">
-            <span class="section-label">Already in this workspace:</span>
-            <div class="existing-chips">
-              @for (r of existingResources(); track r.name) {
-                <span class="chip"><app-kind-icon [kind]="r.kind" /> {{ labels[r.kind] }}</span>
-              }
-            </div>
-          </div>
+          <p class="existing">
+            Already here:
+            @for (r of existingResources(); track r.name) {
+              <span class="chip"><app-kind-icon [kind]="r.kind" /> {{ labels[r.kind] }}</span>
+            }
+          </p>
         }
 
-        @if (availableKinds().length === 0) {
-          <p class="all-full">All resource types are already in this workspace.</p>
-        }
-        <div class="kind-grid">
+        <div class="cards">
           @for (k of availableKinds(); track k) {
             <button
-              class="kind-card"
+              class="card"
               type="button"
               [class.selected]="selectedKind() === k"
+              [attr.aria-pressed]="selectedKind() === k"
               (click)="selectedKind.set(k)"
             >
-              <app-kind-icon class="kind-icon" [kind]="k" />
-              <span class="kind-name">{{ labels[k] }}</span>
-              <span class="kind-desc">{{ kindDesc[k] }}</span>
+              <span class="tick">✓</span>
+              <span class="disc" [style.--kind]="colors[k]"
+                ><app-kind-icon class="kind-icon" [kind]="k"
+              /></span>
+              <span class="card-title">{{ demo[k]?.title ?? labels[k] }}</span>
+              <span class="card-desc">
+                @for (part of techParts(demo[k]?.desc ?? ""); track $index) {
+                  @if (part.tech) {
+                    <b class="tech">{{ part.text }}</b>
+                  } @else {
+                    {{ part.text }}
+                  }
+                }
+              </span>
+              <span class="card-includes">{{ demo[k]?.includes }}</span>
             </button>
           }
         </div>
 
         @if (selectedKind() === "Api") {
-          <div class="options-section">
-            <span class="options-label">Configure API</span>
-            <div class="options-grid">
-              @if (showSqlToggle()) {
-                <button
-                  type="button"
-                  class="option-card"
-                  [class.active]="withSql()"
-                  (click)="withSql.set(!withSql())"
-                >
-                  <span class="option-icon">🗄️</span>
-                  <div class="option-body">
-                    <span class="option-title">Connect to existing SQL database</span>
-                    <span class="option-desc"
-                      >Wire your API to the SQL database already in this workspace.</span
-                    >
-                  </div>
-                  <span class="option-toggle" [class.on]="withSql()"></span>
-                </button>
+          <div class="addons">
+            <div class="addons-head">
+              <span class="addons-label">Your API comes with</span>
+              <button type="button" class="dice" (click)="shuffle()">🎲 Surprise me</button>
+            </div>
+            <div class="toggles">
+              @if (offerSpa()) {
+                <span class="toggle on locked">
+                  <app-kind-icon kind="Spa" /><span>Single Page App</span
+                  ><span class="included">Included</span>
+                </span>
               }
-              @if (offerSql()) {
+              @if (offerSql() || showSqlToggle()) {
                 <button
                   type="button"
-                  class="option-card"
-                  [class.active]="withSql()"
+                  class="toggle"
+                  [class.on]="withSql()"
+                  [disabled]="withSql() && lastData()"
                   (click)="withSql.set(!withSql())"
                 >
-                  <span class="option-icon">🗄️</span>
-                  <div class="option-body">
-                    <span class="option-title">Also provision SQL database</span>
-                    <span class="option-desc"
-                      >Creates a relational database and wires it to your API.</span
-                    >
-                  </div>
-                  <span class="option-toggle" [class.on]="withSql()"></span>
+                  <app-kind-icon kind="Sql" /><span>Postgres</span><span class="switch"></span>
                 </button>
               }
               @if (offerNoSql()) {
                 <button
                   type="button"
-                  class="option-card"
-                  [class.active]="withNoSql()"
+                  class="toggle"
+                  [class.on]="withNoSql()"
+                  [disabled]="withNoSql() && lastData()"
                   (click)="withNoSql.set(!withNoSql())"
                 >
-                  <span class="option-icon">📋</span>
-                  <div class="option-body">
-                    <span class="option-title">Also provision NoSQL database</span>
-                    <span class="option-desc"
-                      >Creates a key-value store and wires it to your API.</span
-                    >
-                  </div>
-                  <span class="option-toggle" [class.on]="withNoSql()"></span>
+                  <app-kind-icon kind="NoSql" /><span>DynamoDB</span><span class="switch"></span>
                 </button>
               }
               @if (offerStorage()) {
                 <button
                   type="button"
-                  class="option-card"
-                  [class.active]="withStorage()"
+                  class="toggle"
+                  [class.on]="withStorage()"
+                  [disabled]="withStorage() && lastData()"
                   (click)="withStorage.set(!withStorage())"
                 >
-                  <span class="option-icon">🗂️</span>
-                  <div class="option-body">
-                    <span class="option-title">Also provision object storage</span>
-                    <span class="option-desc"
-                      >A managed store for files and blobs, wired to your API.</span
-                    >
-                  </div>
-                  <span class="option-toggle" [class.on]="withStorage()"></span>
+                  <app-kind-icon kind="ObjectStorage" /><span>S3 bucket</span
+                  ><span class="switch"></span>
                 </button>
               }
               <button
                 type="button"
-                class="option-card"
-                [class.active]="withCache()"
+                class="toggle"
+                [class.on]="withCache()"
                 (click)="withCache.set(!withCache())"
               >
-                <span class="option-icon">⏩</span>
-                <div class="option-body">
-                  <span class="option-title">Add cache</span>
-                  <span class="option-desc">Cache wired to your API via service binding.</span>
-                </div>
-                <span class="option-toggle" [class.on]="withCache()"></span>
+                <app-kind-icon kind="Cache" /><span>Redis cache</span><span class="switch"></span>
               </button>
-              @if (offerSpa()) {
-                <button
-                  type="button"
-                  class="option-card"
-                  [class.active]="withSpa()"
-                  (click)="withSpa.set(!withSpa())"
-                >
-                  <span class="option-icon">🌐</span>
-                  <div class="option-body">
-                    <span class="option-title">
-                      Also create a SPA
-                      <span class="recommended-badge">Recommended</span>
-                    </span>
-                    <span class="option-desc">Provisions a static frontend wired to this API.</span>
-                  </div>
-                  <span class="option-toggle" [class.on]="withSpa()"></span>
-                </button>
+            </div>
+            <p class="addons-note">Every API gets at least one place to store data.</p>
+          </div>
+        }
+
+        @if (selectedKind()) {
+          <p class="summary">
+            @for (part of techParts(planSummary()); track $index) {
+              @if (part.tech) {
+                <b class="tech">{{ part.text }}</b>
+              } @else {
+                {{ part.text }}
               }
-            </div>
-          </div>
+            }
+          </p>
         }
-
-        @if (selectedKind() === "Spa" && offerApi()) {
-          <div class="options-section">
-            <span class="options-label">Configure SPA</span>
-            <div class="options-grid">
-              <div class="option-card required">
-                <span class="option-icon">⚡</span>
-                <div class="option-body">
-                  <span class="option-title"
-                    >API backend <span class="required-badge">Required for this demo</span></span
-                  >
-                  <span class="option-desc"
-                    >Needed to serve your workspace name to the Demo SPA.</span
-                  >
-                </div>
-              </div>
-            </div>
-          </div>
-        }
-
         @if (error()) {
           <p class="field-error">{{ error() }}</p>
         }
 
-        <div class="form-actions">
+        <div class="actions">
           @if (availableKinds().length > 0) {
-            <button [disabled]="!selectedKind()" (click)="submit()">Create</button>
+            <button class="build" [disabled]="!selectedKind()" (click)="submit()">Build it</button>
+          } @else {
+            <p class="existing">Everything this sandbox can hold is already here.</p>
           }
-          <button type="button" class="secondary" (click)="cancelled.emit()">Cancel</button>
+          @if (allowCancel()) {
+            <button type="button" class="secondary" (click)="cancelled.emit()">Cancel</button>
+          }
         </div>
-      }
-    </div>
+      </div>
+    }
   `,
   styles: [
     `
-      .guest-create-panel {
-        padding: 1.5rem;
-      }
-      @media (max-width: 480px) {
-        .guest-create-panel {
-          padding: 0.5rem 0 1rem;
-        }
+      .picker {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 1.5rem 0;
+        text-align: center;
       }
       h3 {
-        margin: 0 0 1rem;
+        margin: 0;
+        font-size: 1.4rem;
       }
-      .existing-section {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-        margin-bottom: 1.25rem;
+      .lede {
+        margin: 0.4rem 0 1.5rem;
+        opacity: 0.7;
       }
-      .section-label {
-        font-size: 0.8rem;
-        opacity: 0.6;
-        white-space: nowrap;
-      }
-      .existing-chips {
-        display: flex;
-        gap: 0.4rem;
-        flex-wrap: wrap;
+      .existing {
+        font-size: 0.85rem;
+        opacity: 0.75;
       }
       .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        margin: 0 0.2rem;
+        padding: 0.15rem 0.55rem;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 999px;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        text-align: left;
+      }
+      .card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 1.25rem;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+        color: inherit;
+        cursor: pointer;
+        transition:
+          transform 0.15s,
+          border-color 0.15s,
+          box-shadow 0.15s;
+      }
+      .card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, 0.25);
+      }
+      .card.selected {
+        border-color: #818cf8;
+        box-shadow:
+          0 0 0 1px #818cf8,
+          0 8px 30px rgba(99, 102, 241, 0.35);
+      }
+      .tick {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        width: 1.4rem;
+        height: 1.4rem;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 0.75rem;
+        background: #6366f1;
+        color: #fff;
+        opacity: 0;
+      }
+      .card.selected .tick {
+        opacity: 1;
+      }
+      .disc {
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: color-mix(in srgb, var(--kind) 22%, transparent);
+        color: var(--kind);
+        font-size: 1.3rem;
+      }
+      .card-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+      }
+      .card-desc {
+        font-size: 0.85rem;
+        line-height: 1.4;
+        opacity: 0.8;
+      }
+      .card-includes {
+        margin-top: auto;
+        font-size: 0.75rem;
+        opacity: 0.55;
+      }
+      .addons {
+        margin-top: 1.5rem;
+      }
+      .addons-head {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.6rem;
+      }
+      .dice {
+        background: none;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: inherit;
         font-size: 0.8rem;
         padding: 0.2rem 0.6rem;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.15);
       }
-      .kind-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        gap: 0.75rem;
-        margin-bottom: 1rem;
-      }
-      .kind-card {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.25rem;
-        padding: 0.75rem;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 8px;
-        cursor: pointer;
-        text-align: left;
-        position: relative;
-        transition:
-          border-color 0.15s,
-          background 0.15s;
-      }
-      .kind-card:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.25);
-      }
-      .kind-card.selected {
-        border-color: #7c3aed;
-        background: rgba(124, 58, 237, 0.15);
-      }
-
-      .all-full {
-        margin: 0 0 1rem;
-        font-size: 0.875rem;
+      .addons-note {
+        margin: 0.5rem 0 0;
+        font-size: 0.75rem;
         opacity: 0.55;
       }
-      .kind-icon {
-        font-size: 1.4rem;
-        line-height: 1;
+      .toggle.locked {
+        cursor: default;
       }
-      .kind-name {
-        font-size: 0.875rem;
-        font-weight: 600;
+      .toggle:disabled {
+        cursor: not-allowed;
       }
-      .kind-desc {
-        font-size: 0.75rem;
-        opacity: 0.6;
-        line-height: 1.3;
-      }
-      .options-section {
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        margin-top: 0.25rem;
-        padding-top: 1rem;
-        margin-bottom: 1rem;
-      }
-      .options-label {
-        display: block;
+      .included {
+        margin-left: auto;
         font-size: 0.7rem;
+        opacity: 0.7;
+      }
+      .addons-label {
+        display: block;
+        font-size: 0.8rem;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        opacity: 0.45;
-        margin-bottom: 0.75rem;
+        opacity: 0.6;
       }
-      .options-grid {
+      .toggles {
         display: grid;
-        /* Two columns on desktop, one on phones. */
-        grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
         gap: 0.5rem;
       }
-      .option-card {
+      .toggle {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        cursor: pointer;
-        text-align: left;
-        transition:
-          border-color 0.15s,
-          background 0.15s;
-        color: inherit;
-      }
-      .option-icon {
-        font-size: 1.2rem;
-        line-height: 1;
-        flex-shrink: 0;
-      }
-      .option-card.required {
-        cursor: default;
-        opacity: 0.8;
-      }
-      .required-badge {
-        display: inline-block;
-        font-size: 0.65rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--purple, #a78bfa);
-        background: rgba(124, 58, 237, 0.15);
-        border: 1px solid rgba(124, 58, 237, 0.3);
-        border-radius: 4px;
-        padding: 1px 5px;
-        vertical-align: middle;
-        margin-left: 6px;
-      }
-      .option-card:hover {
-        background: rgba(255, 255, 255, 0.07);
-        border-color: rgba(255, 255, 255, 0.2);
-      }
-      .option-card.active {
-        border-color: rgba(124, 58, 237, 0.6);
-        background: rgba(124, 58, 237, 0.1);
-      }
-      .options-grid .option-card {
-        animation: card-in 0.25s ease both;
-      }
-      .options-grid .option-card:nth-child(1) {
-        animation-delay: 0.05s;
-      }
-      .options-grid .option-card:nth-child(2) {
-        animation-delay: 0.1s;
-      }
-      .options-grid .option-card:nth-child(3) {
-        animation-delay: 0.15s;
-      }
-      .options-grid .option-card:nth-child(4) {
-        animation-delay: 0.2s;
-      }
-      .options-grid .option-card:nth-child(5) {
-        animation-delay: 0.25s;
-      }
-      @keyframes card-in {
-        from {
-          opacity: 0;
-          transform: translateY(4px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .recommended-badge {
-        display: inline-block;
-        font-size: 0.65rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #a78bfa;
-        background: rgba(124, 58, 237, 0.15);
-        border: 1px solid rgba(124, 58, 237, 0.3);
-        border-radius: 4px;
-        padding: 1px 5px;
-        vertical-align: middle;
-        margin-left: 6px;
-      }
-      .option-body {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-      }
-      .option-title {
-        font-size: 0.875rem;
-        font-weight: 500;
-      }
-      .option-desc {
-        font-size: 0.75rem;
-        opacity: 0.55;
-        line-height: 1.4;
-      }
-      .option-toggle {
-        flex-shrink: 0;
-        width: 36px;
-        height: 20px;
+        gap: 0.5rem;
+        padding: 0.6rem 0.75rem;
         border-radius: 10px;
-        background: rgba(255, 255, 255, 0.15);
-        position: relative;
-        transition: background 0.2s;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.03);
+        color: inherit;
+        font-size: 0.85rem;
+        text-align: left;
+        cursor: pointer;
       }
-      .option-toggle::after {
+      .toggle.on {
+        border-color: #818cf8;
+        background: rgba(99, 102, 241, 0.12);
+      }
+      .switch {
+        margin-left: auto;
+        width: 30px;
+        height: 18px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.2);
+        position: relative;
+        flex-shrink: 0;
+      }
+      .switch::after {
         content: "";
         position: absolute;
         top: 2px;
         left: 2px;
-        width: 16px;
-        height: 16px;
+        width: 14px;
+        height: 14px;
         border-radius: 50%;
         background: #fff;
-        transition: transform 0.2s;
+        transition: transform 0.15s;
       }
-      .option-toggle.on {
-        background: #7c3aed;
+      .toggle.on .switch {
+        background: #6366f1;
       }
-      .option-toggle.on::after {
-        transform: translateX(16px);
+      .toggle.on .switch::after {
+        transform: translateX(12px);
+      }
+      .summary {
+        margin: 1.25rem 0 0;
+        font-size: 0.9rem;
+        opacity: 0.85;
+      }
+      .actions {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 1rem;
+      }
+      .build {
+        min-width: 12rem;
+        text-align: center;
+        justify-content: center;
+        padding: 0.7rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+      .field-error {
+        color: #fca5a5;
+      }
+      @media (max-width: 600px) {
+        .picker {
+          padding: 0.5rem 0 1rem;
+        }
+        .cards,
+        .toggles {
+          grid-template-columns: 1fr;
+        }
+        .actions {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .build {
+          width: 100%;
+        }
       }
     `,
   ],
@@ -453,6 +425,8 @@ const GUEST_KIND_DESC: Record<ResourceKind, string> = {
 export class GuestCreate implements OnInit {
   readonly workspace = input.required<string>()
   readonly existingResources = input<Resource[]>([])
+  // An empty sandbox has nothing to go back to, so its picker has no Cancel.
+  readonly allowCancel = input(true)
   readonly created = output<void>()
   readonly cancelled = output<void>()
   readonly commitPlanChange = output<string[]>()
@@ -461,7 +435,8 @@ export class GuestCreate implements OnInit {
 
   protected readonly guestKinds = GUEST_KINDS
   protected readonly labels = RESOURCE_KIND_LABELS
-  protected readonly kindDesc = GUEST_KIND_DESC
+  protected readonly demo = DEMO_CARDS
+  protected readonly colors = RESOURCE_KIND_COLORS
 
   protected readonly selectedKind = signal<ResourceKind | "">("")
   protected readonly saving = signal(false)
@@ -471,16 +446,12 @@ export class GuestCreate implements OnInit {
   protected readonly withCache = signal(false)
   protected readonly withSql = signal(false)
   protected readonly withNoSql = signal(false)
-  protected readonly withSpa = signal(false)
+  // Always on, so a guest sees a page as well as JSON.
+  protected readonly withSpa = signal(true)
 
-  protected readonly availableKinds = computed(() => {
-    const existing = new Set(this.existingResources().map((r) => r.kind))
-    // The Workflow demo's Api takes the sandbox's one API hostname.
-    if (existing.has("Workflow")) return []
-    return this.guestKinds.filter(
-      (k) => !existing.has(k) && !(k === "Workflow" && existing.size > 0),
-    )
-  })
+  protected readonly availableKinds = computed(() =>
+    guestAvailableKinds(this.existingResources().map((r) => r.kind)),
+  )
 
   protected readonly offerStorage = computed(() => {
     if (this.selectedKind() !== "Api") return false
@@ -508,11 +479,66 @@ export class GuestCreate implements OnInit {
     () => this.selectedKind() === "Spa" && !this.existingResources().some((r) => r.kind === "Api"),
   )
 
+  protected readonly techParts = techParts
+
+  // Data stores already in the sandbox count toward the one-store rule.
+  private readonly hasExistingData = computed(() =>
+    this.existingResources().some((r) => ["Sql", "NoSql", "ObjectStorage"].includes(r.kind)),
+  )
+
+  // True when only one data store is on, so turning it off is blocked.
+  protected readonly lastData = computed(() => {
+    if (this.hasExistingData()) return false
+    const on = [this.withSql(), this.withNoSql(), this.withStorage()].filter(Boolean)
+    return on.length <= 1
+  })
+
+  // Written as a sentence: "You'll get an API, a Postgres database and a Redis cache."
+  protected readonly planSummary = computed(() => {
+    const kind = this.selectedKind()
+    let items: string[] = []
+    if (kind === "Api") {
+      items = [
+        "an API",
+        this.offerSpa() ? "a Single Page App" : "",
+        this.withSql() ? "a Postgres database" : "",
+        this.withNoSql() ? "a DynamoDB table" : "",
+        this.withStorage() ? "an S3 bucket" : "",
+        this.withCache() ? "a Redis cache" : "",
+      ].filter(Boolean)
+    } else if (kind === "Spa") {
+      items = ["a Single Page App", this.offerApi() ? "an API behind it" : ""].filter(Boolean)
+    } else if (kind === "Workflow") {
+      items = ["a Temporal workflow", "two workers that sign in with Entra"]
+    }
+    if (items.length === 0) return ""
+    const list =
+      items.length === 1 ? items[0] : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`
+    return `You'll get ${list}.`
+  })
+
   ngOnInit(): void {
     // Auto-select Api so the configure options are visible immediately.
     if (this.availableKinds().includes("Api")) {
       this.selectedKind.set("Api")
     }
+    this.shuffle()
+  }
+
+  // Picks a random mix, so each guest sees a different sandbox.
+  // At least one data store is always on. The cache is on about half the time.
+  protected shuffle(): void {
+    const offered = [
+      this.offerSql() ? this.withSql : null,
+      this.offerNoSql() ? this.withNoSql : null,
+      this.offerStorage() ? this.withStorage : null,
+    ].filter((sig) => sig !== null)
+    offered.forEach((sig) => sig.set(Math.random() < 0.5))
+    const anyOn = offered.some((sig) => sig())
+    if (!anyOn && offered.length && !this.hasExistingData()) {
+      offered[Math.floor(Math.random() * offered.length)].set(true)
+    }
+    this.withCache.set(Math.random() < 0.5)
   }
 
   protected buildCommitPlan(kind: ResourceKind): string[] {
@@ -520,10 +546,10 @@ export class GuestCreate implements OnInit {
     if (this.withStorage() && kind === "Api") steps.push("Object storage")
     if (this.withSql() && this.offerSql() && kind === "Api") steps.push("SQL database")
     if (this.withNoSql() && kind === "Api") steps.push("NoSQL database")
-    if (this.withSpa() && kind === "Api" && this.offerSpa()) steps.push("Frontend")
+    if (this.withSpa() && kind === "Api" && this.offerSpa()) steps.push("Website")
     if (kind === "Spa" && this.offerApi()) steps.push("API")
     if (kind === "Workflow") steps.push("Workflow")
-    steps.push(kind === "Spa" ? "Frontend" : "API")
+    steps.push(kind === "Spa" ? "Website" : "API")
     return steps
   }
 

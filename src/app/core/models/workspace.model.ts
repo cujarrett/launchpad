@@ -95,4 +95,6 @@ export interface ResourceStatus {
   initContainers?: InitContainerStatus[]
   // The kind of each resource the platform made for this XR.
   composed?: string[]
+  // A pod that no longer exists.
+  deleted?: boolean
 }
