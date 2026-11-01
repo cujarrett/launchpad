@@ -588,8 +588,9 @@ export class GuestCreate implements OnInit {
       // workspace if this request is interrupted.
       await firstValueFrom(
         this.workspaceService.createGuestResourceBatch(this.workspace(), kind, {
-          withCache: this.withCache(),
-          withSql: this.withSql(),
+          // Add-ons belong to the API with data demo only. The picker keeps its toggles when switching cards.
+          withCache: this.withCache() && kind === "Api",
+          withSql: this.withSql() && kind === "Api",
           withNoSql: this.withNoSql() && kind === "Api",
           withStorage: this.withStorage() && kind === "Api",
           withSpa: this.withSpa() && kind === "Api" && this.offerSpa(),
