@@ -25,6 +25,7 @@ import { CreateResource } from "../../create/create-resource"
 import { WorkspaceArch } from "../workspace-arch/workspace-arch"
 import { GuestCreate, GUEST_KINDS } from "../guest-create/guest-create"
 import { ProvisioningPipeline } from "../provisioning-pipeline/provisioning-pipeline"
+import { PlatformMade } from "../platform-made/platform-made"
 import { SseService } from "../../core/services/sse.service"
 import { environment } from "../../../environments/environment"
 
@@ -67,6 +68,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
     WorkspaceArch,
     GuestCreate,
     ProvisioningPipeline,
+    PlatformMade,
     RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -250,6 +252,12 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
           [commitPlan]="commitPlan()"
         />
       </div>
+      <app-platform-made
+        [workspace]="name()"
+        [resources]="resources()"
+        [statusMap]="statusMap()"
+        [isGuest]="isGuest()"
+      />
     </div>
   `,
   styles: [

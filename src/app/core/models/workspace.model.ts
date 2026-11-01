@@ -93,4 +93,6 @@ export interface ResourceStatus {
   ready: boolean
   message?: string
   initContainers?: InitContainerStatus[]
+  // The kind of each resource the platform made for this XR.
+  composed?: string[]
 }

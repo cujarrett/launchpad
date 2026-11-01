@@ -72,6 +72,14 @@ export class WorkspaceService {
     )
   }
 
+  getGuestCleanup(
+    workspace: string,
+  ): Observable<{ workflowId: string; namespace: string; status: string }> {
+    return this.http.get<{ workflowId: string; namespace: string; status: string }>(
+      `${environment.apiUrl}/guest/workspaces/${workspace}/cleanup`,
+    )
+  }
+
   recordGuestPhase(workspace: string, phase: string, done = false): void {
     this.http
       .post<void>(`${environment.apiUrl}/guest/workspaces/${workspace}/phases`, { phase, done })
