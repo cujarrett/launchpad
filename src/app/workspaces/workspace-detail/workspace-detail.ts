@@ -82,7 +82,12 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
       @if (isGuest()) {
         @if (isExpired()) {
           <div class="guest-banner expiring">
-            ⏰ This sandbox has expired and will be deleted shortly.
+            ⏰
+            @if (guestGone()) {
+              This sandbox expired and was deleted. <a routerLink="/">Start a new one</a>
+            } @else {
+              This sandbox has expired and will be deleted shortly.
+            }
           </div>
         } @else {
           <div class="guest-banner" [class.expiring]="isExpiringSoon()">
@@ -198,50 +203,55 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
         }
       }
 
-      @if (loading()) {
-        <p class="muted">Loading...</p>
-      } @else if (loadError()) {
-        <p class="field-error">
-          Still waiting on your workspace - this is taking longer than usual.
-          <button type="button" (click)="retryLoadResources()">Retry</button>
-        </p>
-      } @else {
-        @if (viewMode() === "arch" && !pipelineActive()) {
-          <app-workspace-arch [resources]="resources()" [statusMap]="statusMap()" />
-        }
-        <!-- Always rendered so resource-card health polling drives allPreviewsReady. -->
-        <div [hidden]="viewMode() === 'arch'">
-          <div class="card-grid">
-            @for (resource of sortedResources(); track resource.name) {
-              <app-resource-card
-                [resource]="resource"
-                [workspace]="name()"
-                [status]="statusMap()[statusKey(resource.kind, resource.name)] ?? null"
-                [expanded]="expandedResource() === resource.name"
-                [canEdit]="roleService.isContributor()"
-                [canEditConnections]="isGuest() && resource.kind === 'Api'"
-                [dependencyReady]="resource.kind !== 'Spa' || spaApiReady()"
-                (toggled)="
-                  expandedResource.set(expandedResource() === resource.name ? null : resource.name)
-                "
-                (deleted)="handleDelete($event)"
-                (saved)="expandedResource.set(null); loadResources()"
-                (createKind)="startCreateForKind($event)"
-                (previewReady)="handlePreviewReady($event)"
-              />
-            } @empty {
-              @if (!creating()) {
-                <p class="muted">
-                  No resources yet.{{ isGuest() ? " Add one above to watch it spin up!" : "" }}
-                </p>
-              }
-            }
-          </div>
-        </div>
-      }
-      <!-- Building: the rollout steps lead. Done: they move to the bottom as a receipt.
+      <!-- Ready: the live link and demo lead, above the cards, so phones see them first.
+           Done: the rollout steps move to the bottom as a receipt.
            CSS order moves them without remounting. -->
       <div class="story">
+        <div class="cards">
+          @if (loading()) {
+            <p class="muted">Loading...</p>
+          } @else if (loadError()) {
+            <p class="field-error">
+              Still waiting on your workspace - this is taking longer than usual.
+              <button type="button" (click)="retryLoadResources()">Retry</button>
+            </p>
+          } @else {
+            @if (viewMode() === "arch" && !pipelineActive()) {
+              <app-workspace-arch [resources]="resources()" [statusMap]="statusMap()" />
+            }
+            <!-- Always rendered so resource-card health polling drives allPreviewsReady. -->
+            <div [hidden]="viewMode() === 'arch'">
+              <div class="card-grid">
+                @for (resource of sortedResources(); track resource.name) {
+                  <app-resource-card
+                    [resource]="resource"
+                    [workspace]="name()"
+                    [status]="statusMap()[statusKey(resource.kind, resource.name)] ?? null"
+                    [expanded]="expandedResource() === resource.name"
+                    [canEdit]="roleService.isContributor()"
+                    [canEditConnections]="isGuest() && resource.kind === 'Api'"
+                    [dependencyReady]="resource.kind !== 'Spa' || spaApiReady()"
+                    (toggled)="
+                      expandedResource.set(
+                        expandedResource() === resource.name ? null : resource.name
+                      )
+                    "
+                    (deleted)="handleDelete($event)"
+                    (saved)="expandedResource.set(null); loadResources()"
+                    (createKind)="startCreateForKind($event)"
+                    (previewReady)="handlePreviewReady($event)"
+                  />
+                } @empty {
+                  @if (!creating()) {
+                    <p class="muted">
+                      No resources yet.{{ isGuest() ? " Add one above to watch it spin up!" : "" }}
+                    </p>
+                  }
+                }
+              </div>
+            </div>
+          }
+        </div>
         @if (liveApp(); as app) {
           <a
             class="live-cta"
@@ -253,15 +263,20 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
               <span class="live-title">Your app is live</span>
               <span class="live-sub">{{ app.sub }}</span>
             </span>
-            <span class="live-btn">Open {{ app.host }} ↗</span>
+            <span class="live-btn" [title]="app.host">Open your app ↗</span>
           </a>
         }
         <!-- Outside the loading gate, so it stays mounted across resource refreshes.
            Once done it collapses to each step's time. Arch view hides it then, because the
            diagram shows live health itself. -->
+        <!-- An empty sandbox showing the picker has no run to show. Phase times the server
+             still holds from a failed attempt would otherwise draw a stuck rollout. -->
         <div
-          [hidden]="viewMode() === 'arch' && !pipelineActive()"
-          [style.order]="pipelineActive() ? 0 : 3"
+          [hidden]="
+            (viewMode() === 'arch' && !pipelineActive()) ||
+            (guestNeedsPick() && commitPlan().length === 0)
+          "
+          [style.order]="pipelineActive() ? 3 : 5"
         >
           <app-provisioning-pipeline
             [workspace]="name()"
@@ -367,13 +382,25 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
         display: flex;
         flex-direction: column;
       }
+      .cards {
+        order: 2;
+      }
+      app-try-workflow {
+        display: block;
+        order: 1;
+        margin-bottom: 1.5rem;
+      }
+      app-platform-made {
+        order: 4;
+      }
       .live-cta {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
         flex-wrap: wrap;
-        margin-top: 1.5rem;
+        order: 0;
+        margin-bottom: 1.5rem;
         padding: 1.25rem 1.5rem;
         border-radius: 14px;
         border: 1px solid #34d399;
@@ -407,6 +434,13 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
         white-space: nowrap;
       }
       @media (max-width: 600px) {
+        .live-cta {
+          padding: 0.9rem 1rem;
+          gap: 0.6rem;
+        }
+        .live-title {
+          font-size: 1.05rem;
+        }
         .live-btn {
           width: 100%;
           text-align: center;
@@ -439,6 +473,10 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   })
   protected readonly guestPhaseTimes = signal<Record<string, string>>({})
   protected readonly guestDoneAt = signal<string | null>(null)
+  private readonly guestMetaTried = signal(false)
+  // Its cleanup workflow finished, so the sandbox no longer exists. A deleted sandbox
+  // has no expiry left to read, so this is the only way the page can tell.
+  protected readonly guestGone = signal(false)
   protected readonly resources = signal<Resource[]>([])
   protected readonly loading = signal(true)
   protected readonly creating = signal(false)
@@ -513,24 +551,37 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   private readonly settled = signal<Set<string>>(new Set())
   private readonly recordSettled = effect(() => {
     const resources = this.resources()
-    if (resources.length > 0 && !this.rolloutRunning()) {
+    if (resources.length === 0) return
+    // A sandbox that finished before this page loaded starts settled, so a refresh doesn't replay the rollout.
+    const finishedEarlier = !!this.guestDoneAt() && untracked(() => this.settled().size === 0)
+    if (finishedEarlier || !this.rolloutRunning()) {
       untracked(() => this.settled.set(new Set(resources.map((r) => statusKey(r.kind, r.name)))))
     }
   })
 
   protected readonly pipelineActive = computed(() => {
     if (this.commitPlan().length > 0) return true
+    // Until the first read of the sandbox's saved finish time, a refresh can't tell
+    // a finished sandbox from one mid-rollout.
+    if (this.isGuest() && !this.guestMetaTried()) return false
     const settled = this.settled()
     const allSettled =
       settled.size > 0 && this.resources().every((r) => settled.has(statusKey(r.kind, r.name)))
     return allSettled ? false : this.rolloutRunning()
   })
 
+  // A settled sandbox skips waiting on this page's own health checks after a refresh.
+  private readonly readyToTry = computed(
+    () =>
+      this.allPreviewsReady() ||
+      (!this.pipelineActive() && (!this.isGuest() || this.guestMetaTried())),
+  )
+
   // The payoff of a sandbox. Shown once the readiness probe passes.
   // Workflow sandboxes show their demo panel instead.
   protected readonly liveApp = computed(() => {
     const resources = this.resources()
-    if (!this.allPreviewsReady() || resources.some((r) => r.kind === "Workflow")) return null
+    if (!this.readyToTry() || resources.some((r) => r.kind === "Workflow")) return null
     const withHost = (kind: string) =>
       resources.find((r) => r.kind === kind && typeof r.spec["host"] === "string")
     const spa = withHost("Spa")
@@ -538,9 +589,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     if (!target) return null
     return {
       host: target.spec["host"] as string,
-      sub: spa
-        ? "See your page call your API, and your API reach every service you added."
-        : "See your API answer, and reach every service you added.",
+      sub: spa ? "Live calls from your page to every service." : "Live calls to every service.",
     }
   })
 
@@ -550,7 +599,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     if (!resources.some((r) => r.kind === "Workflow")) return null
     const api = resources.find((r) => r.kind === "Api" && typeof r.spec["host"] === "string")
     // Waits for the readiness probe, so the workers are serving before the panel appears.
-    if (!api || !this.allPreviewsReady()) return null
+    if (!api || !this.readyToTry()) return null
     return { host: api.spec["host"] as string, apiName: api.name }
   })
 
@@ -576,6 +625,7 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
 
   protected isExpired(): boolean {
     this.tick()
+    if (this.guestGone()) return true
     const expiresAt = this.guestExpiresAt()
     if (!expiresAt) return false
     return new Date(expiresAt).getTime() - Date.now() <= 0
@@ -605,6 +655,12 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
       if (fresh) this.guestExpiresAt.set(new Date(Date.now() + GUEST_TTL_MS).toISOString())
       // Not awaited - the countdown must never gate rendering.
       void this.loadGuestMeta(workspaceName)
+      if (!fresh) {
+        this.workspaceService.getGuestCleanup(workspaceName).subscribe({
+          next: (c) => this.guestGone.set(c.status === "completed"),
+          error: () => {},
+        })
+      }
     }
 
     if (fresh) {
@@ -675,6 +731,8 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
         }
       } catch {
         // Non-fatal - countdown falls back to the optimistic expiry, or '?'.
+      } finally {
+        this.guestMetaTried.set(true)
       }
       // The API caches /workspaces, so retrying sooner just re-reads the same stale miss.
       await new Promise((resolve) => setTimeout(resolve, 3000))

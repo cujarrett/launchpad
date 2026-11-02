@@ -8,7 +8,8 @@ import {
   signal,
 } from "@angular/core"
 import { inject } from "@angular/core"
-import { firstValueFrom } from "rxjs"
+import { toObservable } from "@angular/core/rxjs-interop"
+import { filter, firstValueFrom } from "rxjs"
 import { KindIcon } from "../../core/kind-icon/kind-icon"
 import { WorkspaceService } from "../../core/services/workspace.service"
 import { httpErrorMessage } from "../../core/http-error"
@@ -39,18 +40,18 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
   {
     Api: {
       title: "API with data",
-      desc: "A live API on real AWS and Postgres storage, with its own Single Page App.",
+      desc: "A live API using real AWS and Postgres.",
       includes: "API · SPA · Postgres · DynamoDB · S3 · Redis",
     },
     Spa: {
       title: "Single Page App",
-      desc: "A website that runs in the browser, on its own HTTPS address, calling its own API.",
+      desc: "A website with its own address and API.",
       includes: "SPA · API",
     },
     Workflow: {
       title: "Crash-proof order",
-      desc: "Unplug a server mid-order and watch Temporal finish the order anyway.",
-      includes: "Temporal · Entra · 2 workers",
+      desc: "Unplug a server mid-order. Temporal still finishes it.",
+      includes: "Temporal · Entra · 2 servers",
     },
   }
 
@@ -183,13 +184,7 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
 
         <div class="actions">
           @if (availableKinds().length > 0) {
-            <button
-              class="build"
-              [disabled]="!selectedKind() || !sandboxReady()"
-              (click)="submit()"
-            >
-              {{ sandboxReady() ? "Build it" : "Setting up your sandbox…" }}
-            </button>
+            <button class="build" [disabled]="!selectedKind()" (click)="submit()">Build it</button>
           } @else {
             <p class="existing">Everything this sandbox can hold is already here.</p>
           }
@@ -497,8 +492,9 @@ export class GuestCreate implements OnInit {
 
   protected readonly techParts = techParts
 
-  protected readonly sandboxReady = computed(
-    () => this.workspaceService.creatingGuest() !== this.workspace(),
+  // A fast pick can beat the sandbox's own commit. Build waits for it behind the rollout.
+  private readonly sandboxReady$ = toObservable(
+    computed(() => this.workspaceService.creatingGuest() !== this.workspace()),
   )
 
   // Data stores already in the sandbox count toward the one-store rule.
@@ -582,6 +578,11 @@ export class GuestCreate implements OnInit {
     this.saving.set(true)
     this.error.set(null)
     try {
+      // False only if this page closed first, such as a failed sandbox create sending the guest home.
+      const ready = await firstValueFrom(this.sandboxReady$.pipe(filter(Boolean)), {
+        defaultValue: false,
+      })
+      if (!ready) return
       // All requested resources (add-ons plus the API/SPA itself) are created
       // in one request and one atomic Git commit server-side - no more
       // sequential round trips per add-on, and no risk of a partially created

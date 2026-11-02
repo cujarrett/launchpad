@@ -26,6 +26,14 @@ const STEP_NAMES = ["charge", "pack", "ship", "email"]
 // Polling stops once both copies have settled, or after this long.
 const MAX_POLL_MS = 2 * 60 * 1000
 
+// What a server is doing during each step, in words a guest reads at a glance.
+const DOING: Record<string, string> = {
+  charge: "charging the card",
+  pack: "packing the box",
+  ship: "shipping the box",
+  email: "emailing the receipt",
+}
+
 const MARK: Record<string, string> = { done: "✓", running: "●", stuck: "✗", waiting: "·" }
 
 @Component({
@@ -33,63 +41,59 @@ const MARK: Record<string, string> = { done: "✓", running: "●", stuck: "✗"
   template: `
     <section class="panel">
       <div class="head">
-        <h3>Crash a worker mid-order</h3>
-        <details class="why" [open]="!everPlaced()">
+        <h3>Crash a server mid-order</h3>
+        <details class="why" [open]="!everPlaced() && wide">
           <summary>Why this matters</summary>
           <ul>
-            <li>A worker is a server that does an order's steps: charge, pack, ship, email.</li>
-            <li>Servers crash, restart and get redeployed all the time.</li>
-            <li>Without Temporal, a crash mid-order can charge a customer and never ship.</li>
-            <li>With Temporal, another worker carries on, and the card is charged once.</li>
+            <li>Servers crash and redeploy all the time.</li>
+            <li>Without Temporal, a crash can charge a card and never ship.</li>
+            <li>Temporal saves each step, so another server carries on.</li>
           </ul>
         </details>
       </div>
-      <p class="bridge">
-        Your Workflow runs on Temporal, which records every step as it happens. Each order you place
-        runs twice, side by side: once without Temporal and once with it.
-      </p>
+      <p class="bridge">Each order runs twice: without Temporal and with it.</p>
 
-      <div class="bar">
+      <div class="spotlight" [class.urgent]="stage() === 2" [class.win]="won()">
         <ol class="steps">
-          <li [class.active]="stage() === 1" [class.done]="stage() > 1">
-            <span class="num">{{ stage() > 1 ? "✓" : "1" }}</span>
-            @if (stage() === 1) {
-              <button class="go" (click)="placeOrder()" [disabled]="busy()">
-                {{ order() ? "Place another order" : "Place an order" }}
-              </button>
-            } @else {
-              <span>Order placed</span>
-            }
+          <li
+            [class.active]="stage() === 1 && !finished()"
+            [class.done]="stage() > 1 || finished()"
+          >
+            1 · Order
           </li>
-          <li [class.active]="stage() === 2" [class.done]="stage() > 2">
-            <span class="num">{{ stage() > 2 ? "✓" : "2" }}</span>
-            @if (stage() > 2) {
-              <span>{{ unpluggedLabel() }} unplugged</span>
-            } @else {
-              <button class="danger" (click)="unplug()" [disabled]="stage() < 2 || !canUnplug()">
-                Unplug {{ busyPod() ? labelOf(busyPod()) : "its worker" }}
-              </button>
-            }
-          </li>
-          <li [class.active]="stage() === 3">
-            <span class="num">3</span>
-            <span>Watch</span>
-          </li>
+          <li [class.active]="stage() === 2" [class.done]="stage() > 2 || won()">2 · Crash</li>
+          <li [class.active]="stage() === 3" [class.done]="won()">3 · Watch</li>
         </ol>
-        <div class="workers">
-          @for (w of workers(); track w.pod) {
-            <span class="worker" [class.online]="w.online" [class.busy]="w.pod === busyPod()">
-              <span class="dot"></span>{{ w.label }}
-              <span class="state">{{
-                w.online ? (w.pod === busyPod() ? "working" : "online") : "offline"
-              }}</span>
-            </span>
+        <p class="prompt">{{ prompt() }}</p>
+        <div class="action">
+          @if (stage() === 1) {
+            <button
+              class="go"
+              [class.pulse]="!order() || missed()"
+              (click)="placeOrder()"
+              [disabled]="busy()"
+            >
+              {{ order() ? "Run it again" : "Place an order" }}
+            </button>
+          } @else if (stage() === 2) {
+            <button class="danger pulse" (click)="unplug()" [disabled]="!canUnplug()">
+              ⚡ Unplug {{ labelOf(busyPod()) || "the server" }}
+            </button>
+          } @else {
+            <span class="watching"><span class="spinner"></span>Watching the order recover</span>
           }
+          <div class="workers">
+            @for (w of workers(); track w.pod) {
+              <span class="worker" [class.online]="w.online" [class.busy]="w.pod === busyPod()">
+                <span class="dot"></span>{{ w.label }}
+                <span class="state">{{
+                  w.online ? (w.pod === busyPod() ? "working" : "online") : "offline"
+                }}</span>
+              </span>
+            }
+          </div>
         </div>
       </div>
-      @if (hint()) {
-        <p class="hint">{{ hint() }}</p>
-      }
       @if (error()) {
         <p class="error">{{ error() }}</p>
       }
@@ -121,10 +125,6 @@ const MARK: Record<string, string> = { done: "✓", running: "●", stuck: "✗"
         <p class="caption" [class.good]="order()?.workflow?.done">{{ temporalCaption() }}</p>
       </div>
 
-      @if (result()) {
-        <p class="result">{{ result() }}</p>
-      }
-
       @if (order()?.events?.length) {
         <details class="history">
           <summary>Event history from Temporal</summary>
@@ -146,7 +146,6 @@ const MARK: Record<string, string> = { done: "✓", running: "●", stuck: "✗"
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 12px;
         padding: 1rem 1.25rem;
-        margin-top: 1.5rem;
       }
       .why {
         margin-top: 0.4rem;
@@ -177,65 +176,120 @@ const MARK: Record<string, string> = { done: "✓", running: "●", stuck: "✗"
         font-size: 0.85rem;
         opacity: 0.8;
       }
-      .bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 0.75rem;
-        flex-wrap: wrap;
+      .spotlight {
+        margin: 0.25rem 0 0.5rem;
+        padding: 1rem;
+        border-radius: 10px;
+        border: 1px solid rgba(124, 58, 237, 0.5);
+        background: rgba(124, 58, 237, 0.08);
+        transition:
+          border-color 0.3s,
+          background 0.3s;
+      }
+      .spotlight.urgent {
+        border-color: #ef4444;
+        background: rgba(239, 68, 68, 0.08);
+      }
+      .spotlight.win {
+        border-color: #4ade80;
+        background: rgba(74, 222, 128, 0.08);
       }
       .steps {
         display: flex;
-        gap: 0.75rem;
-        flex-wrap: wrap;
+        gap: 1rem;
         list-style: none;
-        margin: 0;
+        margin: 0 0 0.5rem;
         padding: 0;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
       }
       .steps li {
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
-        font-size: 0.85rem;
-        opacity: 0.45;
+        opacity: 0.4;
       }
-      .steps li.active,
-      .steps li.done {
+      .steps li.active {
         opacity: 1;
+        color: #c4b5fd;
+        font-weight: 700;
       }
       .steps li.done {
+        opacity: 0.8;
         color: #4ade80;
       }
-      .num {
-        width: 1.4rem;
-        height: 1.4rem;
-        border-radius: 50%;
-        border: 1px solid currentColor;
-        display: grid;
-        place-items: center;
-        font-size: 0.7rem;
-      }
-      .steps li.active .num {
-        border-color: #7c3aed;
-        background: #7c3aed;
-        color: #fff;
-      }
-      .steps button {
-        border: 1px solid transparent;
-        color: #fff;
+      .prompt {
+        margin: 0 0 0.75rem;
+        font-size: 1.05rem;
         font-weight: 600;
       }
-      .steps button.go {
+      .spotlight.win .prompt {
+        color: #bbf7d0;
+      }
+      .action {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .action button {
+        border: 1px solid transparent;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
+        padding: 0.6rem 1.2rem;
+      }
+      button.go {
         background: #6366f1;
+        --glow: rgba(99, 102, 241, 0.6);
       }
-      .steps button.danger {
+      button.danger {
         background: #dc2626;
+        --glow: rgba(239, 68, 68, 0.6);
       }
-      .steps button:disabled {
+      .action button:disabled {
         background: transparent;
         border-color: rgba(255, 255, 255, 0.15);
         color: rgba(255, 255, 255, 0.35);
         cursor: not-allowed;
+        animation: none;
+      }
+      .pulse {
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 var(--glow);
+        }
+        50% {
+          box-shadow: 0 0 0 8px transparent;
+        }
+      }
+      .watching {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: #c4b5fd;
+      }
+      .spinner {
+        width: 0.9rem;
+        height: 0.9rem;
+        border-radius: 50%;
+        border: 2px solid rgba(196, 181, 253, 0.3);
+        border-top-color: #c4b5fd;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .pulse,
+        .spinner {
+          animation: none;
+        }
       }
       .workers {
         display: flex;
@@ -268,11 +322,6 @@ const MARK: Record<string, string> = { done: "✓", running: "●", stuck: "✗"
       }
       .state {
         opacity: 0.6;
-      }
-      .hint {
-        margin: 0.5rem 0 0;
-        font-size: 0.8rem;
-        color: #c4b5fd;
       }
       .error {
         color: #fca5a5;
@@ -339,11 +388,6 @@ const MARK: Record<string, string> = { done: "✓", running: "●", stuck: "✗"
         color: #4ade80;
         opacity: 1;
       }
-      .result {
-        margin: 0.75rem 0 0;
-        font-size: 0.9rem;
-        font-weight: 600;
-      }
       .history {
         margin-top: 0.75rem;
         font-size: 0.8rem;
@@ -359,6 +403,30 @@ const MARK: Record<string, string> = { done: "✓", running: "●", stuck: "✗"
         opacity: 0.5;
         font-variant-numeric: tabular-nums;
       }
+      @media (max-width: 600px) {
+        .panel {
+          padding: 0.85rem 1rem;
+        }
+        .bridge {
+          margin-bottom: 0.75rem;
+        }
+        .prompt {
+          font-size: 0.95rem;
+        }
+        .track {
+          margin-top: 0.6rem;
+          padding: 0.6rem;
+        }
+        .chips {
+          flex-wrap: nowrap;
+          gap: 0.3rem;
+        }
+        .chip {
+          padding: 0.2rem 0.45rem;
+          font-size: 0.75rem;
+          white-space: nowrap;
+        }
+      }
     `,
   ],
 })
@@ -370,11 +438,14 @@ export class TryWorkflow {
   readonly podStatusMap = input.required<Partial<Record<string, ResourceStatus>>>()
 
   protected readonly stepNames = STEP_NAMES
+  // Phones start with the explainer folded, so the button is on the first screen.
+  protected readonly wide = window.matchMedia("(min-width: 601px)").matches
   protected readonly order = signal<OrderView | null>(null)
   protected readonly error = signal<string | null>(null)
   protected readonly busy = signal(false)
   protected readonly everPlaced = signal(false)
   protected readonly unpluggedLabel = signal("")
+  private readonly unpluggedStep = signal("")
   private readonly unplugged = signal(false)
   // The server keeps only each step's last worker, so the page remembers the earlier one.
   private readonly moves = signal<Move[]>([])
@@ -397,7 +468,7 @@ export class TryWorkflow {
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((p, i) => ({
         pod: p.name,
-        label: `Worker ${String.fromCharCode(65 + i)}`,
+        label: `Server ${String.fromCharCode(65 + i)}`,
         online: p.ready,
       })),
   )
@@ -421,12 +492,31 @@ export class TryWorkflow {
     return this.unplugged() || o.workflow.handoffs > 0 ? 3 : 2
   })
 
-  protected readonly hint = computed(() => {
-    const running = this.order()?.workflow.steps.find((s) => s.status === "running")
-    if (this.stage() !== 2 || !running) return ""
+  protected readonly finished = computed(() => !!this.order()?.workflow.done)
+  protected readonly won = computed(
+    () => this.finished() && (this.order()?.workflow.handoffs ?? 0) > 0,
+  )
+  protected readonly missed = computed(() => this.finished() && !this.won())
+
+  // The one thing to do or watch next.
+  protected readonly prompt = computed(() => {
+    const o = this.order()
+    if (!o)
+      return "Place an order. Then crash the server working on it, and see which copy survives."
+    if (this.won()) return this.result()
+    if (this.missed())
+      return "No server crashed, so both finished. Run it again and hit Unplug mid-order."
+    if (this.stage() === 3) {
+      const move = this.moves()[0]
+      return move
+        ? `Temporal moved the order to ${this.labelOf(move.to)}. Finishing it now…`
+        : `${this.unpluggedLabel() || "The server"} is down. Watch the order carry on without it…`
+    }
+    const running = o.workflow.steps.find((s) => s.status === "running")
+    if (!running) return "Starting the order…"
     if (!this.canUnplug())
-      return `${this.restarting()?.label ?? "The other worker"} is restarting. Wait for it.`
-    return `${this.labelOf(running.worker)} is on ${running.name}. Unplug it before the order finishes.`
+      return `${this.restarting()?.label ?? "The other server"} is restarting. Wait a moment.`
+    return `${this.labelOf(running.worker)} is ${DOING[running.name] ?? running.name}. Unplug it now!`
   })
 
   protected readonly plainSteps = computed(() => {
@@ -444,39 +534,42 @@ export class TryWorkflow {
 
   protected readonly plainCaption = computed(() => {
     const o = this.order()
-    if (!o) return "Runs in one worker's memory."
-    const who = this.labelOf(o.plain.worker) || "its worker"
+    if (!o) return "Lives on one server. If that server dies, so does the order."
+    const who = this.labelOf(o.plain.worker) || "its server"
     if (o.plain.stuck) {
       return o.payments.plainCharged
         ? `Died with ${who}. Charged, never shipped.`
         : `Died with ${who}. Never finished.`
     }
     if (o.plain.steps.at(-1) === "done") return `Finished, because ${who} stayed up.`
-    return `Running in ${who}'s memory.`
+    return `${who} is running it alone.`
   })
 
   protected readonly temporalCaption = computed(() => {
     const o = this.order()
-    if (!o) return "Each step is recorded, so any worker can carry on."
+    if (!o) return "Each step is saved, so any server can pick it up."
     const move = this.moves()[0]
-    const moved = move
-      ? `${this.labelOf(move.from)} died during ${move.step}. Temporal moved it to ${this.labelOf(move.to)}. `
-      : ""
+    const doing = (step: string) => DOING[step] ?? step
+    // The crashed server can restart and take the order back before the other one does.
+    const recovered = move
+      ? `${this.labelOf(move.from)} died while ${doing(move.step)}. Temporal moved the order to ${this.labelOf(move.to)}. `
+      : o.workflow.handoffs > 0 && this.unpluggedLabel()
+        ? `${this.unpluggedLabel()} died while ${doing(this.unpluggedStep())}. Temporal carried on once it was back. `
+        : ""
     const charged = o.payments.charges
-      ? `Charged once${o.payments.attempts > 1 ? `, ${o.payments.attempts} attempts` : ""}.`
+      ? o.payments.attempts > 1
+        ? `Charged once, though the charge step ran ${o.payments.attempts} times.`
+        : "Charged once."
       : ""
-    return `${moved}${charged}`.trim() || "Waiting for a worker."
+    return `${recovered}${charged}`.trim() || "Waiting for a server."
   })
 
   protected readonly result = computed(() => {
     const o = this.order()
     if (!o?.workflow.done) return ""
-    if (o.workflow.handoffs > 0) {
-      return o.plain.stuck && o.payments.plainCharged
-        ? "Same crash, two outcomes. With Temporal the customer got their order. Without it they paid for nothing."
-        : "Same crash, two outcomes. Temporal finished the order. The other copy stopped."
-    }
-    return "Both finished, because no worker died. Try again and unplug partway."
+    return o.plain.stuck && o.payments.plainCharged
+      ? "Same crash, two outcomes. With Temporal the customer got their order. Without it they paid for nothing."
+      : "Same crash, two outcomes. Temporal finished the order. The other copy stopped."
   })
 
   constructor() {
@@ -495,12 +588,11 @@ export class TryWorkflow {
     return this.moves().find((m) => m.step === step)
   }
 
-  // Under each chip: who ran it, and "B→A" when it moved.
+  // Under each chip: which server ran it, or where it moved.
   protected whoText(s: Step): string {
-    const short = (pod: string) => this.labelOf(pod).replace("Worker ", "")
     const move = this.moveOf(s.name)
-    if (move) return `${short(move.from)}→${short(move.to)}`
-    return s.worker ? short(s.worker) : ""
+    if (move) return `moved to ${this.labelOf(move.to).replace("Server ", "")}`
+    return s.worker ? this.labelOf(s.worker) : ""
   }
 
   // History lines name pods. Show the same worker letters as the cards.
@@ -536,6 +628,9 @@ export class TryWorkflow {
     }).catch(() => null)
     if (res?.ok) {
       this.unpluggedLabel.set(this.labelOf(this.busyPod()))
+      this.unpluggedStep.set(
+        this.order()?.workflow.steps.find((s) => s.status === "running")?.name ?? "",
+      )
       this.unplugged.set(true)
     } else {
       this.error.set("Could not unplug. The step may have just finished.")

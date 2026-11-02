@@ -289,6 +289,8 @@ export class ResourceCard {
     if (!msg) return null
     // Filter out generic transient messages that aren't actionable.
     if (msg === "Creating" || msg === "Deleting") return null
+    // Routine waiting is shown by the rollout steps, and the card needs the room for its name.
+    if (msg.startsWith("Unready resources:")) return null
     return msg
   })
 

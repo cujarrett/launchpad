@@ -505,7 +505,7 @@ app-resource-card.expanded {
 }
 
 .resource-card .name {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   font-size: 0.9375rem;
   font-family: var(--font-mono);
@@ -564,7 +564,8 @@ app-resource-card.expanded {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 40ch;
-  flex-shrink: 1;
+  /* Gives up its width before the name does. */
+  flex-shrink: 1000;
   min-width: 0;
 }
 .resource-card .status-message.status-message-error {

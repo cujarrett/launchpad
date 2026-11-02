@@ -8,10 +8,12 @@ import {
   inject,
   input,
   signal,
+  untracked,
 } from "@angular/core"
 import { Resource, ResourceStatus, statusKey } from "../../core/models/workspace.model"
 import { WorkspaceService } from "../../core/services/workspace.service"
 import { NodeState, PIPELINE_NODES, PipelineNodes } from "./pipeline-nodes"
+import { Culprit, waitLine } from "./wait-lines"
 
 type RowStatus = "pending" | "active" | "done"
 
@@ -684,6 +686,8 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     // Apply server-side phase times reactively - initialPhaseTimes arrives async (after
     // getWorkspaces() resolves) so ngOnInit reads it too early. This effect re-fires when
     // the input updates and overwrites any localStorage data with the ground truth.
+    // A phase the server lacks keeps the local time. Build can start before the sandbox
+    // exists, so the server drops that first phase record.
     effect(() => {
       const serverTimes = this.initialPhaseTimes()
       if (Object.keys(serverTimes).length === 0) return
@@ -692,7 +696,8 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
         const ms = new Date(v).getTime()
         if (!isNaN(ms)) parsed[Number(k)] = ms
       }
-      this.phaseTimes.set(this.clampPhaseTimes(parsed))
+      const local = untracked(() => this.phaseTimes())
+      this.phaseTimes.set(this.clampPhaseTimes({ ...local, ...parsed }))
     })
     effect(() => {
       const serverDone = this.initialDoneTime()
@@ -817,6 +822,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     const plan = this.commitPlan()
     if (plan.length > 0) {
       rows.push(sec("s-commit", "Committing manifests to Git", "active", this.dur(0)))
+      rows.push(...this.waitRow(0, "GitHub"))
       return rows
     }
     // Show committed row if we have a timestamp OR if resources exist (proving a commit happened).
@@ -831,7 +837,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     // ── Syncing to Kubernetes ──────────────────────────────────────────────
     const syncActive = phase === 1
     rows.push(sec("s-sync", "Syncing to Kubernetes", syncActive ? "active" : "done", this.dur(1)))
-    if (syncActive) return rows
+    if (syncActive) return [...rows, ...this.waitRow(1, "ArgoCD")]
 
     // ── Provisioning infrastructure ────────────────────────────────────────
     const allReady = resources.every((r) => statusMap[statusKey(r.kind, r.name)]?.ready)
@@ -840,13 +846,36 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
       sec("s-prov", "Provisioning infrastructure", allReady ? "done" : "active", this.dur(2)),
     )
     // Only expand detail rows while this phase is active
+    const hasWorkflow = resources.some((r) => r.kind === "Workflow")
     if (provActive) {
+      let entraWait = false
       for (const r of resources) {
         const s = statusMap[statusKey(r.kind, r.name)]
         const rStatus: RowStatus = !s ? "pending" : s.ready ? "done" : "active"
         rows.push(subsec(r.name, KIND_LABEL[r.kind] ?? r.kind, rStatus, resourceDetail(r)))
+        // The servers stay unready until Entra accepts their brand-new app and Temporal lets them in.
+        // That wait is most of a Workflow rollout, so it gets its own line and clock.
+        if (hasWorkflow && r.kind === "Api" && s?.message === "Unready resources: deployment") {
+          const start = this.phaseTimes()[2]
+          const waited =
+            start === undefined ? "" : ` · ${fmt(Math.max(0, this.now() - start))} so far`
+          entraWait = true
+          rows.push(
+            item(
+              "h-entra",
+              "Servers signing in",
+              `waiting for Entra to accept the new app, usually about 30s${waited}`,
+              "active",
+            ),
+          )
+        }
       }
-      return rows
+      const awsWait = resources.some(
+        (r) =>
+          (r.kind === "NoSql" || r.kind === "ObjectStorage") &&
+          !statusMap[statusKey(r.kind, r.name)]?.ready,
+      )
+      return [...rows, ...this.waitRow(2, entraWait ? "Entra" : awsWait ? "AWS" : "Kubernetes")]
     }
 
     if (!allReady) return rows
@@ -880,7 +909,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
             ),
           )
         }
-        return rows
+        return [...rows, ...this.waitRow(3, "Kubernetes")]
       }
       if (!allBound) return rows
     }
@@ -888,28 +917,32 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     // ── Container startup ──────────────────────────────────────────────────
     if (hasApi || hasSpa) {
       const healthDone = this.allPreviewsReady()
-      // Workflow workers wait for Entra to accept their new app before they can serve.
-      const hasWorkflow = resources.some((r) => r.kind === "Workflow")
       rows.push(
         sec(
           "s-health",
-          hasWorkflow ? "Workers signing in to Temporal" : "Waiting for container readiness probe",
+          "Waiting for container readiness probe",
           healthDone ? "done" : "active",
           this.dur(4),
         ),
       )
       // Only expand while this phase is active
       if (!healthDone) {
-        if (hasWorkflow) {
-          rows.push(item("h-entra", "Entra", "accepting the new app's login, about 30s", "active"))
-        }
         if (hasApi) rows.push(item("h-api", "API", "polling…", "active"))
         if (hasSpa) rows.push(item("h-spa", "Website", "polling…", "active"))
+        rows.push(...this.waitRow(4, "Kubernetes"))
       }
     }
 
     return rows
   })
+
+  // Something to read under a stage that has dragged on. Empty until then.
+  private waitRow(phase: number, who: Culprit): StatusRow[] {
+    const start = this.phaseTimes()[phase]
+    if (start === undefined) return []
+    const text = waitLine(who, this.now() - start)
+    return text ? [item("h-wait", "⏳", text, "active")] : []
+  }
 
   // Full retrospective view: all stages with sub-items expanded.
   // Only used when isDone() && expanded().
@@ -923,6 +956,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     rows.push(sec("s-sync", "Syncing to Kubernetes", "done", this.dur(1)))
 
     rows.push(sec("s-prov", "Provisioning infrastructure", "done", this.dur(2)))
+    const hasWorkflow = resources.some((r) => r.kind === "Workflow")
     for (const r of resources) {
       const s = statusMap[statusKey(r.kind, r.name)]
       rows.push(
@@ -933,6 +967,9 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
           resourceDetail(r),
         ),
       )
+      if (hasWorkflow && r.kind === "Api") {
+        rows.push(item("h-entra", "Servers signing in", "Entra accepted the new app", "done"))
+      }
     }
 
     const hasApi = resources.some((r) => r.kind === "Api")
@@ -958,11 +995,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     }
 
     if (hasApi || hasSpa) {
-      const hasWorkflow = resources.some((r) => r.kind === "Workflow")
-      const healthLabel = hasWorkflow
-        ? "Workers signing in to Temporal"
-        : "Waiting for container readiness probe"
-      rows.push(sec("s-health", healthLabel, "done", this.dur(4)))
+      rows.push(sec("s-health", "Waiting for container readiness probe", "done", this.dur(4)))
       if (hasApi) rows.push(item("h-api", "API", "ready", "done"))
       if (hasSpa) rows.push(item("h-spa", "Website", "ready", "done"))
     }

@@ -1,12 +1,7 @@
 import { Component, computed, effect, inject, input, signal } from "@angular/core"
 import { WorkspaceService } from "../../core/services/workspace.service"
 import { techParts } from "../../core/tech-text"
-import {
-  RESOURCE_KIND_LABELS,
-  Resource,
-  ResourceStatus,
-  statusKey,
-} from "../../core/models/workspace.model"
+import { Resource, ResourceStatus, statusKey } from "../../core/models/workspace.model"
 
 interface Row {
   title: string
@@ -16,7 +11,7 @@ interface Row {
   ready: boolean
 }
 
-// A kind not listed in any group lands in "Other parts".
+// A kind not listed in any group lands in "Other".
 const GROUP_KINDS: Record<string, string[]> = {
   data: ["AWS Table", "AWS Bucket", "PersistentVolumeClaim", "Cache"],
   who: [
@@ -38,6 +33,32 @@ const GROUP_KINDS: Record<string, string[]> = {
   watch: ["ServiceMonitor", "PodMonitor"],
 }
 
+// Crossplane names the parts it is still waiting on by their composition name.
+// Each pattern maps a name to the row it belongs to.
+const NAME_GROUPS: [RegExp, string][] = [
+  [/^(deployment|service|httproute|.*-middleware|.*configmap)$/, "runs"],
+  [/^(entra-application|entra-federated-credential|entra-principal|serviceaccount)$/, "who"],
+  [/^(entra-role|entra-grant|entra-scope-grant|temporal-)/, "use"],
+  [/^(role|rolebinding)$/, "secrets"],
+  [/^connection-/, "callers"],
+  [/^(servicemonitor|podmonitor)$/, "watch"],
+  [/^cache$/, "data"],
+]
+
+// The rows a not-ready resource is still waiting on. Null when the message
+// doesn't say, so every row of that resource stays waiting.
+export function waitingGroups(message: string | undefined): Set<string> | null {
+  const m = /^Unready resources: (.*)$/.exec(message ?? "")
+  if (!m || m[1].includes(" more")) return null
+  const groups = new Set<string>()
+  for (const name of m[1].split(/,\s*(?:and\s+)?|\s+and\s+/)) {
+    const group = NAME_GROUPS.find(([re]) => re.test(name.trim()))?.[1]
+    if (!group) return null
+    groups.add(group)
+  }
+  return groups
+}
+
 @Component({
   selector: "app-platform-made",
   template: `
@@ -45,11 +66,8 @@ const GROUP_KINDS: Record<string, string[]> = {
       <section class="panel">
         <h3>What happened</h3>
         <p class="headline">
-          @if (picked()) {
-            You picked {{ picked() }}.
-          }
-          Launchpad wrote {{ files() }} {{ files() === 1 ? "file" : "files" }} to Git. The platform
-          {{ allReady() ? "made" : "is making" }} {{ total() }} things from them.
+          {{ files() }} {{ files() === 1 ? "file" : "files" }} in Git. {{ total() }} things
+          {{ allReady() ? "made" : "being made" }}.
         </p>
         <ul>
           @for (row of rows(); track row.title) {
@@ -66,9 +84,7 @@ const GROUP_KINDS: Record<string, string[]> = {
             <li [class.ready]="cleanupRunning()" title="Temporal workflow">
               <span class="dot"></span>
               <span class="title">Cleanup</span>
-              <span class="text"
-                >A <b class="tech">Temporal</b> timer deletes this sandbox in {{ left }}</span
-              >
+              <span class="text"><b class="tech">Temporal</b> deletes it in {{ left }}</span>
             </li>
           }
         </ul>
@@ -120,11 +136,20 @@ const GROUP_KINDS: Record<string, string[]> = {
         opacity: 0.7;
       }
       @media (max-width: 600px) {
-        li {
-          grid-template-columns: 0.75rem 1fr;
+        .panel {
+          padding: 0.85rem 1rem;
         }
+        li {
+          grid-template-columns: 0.5rem 4.5rem 1fr;
+          gap: 0.4rem;
+          padding: 0.2rem 0;
+          font-size: 0.8rem;
+        }
+        .title,
         .text {
-          grid-column: 2;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
       }
     `,
@@ -147,13 +172,6 @@ export class PlatformMade {
 
   protected readonly files = computed(() => this.resources().length)
 
-  // The main kind the guest chose. A Workflow sandbox also holds an Api.
-  protected readonly picked = computed(() => {
-    const kinds = this.resources().map((r) => r.kind)
-    const main = kinds.includes("Workflow") ? "Workflow" : kinds.includes("Api") ? "Api" : kinds[0]
-    return main ? RESOURCE_KIND_LABELS[main] : ""
-  })
-
   private readonly statuses = computed(() =>
     this.resources()
       .map((r) => this.statusMap()[statusKey(r.kind, r.name)])
@@ -173,13 +191,19 @@ export class PlatformMade {
     const host = typeof api?.spec["host"] === "string" ? (api.spec["host"] as string) : ""
     const replicas = Number(api?.spec["replicas"] ?? 1)
 
-    const row = (title: string, kinds: string[], text: (has: (k: string) => boolean) => string) => {
+    const row = (
+      title: string,
+      group: string,
+      kinds: string[],
+      text: (has: (k: string) => boolean) => string,
+    ) => {
       const found = new Set<string>()
       let ready = true
       for (const s of this.statuses()) {
         const mine = (s.composed ?? []).filter((k) => kinds.includes(k))
         mine.forEach((k) => found.add(k))
-        if (mine.length && !s.ready && !this.settled()) ready = false
+        if (!mine.length || s.ready || this.settled()) continue
+        if (waitingGroups(s.message)?.has(group) ?? true) ready = false
       }
       if (found.size === 0) return null
       return { title, kinds: [...found].sort(), ready, text: text((k) => found.has(k)) }
@@ -193,47 +217,40 @@ export class PlatformMade {
     ]
 
     return [
-      row("Real services", GROUP_KINDS["data"], (has) =>
+      row("Services", "data", GROUP_KINDS["data"], (has) =>
         [
-          has("AWS Table") && "a DynamoDB table in AWS",
-          has("AWS Bucket") && "an S3 bucket in AWS",
-          has("PersistentVolumeClaim") && "a Postgres database on its own disk",
-          has("Cache") && "a Redis cache",
+          has("AWS Table") && "DynamoDB",
+          has("AWS Bucket") && "S3",
+          has("PersistentVolumeClaim") && "Postgres",
+          has("Cache") && "Redis",
         ]
           .filter(Boolean)
-          .join(", ")
-          .replace(/^./, (c) => c.toUpperCase()),
+          .join(" "),
       ),
-      row("Who it is", GROUP_KINDS["who"], (has) =>
-        has("Entra FederatedIdentityCredential")
-          ? "An Entra app that logs in with no password"
-          : "Its own identity in the cluster",
+      row("Identity", "who", GROUP_KINDS["who"], (has) =>
+        has("Entra FederatedIdentityCredential") ? "An Entra app, no password" : "Its own identity",
       ),
-      row("What it may use", GROUP_KINDS["use"], (has) =>
+      row("Access", "use", GROUP_KINDS["use"], (has) =>
         [
-          has("TemporalNamespace") && "its own Temporal namespace, and the right to call it",
-          has("AWS Role") && "AWS access to only its own table and bucket, with no stored keys",
+          has("TemporalNamespace") && "Its own Temporal namespace",
+          has("AWS Role") && "Only its own AWS data, no keys",
         ]
           .filter(Boolean)
-          .join(". ")
-          .replace(/^./, (c) => c.toUpperCase()),
+          .join(". "),
       ),
       row(
-        "Connection details",
+        "Secrets",
+        "secrets",
         GROUP_KINDS["secrets"],
-        () => "Addresses and passwords, mounted as files only this app can read",
+        () => "Passwords in files only it can read",
       ),
-      row(
-        "Who may call it",
-        GROUP_KINDS["callers"],
-        () => "Encrypted traffic, from an allow list only",
-      ),
-      row("How it runs", GROUP_KINDS["runs"], () => {
-        const copies = replicas === 1 ? "1 copy" : `${replicas} copies`
-        return host ? `${copies} behind ${host}` : copies
+      row("Callers", "callers", GROUP_KINDS["callers"], () => "Allow list only, encrypted"),
+      row("Runs", "runs", GROUP_KINDS["runs"], () => {
+        const servers = replicas === 1 ? "1 server" : `${replicas} servers`
+        return host ? `${servers} answering ${host}` : servers
       }),
-      row("How we watch it", GROUP_KINDS["watch"], () => "Metrics, collected automatically"),
-      row("Other parts", otherKinds, () => otherKinds.join(", ")),
+      row("Metrics", "watch", GROUP_KINDS["watch"], () => "Collected automatically"),
+      row("Other", "other", otherKinds, () => otherKinds.join(", ")),
     ].filter((r): r is Row => r !== null)
   })
 
