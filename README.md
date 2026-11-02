@@ -45,10 +45,14 @@ Each sandbox gets a dedicated namespace, its own service bindings, and (for AWS 
 
 ```bash
 npm install
-npm start   # proxies /api → localhost:8080 via proxy.conf.json
+npm start                # against launchpad-api from source on localhost:8080
+npm run start:prod-api   # against the live API at launchpad.mattjarrett.dev
 ```
 
-[launchpad-api](https://github.com/cujarrett/launchpad-api) must be running locally for any real functionality. Set `ENTRA_AUTH_DISABLED=true` there to skip JWT validation during local dev.
+Open http://localhost:4200.
+
+- `npm start` needs [launchpad-api](https://github.com/cujarrett/launchpad-api) running locally. Its [Local dev](https://github.com/cujarrett/launchpad-api#local-dev) section covers setup. Set `ENTRA_AUTH_DISABLED=true` there to skip JWT validation.
+- `npm run start:prod-api` builds real sandboxes in the cluster, the same as the live site.
 
 ## Brand
 
