@@ -25,7 +25,8 @@ import {
 // Subscription excluded (requires existing topic).
 // Sql, NoSql, ObjectStorage are only available as Api add-ons, not as standalone options.
 // Workflow brings its own Api, so it is a sandbox of its own.
-export const GUEST_KINDS: ResourceKind[] = ["Api", "Spa", "Workflow"]
+// The API demo already includes a Single Page App, so the Spa has no card of its own.
+export const GUEST_KINDS: ResourceKind[] = ["Api", "Workflow"]
 
 // The kinds a guest can still add. The page's Add button and this panel both use it.
 export function guestAvailableKinds(existingKinds: ResourceKind[]): ResourceKind[] {
@@ -39,19 +40,15 @@ export function guestAvailableKinds(existingKinds: ResourceKind[]): ResourceKind
 const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; includes: string }>> =
   {
     Api: {
-      title: "API with data",
-      desc: "A live API using real AWS and Postgres.",
-      includes: "API · SPA · Postgres · DynamoDB · S3 · Redis",
-    },
-    Spa: {
-      title: "Single Page App",
-      desc: "A website with its own address and API.",
-      includes: "SPA · API",
+      title: "App with real data",
+      // Card text stays plain. The toggles and the summary below it name the products.
+      desc: "A website and API, wired to real data stores.",
+      includes: "SPA + API + Choice of Datastore(s)",
     },
     Workflow: {
-      title: "Crash-proof order",
-      desc: "Unplug a server mid-order. Temporal still finishes it.",
-      includes: "Temporal · Entra · 2 servers",
+      title: "Durable workflow",
+      desc: "A business process, kept running through a server crash.",
+      includes: "API + Temporal + Crash test",
     },
   }
 
@@ -63,7 +60,7 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
     @if (!saving()) {
       <div class="picker">
         <h3>What do you want to try?</h3>
-        <p class="lede">Each demo builds real infrastructure in about a minute.</p>
+        <p class="lede">Each demo builds real infrastructure in under a minute.</p>
 
         @if (existingResources().length > 0) {
           <p class="existing">
@@ -168,7 +165,6 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
                 <app-kind-icon kind="Cache" /><span>Redis cache</span><span class="switch"></span>
               </button>
             </div>
-            <p class="addons-note">Every API gets at least one place to store data.</p>
           </div>
         }
 
@@ -251,10 +247,35 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
         border-color: rgba(255, 255, 255, 0.25);
       }
       .card.selected {
-        border-color: #818cf8;
-        box-shadow:
-          0 0 0 1px #818cf8,
-          0 8px 30px rgba(99, 102, 241, 0.35);
+        border-color: transparent;
+        box-shadow: 0 8px 30px rgba(99, 102, 241, 0.35);
+      }
+      /* The same running border as the home page's Try the Sandbox button. */
+      .card.selected::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: inherit;
+        padding: 2px;
+        background: linear-gradient(90deg, #7c3aed, #a78bfa, #38bdf8, #7c3aed);
+        background-size: 300% 100%;
+        -webkit-mask:
+          linear-gradient(#fff 0 0) content-box,
+          linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        animation: border-run 2.8s linear infinite;
+        pointer-events: none;
+      }
+      @keyframes border-run {
+        to {
+          background-position: 300% 50%;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .card.selected::before {
+          animation: none;
+        }
       }
       .tick {
         position: absolute;
@@ -314,11 +335,6 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
         font-size: 0.8rem;
         padding: 0.2rem 0.6rem;
         border-radius: 999px;
-      }
-      .addons-note {
-        margin: 0.5rem 0 0;
-        font-size: 0.75rem;
-        opacity: 0.55;
       }
       .toggle.locked {
         cursor: default;
@@ -486,10 +502,6 @@ export class GuestCreate implements OnInit {
     () => this.selectedKind() === "Api" && !this.existingResources().some((r) => r.kind === "Spa"),
   )
 
-  protected readonly offerApi = computed(
-    () => this.selectedKind() === "Spa" && !this.existingResources().some((r) => r.kind === "Api"),
-  )
-
   protected readonly techParts = techParts
 
   // A fast pick can beat the sandbox's own commit. Build waits for it behind the rollout.
@@ -522,10 +534,9 @@ export class GuestCreate implements OnInit {
         this.withStorage() ? "an S3 bucket" : "",
         this.withCache() ? "a Redis cache" : "",
       ].filter(Boolean)
-    } else if (kind === "Spa") {
-      items = ["a Single Page App", this.offerApi() ? "an API behind it" : ""].filter(Boolean)
     } else if (kind === "Workflow") {
-      items = ["a Temporal workflow", "two workers that sign in with Entra"]
+      // Says what the guest will do, not how the servers sign in.
+      return "You'll get an order API on two servers, run by Temporal. Then you crash one mid-order."
     }
     if (items.length === 0) return ""
     const list =
@@ -563,9 +574,8 @@ export class GuestCreate implements OnInit {
     if (this.withSql() && this.offerSql() && kind === "Api") steps.push("SQL database")
     if (this.withNoSql() && kind === "Api") steps.push("NoSQL database")
     if (this.withSpa() && kind === "Api" && this.offerSpa()) steps.push("Website")
-    if (kind === "Spa" && this.offerApi()) steps.push("API")
     if (kind === "Workflow") steps.push("Workflow")
-    steps.push(kind === "Spa" ? "Website" : "API")
+    steps.push("API")
     return steps
   }
 
@@ -589,13 +599,12 @@ export class GuestCreate implements OnInit {
       // workspace if this request is interrupted.
       await firstValueFrom(
         this.workspaceService.createGuestResourceBatch(this.workspace(), kind, {
-          // Add-ons belong to the API with data demo only. The picker keeps its toggles when switching cards.
+          // Add-ons belong to the App with real data demo only. The picker keeps its toggles when switching cards.
           withCache: this.withCache() && kind === "Api",
           withSql: this.withSql() && kind === "Api",
           withNoSql: this.withNoSql() && kind === "Api",
           withStorage: this.withStorage() && kind === "Api",
           withSpa: this.withSpa() && kind === "Api" && this.offerSpa(),
-          withApi: kind === "Spa" && this.offerApi(),
         }),
       )
       this.created.emit()

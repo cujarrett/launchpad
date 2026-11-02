@@ -864,7 +864,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
             item(
               "h-entra",
               "Servers signing in",
-              `waiting for Entra to accept the new app, usually about 30s${waited}`,
+              `Entra is accepting the new app. First deploy only, usually about 30s${waited}`,
               "active",
             ),
           )
