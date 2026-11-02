@@ -8,6 +8,7 @@ import {
   OnInit,
   signal,
   untracked,
+  viewChild,
 } from "@angular/core"
 import { ActivatedRoute, Router, RouterLink } from "@angular/router"
 import { firstValueFrom, Subscription } from "rxjs"
@@ -266,6 +267,20 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
             <span class="live-btn" [title]="app.host">Open your app ↗</span>
           </a>
         }
+        <!-- The Workflow demo's payoff is the crash panel below, so its button starts it. -->
+        @if (workflowDemo() && !tryWorkflow()?.everPlaced()) {
+          <div class="live-cta">
+            <span class="live-text">
+              <span class="live-title">Your durable workflow is live</span>
+              <span class="live-sub"
+                >Two servers are running your order API. Crash one mid-order.</span
+              >
+            </span>
+            <button type="button" class="live-btn" (click)="tryWorkflow()?.placeOrder()">
+              Start the demo ↓
+            </button>
+          </div>
+        }
         <!-- Outside the loading gate, so it stays mounted across resource refreshes.
            Once done it collapses to each step's time. Arch view hides it then, because the
            diagram shows live health itself. -->
@@ -427,11 +442,14 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
       }
       .live-btn {
         padding: 0.65rem 1.1rem;
+        border: none;
         border-radius: 10px;
         background: #10b981;
         color: #04261b;
+        font: inherit;
         font-weight: 700;
         white-space: nowrap;
+        cursor: pointer;
       }
       @media (max-width: 600px) {
         .live-cta {
@@ -452,6 +470,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
 })
 export class WorkspaceDetail implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute)
+  protected readonly tryWorkflow = viewChild(TryWorkflow)
   private readonly router = inject(Router)
   private readonly workspaceService = inject(WorkspaceService)
   private readonly sseService = inject(SseService)

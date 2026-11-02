@@ -443,7 +443,8 @@ export class TryWorkflow {
   protected readonly order = signal<OrderView | null>(null)
   protected readonly error = signal<string | null>(null)
   protected readonly busy = signal(false)
-  protected readonly everPlaced = signal(false)
+  // Read by the page, which hides its start button once the demo has begun.
+  readonly everPlaced = signal(false)
   protected readonly unpluggedLabel = signal("")
   private readonly unpluggedStep = signal("")
   private readonly unplugged = signal(false)
@@ -600,7 +601,7 @@ export class TryWorkflow {
     return this.workers().reduce((t, w) => t.replaceAll(w.pod, w.label), text)
   }
 
-  protected async placeOrder(): Promise<void> {
+  async placeOrder(): Promise<void> {
     this.error.set(null)
     this.busy.set(true)
     try {
