@@ -60,7 +60,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
   Wordpress: "Managed WordPress site with MariaDB.",
   GraphApi: "API whose schema joins a federated graph.",
   FederatedGraph: "One GraphQL endpoint joining every subgraph.",
-  Workflow: "Steps that finish even when a server dies. Runs on Temporal.",
+  WorkflowSpace: "Steps that finish even when a server dies. Runs on Temporal.",
 }
 
 @Component({
@@ -267,7 +267,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
             <span class="live-btn" [title]="app.host">Open your app ↗</span>
           </a>
         }
-        <!-- The Workflow demo's payoff is the crash panel below, so its button starts it. -->
+        <!-- The WorkflowSpace demo's payoff is the crash panel below, so its button starts it. -->
         @if (workflowDemo() && !tryWorkflow()?.everPlaced()) {
           <div class="live-cta">
             <span class="live-text">
@@ -597,10 +597,10 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   )
 
   // The payoff of a sandbox. Shown once the readiness probe passes.
-  // Workflow sandboxes show their demo panel instead.
+  // WorkflowSpace sandboxes show their demo panel instead.
   protected readonly liveApp = computed(() => {
     const resources = this.resources()
-    if (!this.readyToTry() || resources.some((r) => r.kind === "Workflow")) return null
+    if (!this.readyToTry() || resources.some((r) => r.kind === "WorkflowSpace")) return null
     const withHost = (kind: string) =>
       resources.find((r) => r.kind === kind && typeof r.spec["host"] === "string")
     const spa = withHost("Spa")
@@ -612,10 +612,10 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
     }
   })
 
-  // A Workflow sandbox's Api runs the demo.
+  // A WorkflowSpace sandbox's Api runs the demo.
   protected readonly workflowDemo = computed(() => {
     const resources = this.resources()
-    if (!resources.some((r) => r.kind === "Workflow")) return null
+    if (!resources.some((r) => r.kind === "WorkflowSpace")) return null
     const api = resources.find((r) => r.kind === "Api" && typeof r.spec["host"] === "string")
     // Waits for the readiness probe, so the workers are serving before the panel appears.
     if (!api || !this.readyToTry()) return null

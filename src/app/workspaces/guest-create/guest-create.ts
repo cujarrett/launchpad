@@ -24,16 +24,18 @@ import {
 // Kinds available to guests - Wordpress excluded (production data risk),
 // Subscription excluded (requires existing topic).
 // Sql, NoSql, ObjectStorage are only available as Api add-ons, not as standalone options.
-// Workflow brings its own Api, so it is a sandbox of its own.
+// WorkflowSpace brings its own Api, so it is a sandbox of its own.
 // The API demo already includes a Single Page App, so the Spa has no card of its own.
-export const GUEST_KINDS: ResourceKind[] = ["Api", "Workflow"]
+export const GUEST_KINDS: ResourceKind[] = ["Api", "WorkflowSpace"]
 
 // The kinds a guest can still add. The page's Add button and this panel both use it.
 export function guestAvailableKinds(existingKinds: ResourceKind[]): ResourceKind[] {
   const existing = new Set(existingKinds)
-  // The Workflow demo's Api takes the sandbox's one API hostname.
-  if (existing.has("Workflow")) return []
-  return GUEST_KINDS.filter((k) => !existing.has(k) && !(k === "Workflow" && existing.size > 0))
+  // The WorkflowSpace demo's Api takes the sandbox's one API hostname.
+  if (existing.has("WorkflowSpace")) return []
+  return GUEST_KINDS.filter(
+    (k) => !existing.has(k) && !(k === "WorkflowSpace" && existing.size > 0),
+  )
 }
 
 // What each demo card promises. Written as the outcome a guest sees, not the kind name.
@@ -45,7 +47,7 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
       desc: "A website and API, wired to real data stores.",
       includes: "SPA + API + Choice of Datastore(s)",
     },
-    Workflow: {
+    WorkflowSpace: {
       title: "Durable workflow",
       desc: "A business process, kept running through a server crash.",
       includes: "API + Temporal + Crash test",
@@ -534,7 +536,7 @@ export class GuestCreate implements OnInit {
         this.withStorage() ? "an S3 bucket" : "",
         this.withCache() ? "a Redis cache" : "",
       ].filter(Boolean)
-    } else if (kind === "Workflow") {
+    } else if (kind === "WorkflowSpace") {
       // Says what the guest will do, not how the servers sign in.
       return "You'll get an order API on two servers, run by Temporal. Then you crash one mid-order."
     }
@@ -574,7 +576,7 @@ export class GuestCreate implements OnInit {
     if (this.withSql() && this.offerSql() && kind === "Api") steps.push("SQL database")
     if (this.withNoSql() && kind === "Api") steps.push("NoSQL database")
     if (this.withSpa() && kind === "Api" && this.offerSpa()) steps.push("Website")
-    if (kind === "Workflow") steps.push("Workflow")
+    if (kind === "WorkflowSpace") steps.push("Workflow space")
     steps.push("API")
     return steps
   }

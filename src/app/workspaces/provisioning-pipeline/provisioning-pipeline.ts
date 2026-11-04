@@ -846,7 +846,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
       sec("s-prov", "Provisioning infrastructure", allReady ? "done" : "active", this.dur(2)),
     )
     // Only expand detail rows while this phase is active
-    const hasWorkflow = resources.some((r) => r.kind === "Workflow")
+    const hasWorkflow = resources.some((r) => r.kind === "WorkflowSpace")
     if (provActive) {
       let entraWait = false
       for (const r of resources) {
@@ -854,7 +854,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
         const rStatus: RowStatus = !s ? "pending" : s.ready ? "done" : "active"
         rows.push(subsec(r.name, KIND_LABEL[r.kind] ?? r.kind, rStatus, resourceDetail(r)))
         // The servers stay unready until Entra accepts their brand-new app and Temporal lets them in.
-        // That wait is most of a Workflow rollout, so it gets its own line and clock.
+        // That wait is most of a WorkflowSpace rollout, so it gets its own line and clock.
         if (hasWorkflow && r.kind === "Api" && s?.message === "Unready resources: deployment") {
           const start = this.phaseTimes()[2]
           const waited =
@@ -956,7 +956,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     rows.push(sec("s-sync", "Syncing to Kubernetes", "done", this.dur(1)))
 
     rows.push(sec("s-prov", "Provisioning infrastructure", "done", this.dur(2)))
-    const hasWorkflow = resources.some((r) => r.kind === "Workflow")
+    const hasWorkflow = resources.some((r) => r.kind === "WorkflowSpace")
     for (const r of resources) {
       const s = statusMap[statusKey(r.kind, r.name)]
       rows.push(

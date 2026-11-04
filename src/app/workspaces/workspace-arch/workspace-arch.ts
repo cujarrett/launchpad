@@ -294,7 +294,7 @@ export class WorkspaceArch {
     const apis = byKind("Api", "GraphApi").map(toNode)
     // Topics before subscriptions so publish→deliver→consume reads top-down.
     const messaging = [...byKind("Topic"), ...byKind("Subscription")].map(toNode)
-    const data = byKind("Sql", "NoSql", "ObjectStorage", "Cache", "Workflow").map(toNode)
+    const data = byKind("Sql", "NoSql", "ObjectStorage", "Cache", "WorkflowSpace").map(toNode)
 
     const edges: DiagramEdge[] = []
     const nodeIds = new Set([...frontend, ...apis, ...messaging, ...data].map((n) => n.id))
@@ -402,7 +402,7 @@ export class WorkspaceArch {
       if (topic) addEdge(r.name, topic, "publish")
       const sub = ref("subscriptionRef")
       if (sub) addEdge(sub, r.name, "consume")
-      const workflow = ref("workflowRef")
+      const workflow = ref("workflowSpaceRef")
       if (workflow) addEdge(r.name, workflow, "workflows")
     }
 
