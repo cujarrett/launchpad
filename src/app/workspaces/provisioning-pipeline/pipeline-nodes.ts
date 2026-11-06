@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, input } from "@angular/core"
+import { KindIcon } from "../../core/kind-icon/kind-icon"
 
 export type NodeState = "done" | "active" | "pending"
 
 export const PIPELINE_NODES = [
-  { icon: "📦", label: "Committed" },
-  { icon: "🔄", label: "Syncing" },
-  { icon: "⚙️", label: "Provisioning" },
-  { icon: "🔌", label: "Connecting" },
-  { icon: "✨", label: "Live" },
+  { icon: "package", label: "Committed" },
+  { icon: "refresh-cw", label: "Syncing" },
+  { icon: "settings", label: "Provisioning" },
+  { icon: "plug", label: "Connecting" },
+  { icon: "sparkles", label: "Live" },
 ]
 
 // The node strip above the status list. Split out from ProvisioningPipeline
@@ -15,6 +16,7 @@ export const PIPELINE_NODES = [
 // here reads the parent's state, it just renders the states it's handed.
 @Component({
   selector: "app-pipeline-nodes",
+  imports: [KindIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="pipeline-mini" [class.pipeline-mini--done]="done()">
@@ -27,7 +29,11 @@ export const PIPELINE_NODES = [
             [class.pm-node--pending]="states()[i] === 'pending'"
           >
             <div class="pm-pulse"></div>
-            <span class="pm-icon">{{ states()[i] === "done" ? "✓" : node.icon }}</span>
+            @if (states()[i] === "done") {
+              <span class="pm-icon">✓</span>
+            } @else {
+              <app-kind-icon [icon]="node.icon" />
+            }
           </div>
           <span class="pm-label" [class.pm-label--active]="states()[i] === 'active'">{{
             node.label
@@ -50,7 +56,6 @@ export const PIPELINE_NODES = [
         display: flex;
         align-items: flex-start;
         padding: 0.5rem 0 0.9rem;
-        overflow: hidden;
         max-height: 100px;
         opacity: 1;
         transition:
@@ -58,7 +63,9 @@ export const PIPELINE_NODES = [
           max-height 0.5s ease,
           padding 0.5s ease;
       }
+      /* Clips only while collapsing. Clipping sooner cuts off the active circle's pulse. */
       .pipeline-mini--done {
+        overflow: hidden;
         opacity: 0;
         max-height: 0;
         padding: 0;
@@ -94,7 +101,11 @@ export const PIPELINE_NODES = [
         font-size: 0.62rem;
         font-weight: 700;
       }
+      .pm-node app-kind-icon {
+        font-size: 0.85rem;
+      }
       .pm-node--active {
+        color: #c4b5fd;
         background: rgba(124, 58, 237, 0.2);
         border-color: #7c3aed;
         animation: pulse-node 1.8s ease-in-out infinite;

@@ -219,21 +219,23 @@ export class PlatformMade {
     return [
       row("Services", "data", GROUP_KINDS["data"], (has) =>
         [
-          has("AWS Table") && "DynamoDB",
-          has("AWS Bucket") && "S3",
-          has("PersistentVolumeClaim") && "Postgres",
-          has("Cache") && "Redis",
+          has("AWS Table") && "NoSQL database",
+          has("AWS Bucket") && "Object storage",
+          has("PersistentVolumeClaim") && "SQL database",
+          has("Cache") && "Cache",
         ]
           .filter(Boolean)
-          .join(" "),
+          .join(", "),
       ),
       row("Identity", "who", GROUP_KINDS["who"], (has) =>
-        has("Entra FederatedIdentityCredential") ? "An Entra app, no password" : "Its own identity",
+        has("Entra FederatedIdentityCredential")
+          ? "An Entra app, no password"
+          : "A unique ID issued by the platform",
       ),
       row("Access", "use", GROUP_KINDS["use"], (has) =>
         [
           has("TemporalNamespace") && "Its own Temporal namespace",
-          has("AWS Role") && "Only its own AWS data, no keys",
+          has("AWS Role") && "Workload identity, no long-lived keys",
         ]
           .filter(Boolean)
           .join(". "),
@@ -246,8 +248,8 @@ export class PlatformMade {
       ),
       row("Callers", "callers", GROUP_KINDS["callers"], () => "Allow list only, encrypted"),
       row("Runs", "runs", GROUP_KINDS["runs"], () => {
-        const servers = replicas === 1 ? "1 server" : `${replicas} servers`
-        return host ? `${servers} answering ${host}` : servers
+        if (replicas > 1) return host ? `${replicas} workers at ${host}` : `${replicas} workers`
+        return host ? `At ${host}` : "In the cluster"
       }),
       row("Metrics", "watch", GROUP_KINDS["watch"], () => "Collected automatically"),
       row("Other", "other", otherKinds, () => otherKinds.join(", ")),

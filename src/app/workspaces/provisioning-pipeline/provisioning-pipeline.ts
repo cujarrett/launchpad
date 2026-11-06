@@ -853,7 +853,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
         const s = statusMap[statusKey(r.kind, r.name)]
         const rStatus: RowStatus = !s ? "pending" : s.ready ? "done" : "active"
         rows.push(subsec(r.name, KIND_LABEL[r.kind] ?? r.kind, rStatus, resourceDetail(r)))
-        // The servers stay unready until Entra accepts their brand-new app and Temporal lets them in.
+        // The workers stay unready until Entra accepts their brand-new app and Temporal lets them in.
         // That wait is most of a WorkflowSpace rollout, so it gets its own line and clock.
         if (hasWorkflow && r.kind === "Api" && s?.message === "Unready resources: deployment") {
           const start = this.phaseTimes()[2]
@@ -863,7 +863,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
           rows.push(
             item(
               "h-entra",
-              "Servers signing in",
+              "Workers signing in",
               `Entra is accepting the new app. First deploy only, usually about 30s${waited}`,
               "active",
             ),
@@ -941,7 +941,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     const start = this.phaseTimes()[phase]
     if (start === undefined) return []
     const text = waitLine(who, this.now() - start)
-    return text ? [item("h-wait", "⏳", text, "active")] : []
+    return text ? [item("h-wait", "Waiting", text, "active")] : []
   }
 
   // Full retrospective view: all stages with sub-items expanded.
@@ -968,7 +968,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
         ),
       )
       if (hasWorkflow && r.kind === "Api") {
-        rows.push(item("h-entra", "Servers signing in", "Entra accepted the new app", "done"))
+        rows.push(item("h-entra", "Workers signing in", "Entra accepted the new app", "done"))
       }
     }
 

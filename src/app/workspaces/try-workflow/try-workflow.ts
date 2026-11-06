@@ -26,7 +26,7 @@ const STEP_NAMES = ["charge", "pack", "ship", "email"]
 // Polling stops once both copies have settled, or after this long.
 const MAX_POLL_MS = 2 * 60 * 1000
 
-// What a server is doing during each step, in words a guest reads at a glance.
+// What a worker is doing during each step, in words a guest reads at a glance.
 const DOING: Record<string, string> = {
   charge: "charging the card",
   pack: "packing the box",
@@ -41,13 +41,13 @@ const MARK: Record<string, string> = { done: "✓", running: "●", stuck: "✗"
   template: `
     <section class="panel">
       <div class="head">
-        <h3>Crash a server mid-order</h3>
+        <h3>Crash a worker mid-order</h3>
         <details class="why" [open]="!everPlaced() && wide">
           <summary>Why this matters</summary>
           <ul>
-            <li>Servers crash and redeploy all the time.</li>
+            <li>Workers crash and redeploy all the time.</li>
             <li>Without Temporal, a crash can charge a card and never ship.</li>
-            <li>Temporal saves each step, so another server carries on.</li>
+            <li>Temporal saves each step, so another worker carries on.</li>
           </ul>
         </details>
       </div>
@@ -77,7 +77,7 @@ const MARK: Record<string, string> = { done: "✓", running: "●", stuck: "✗"
             </button>
           } @else if (stage() === 2) {
             <button class="danger pulse" (click)="unplug()" [disabled]="!canUnplug()">
-              ⚡ Unplug {{ labelOf(busyPod()) || "the server" }}
+              Unplug {{ labelOf(busyPod()) || "the worker" }}
             </button>
           } @else {
             <span class="watching"><span class="spinner"></span>Watching the order recover</span>
@@ -469,7 +469,7 @@ export class TryWorkflow {
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((p, i) => ({
         pod: p.name,
-        label: `Server ${String.fromCharCode(65 + i)}`,
+        label: `Worker ${String.fromCharCode(65 + i)}`,
         online: p.ready,
       })),
   )
@@ -502,21 +502,20 @@ export class TryWorkflow {
   // The one thing to do or watch next.
   protected readonly prompt = computed(() => {
     const o = this.order()
-    if (!o)
-      return "Place an order. Then crash the server working on it, and see which copy survives."
+    if (!o) return "Place an order. Then crash the worker running it, and see which copy survives."
     if (this.won()) return this.result()
     if (this.missed())
-      return "No server crashed, so both finished. Run it again and hit Unplug mid-order."
+      return "No worker crashed, so both finished. Run it again and hit Unplug mid-order."
     if (this.stage() === 3) {
       const move = this.moves()[0]
       return move
         ? `Temporal moved the order to ${this.labelOf(move.to)}. Finishing it now…`
-        : `${this.unpluggedLabel() || "The server"} is down. Watch the order carry on without it…`
+        : `${this.unpluggedLabel() || "The worker"} is down. Watch the order carry on without it…`
     }
     const running = o.workflow.steps.find((s) => s.status === "running")
     if (!running) return "Starting the order…"
     if (!this.canUnplug())
-      return `${this.restarting()?.label ?? "The other server"} is restarting. Wait a moment.`
+      return `${this.restarting()?.label ?? "The other worker"} is restarting. Wait a moment.`
     return `${this.labelOf(running.worker)} is ${DOING[running.name] ?? running.name}. Unplug it now!`
   })
 
@@ -535,8 +534,8 @@ export class TryWorkflow {
 
   protected readonly plainCaption = computed(() => {
     const o = this.order()
-    if (!o) return "Lives on one server. If that server dies, so does the order."
-    const who = this.labelOf(o.plain.worker) || "its server"
+    if (!o) return "Lives on one worker. If that worker dies, so does the order."
+    const who = this.labelOf(o.plain.worker) || "its worker"
     if (o.plain.stuck) {
       return o.payments.plainCharged
         ? `Died with ${who}. Charged, never shipped.`
@@ -548,10 +547,10 @@ export class TryWorkflow {
 
   protected readonly temporalCaption = computed(() => {
     const o = this.order()
-    if (!o) return "Each step is saved, so any server can pick it up."
+    if (!o) return "Each step is saved, so any worker can pick it up."
     const move = this.moves()[0]
     const doing = (step: string) => DOING[step] ?? step
-    // The crashed server can restart and take the order back before the other one does.
+    // The crashed worker can restart and take the order back before the other one does.
     const recovered = move
       ? `${this.labelOf(move.from)} died while ${doing(move.step)}. Temporal moved the order to ${this.labelOf(move.to)}. `
       : o.workflow.handoffs > 0 && this.unpluggedLabel()
@@ -562,7 +561,7 @@ export class TryWorkflow {
         ? `Charged once, though the charge step ran ${o.payments.attempts} times.`
         : "Charged once."
       : ""
-    return `${recovered}${charged}`.trim() || "Waiting for a server."
+    return `${recovered}${charged}`.trim() || "Waiting for a worker."
   })
 
   protected readonly result = computed(() => {
@@ -589,10 +588,10 @@ export class TryWorkflow {
     return this.moves().find((m) => m.step === step)
   }
 
-  // Under each chip: which server ran it, or where it moved.
+  // Under each chip: which worker ran it, or where it moved.
   protected whoText(s: Step): string {
     const move = this.moveOf(s.name)
-    if (move) return `moved to ${this.labelOf(move.to).replace("Server ", "")}`
+    if (move) return `moved to ${this.labelOf(move.to).replace("Worker ", "")}`
     return s.worker ? this.labelOf(s.worker) : ""
   }
 

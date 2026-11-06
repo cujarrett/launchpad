@@ -21,10 +21,12 @@ import { RESOURCE_KIND_ICONS } from "../models/workspace.model"
   `,
 })
 export class KindIcon {
-  readonly kind = input.required<string>()
+  readonly kind = input("")
+  // For an icon that isn't a resource kind. It names a file in public/icons.
+  readonly icon = input("")
 
   protected readonly maskImage = computed(() => {
-    const file = RESOURCE_KIND_ICONS[this.kind() as keyof typeof RESOURCE_KIND_ICONS]
+    const file = this.icon() || RESOURCE_KIND_ICONS[this.kind() as keyof typeof RESOURCE_KIND_ICONS]
     return file ? `url(/icons/${file}.svg)` : "none"
   })
 }

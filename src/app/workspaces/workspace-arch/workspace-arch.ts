@@ -189,7 +189,7 @@ const colIndexOf = (columns: DiagramColumn[], id: string) =>
                       @if (node.iconKind) {
                         <app-kind-icon [kind]="node.iconKind" />
                       } @else {
-                        {{ node.icon }}
+                        <app-kind-icon [icon]="node.icon" />
                       }
                     </span>
                     <span class="arch-node-kind">{{ node.kindLabel }}</span>
@@ -350,7 +350,7 @@ export class WorkspaceArch {
         id: USER_NODE_ID,
         label: "users",
         kindLabel: "Internet",
-        icon: "🌍",
+        icon: "globe",
         color: "#8492a6",
         statusName: null,
         isUser: true,

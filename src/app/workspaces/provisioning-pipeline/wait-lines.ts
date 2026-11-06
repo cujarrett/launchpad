@@ -9,56 +9,54 @@ const JOKE_EVERY_MS = 5_000
 // Who the wait is on. Each gets a nudge and jokes of its own.
 export type Culprit = "GitHub" | "ArgoCD" | "Kubernetes" | "AWS" | "Entra"
 
+// Tone: fond of the stack, and never at its expense.
 const NUDGE: Record<Culprit, string> = {
-  Entra: "Entra's taking its time. We're asking nicely.",
-  AWS: "AWS is thinking. We're nudging.",
-  GitHub: "GitHub hasn't called back. Following up.",
-  ArgoCD: "ArgoCD hasn't noticed. Poking it.",
-  Kubernetes: "Kubernetes is working on it. Allegedly.",
+  Entra: "Entra is double-checking the paperwork.",
+  AWS: "AWS is clearing a shelf for your data.",
+  GitHub: "GitHub is filing your changes.",
+  ArgoCD: "ArgoCD is reading the plan carefully.",
+  Kubernetes: "Kubernetes is finding a good spot for your app.",
 }
 
 const OWN_JOKES: Record<Culprit, string[]> = {
   Entra: [
-    "Entra is reviewing an app that didn't exist a minute ago.",
-    "Entra says up to 24 hours. We've got a head start.",
+    "Entra is making your app a name badge.",
+    "Entra is learning your app's name. It's a nice name.",
   ],
-  AWS: ["AWS bills by the second. No rush, apparently.", "us-east-1. A bold choice."],
-  GitHub: [
-    "GitHub has nines. Not necessarily consecutive.",
-    "GitHub status: green. Our patience: amber.",
+  AWS: [
+    "AWS is carrying your bucket over with care.",
+    "Somewhere in Virginia, a small table is being set.",
   ],
+  GitHub: ["GitHub is keeping careful notes.", "Every change is in Git, so nothing gets lost."],
   ArgoCD: [
-    "ArgoCD says Progressing. Aren't we all.",
-    "ArgoCD is comparing reality to its expectations.",
+    "ArgoCD is checking its list twice.",
+    "ArgoCD likes things to match the plan. So do we.",
   ],
   Kubernetes: [
-    "ContainerCreating. Very creative. Still creating.",
-    "Kubernetes is looking for a node that believes in itself.",
-    "Desired state: ready. Actual state: we'll see.",
+    "Your containers are getting dressed.",
+    "Kubernetes is finding each pod a comfy node.",
+    "Desired state: ready. It's on its way.",
   ],
 }
 
 const JOKES = [
-  "P1 raised. Someone downgraded it to a P3.",
-  "Escalated. A meeting has been scheduled.",
-  "Your demo matters to us. Please hold.",
-  "All systems operational. Except the ones we need.",
-  "We've engaged our best engineers. They're also waiting.",
-  "Incident commander assigned. It's you.",
-  "The postmortem is going to be interesting.",
-  "Infrastructure as code. Patience as a service.",
-  "We built a platform so you wouldn't have to wait for tickets. Anyway...",
-  "Not DNS. Never DNS. Once, DNS.",
-  "Eventually consistent. Eventually.",
-  "Reconciliation is just retrying with confidence.",
-  "Everything is declarative. Including our frustration.",
-  "The control plane is in control. Allegedly.",
-  "Launchpad is judging this rollout. Quietly.",
-  "Have you tried turning the cloud off and on again?",
+  "Four Raspberry Pis are giving this their full attention.",
+  "Your sandbox is picking out an outfit.",
   "Your sandbox is developing a backstory.",
-  "Congratulations. You've discovered distributed systems.",
-  "We could have built this manually. We won't.",
-  "The happy path has encountered an unhappy dependency.",
+  "All this from one commit. Not bad.",
+  "No tickets were filed in the making of this sandbox.",
+  "Still on the happy path. Just the scenic route.",
+  "Good time to stretch. We'll keep an eye on it.",
+  "Real infrastructure likes to take a moment.",
+  "Not DNS. Never DNS. Once, DNS.",
+  "Eventually consistent. We believe in it.",
+  "Reconciliation is just patience with a plan.",
+  "Infrastructure as code. Patience as a service.",
+  "Everything is declarative. Even our optimism.",
+  "Have you tried turning the cloud off and on again?",
+  "We could have built this by hand. Aren't you glad we didn't?",
+  "A small rack is working very hard for you right now.",
+  "Thanks for waiting. It's worth it.",
 ]
 
 export function waitLine(who: Culprit, elapsedMs: number): string | null {

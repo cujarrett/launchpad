@@ -43,13 +43,13 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
   {
     Api: {
       title: "App with real data",
-      // Card text stays plain. The toggles and the summary below it name the products.
-      desc: "A website and API, wired to real data stores.",
-      includes: "SPA + API + Choice of Datastore(s)",
+      // Data stores use general names. Temporal is the one product a guest sees by name.
+      desc: "A website and API, wired to every kind of data store.",
+      includes: "Website + API + SQL + NoSQL + Object storage + Cache",
     },
     WorkflowSpace: {
       title: "Durable workflow",
-      desc: "A business process, kept running through a server crash.",
+      desc: "A business process, kept running through a worker crash.",
       includes: "API + Temporal + Crash test",
     },
   }
@@ -96,86 +96,6 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
           }
         </div>
 
-        @if (selectedKind() === "Api") {
-          <div class="addons">
-            <div class="addons-head">
-              <span class="addons-label">Your API comes with</span>
-              <button type="button" class="dice" (click)="shuffle()">🎲 Surprise me</button>
-            </div>
-            <div class="toggles">
-              @if (offerSpa()) {
-                <span class="toggle on locked">
-                  <app-kind-icon kind="Spa" /><span>Single Page App</span
-                  ><span class="included">Included</span>
-                </span>
-              }
-              @if (offerSql() || showSqlToggle()) {
-                <button
-                  type="button"
-                  class="toggle"
-                  [class.on]="withSql()"
-                  [disabled]="withSql() && lastData()"
-                  [attr.title]="
-                    withSql() && lastData()
-                      ? 'Every API keeps at least one place to store data'
-                      : null
-                  "
-                  (click)="withSql.set(!withSql())"
-                >
-                  <app-kind-icon kind="Sql" /><span>Postgres</span><span class="switch"></span>
-                </button>
-              }
-              @if (offerNoSql()) {
-                <button
-                  type="button"
-                  class="toggle"
-                  [class.on]="withNoSql()"
-                  [disabled]="withNoSql() && lastData()"
-                  [attr.title]="
-                    withNoSql() && lastData()
-                      ? 'Every API keeps at least one place to store data'
-                      : null
-                  "
-                  (click)="withNoSql.set(!withNoSql())"
-                >
-                  <app-kind-icon kind="NoSql" /><span>DynamoDB</span><span class="switch"></span>
-                </button>
-              }
-              @if (offerStorage()) {
-                <button
-                  type="button"
-                  class="toggle"
-                  [class.on]="withStorage()"
-                  [disabled]="withStorage() && lastData()"
-                  [attr.title]="
-                    withStorage() && lastData()
-                      ? 'Every API keeps at least one place to store data'
-                      : null
-                  "
-                  (click)="withStorage.set(!withStorage())"
-                >
-                  <app-kind-icon kind="ObjectStorage" /><span>S3 bucket</span
-                  ><span class="switch"></span>
-                </button>
-              }
-              <button
-                type="button"
-                class="toggle"
-                [class.on]="withCache()"
-                (click)="withCache.set(!withCache())"
-              >
-                <app-kind-icon kind="Cache" /><span>Redis cache</span><span class="switch"></span>
-              </button>
-            </div>
-          </div>
-        }
-
-        @if (selectedKind()) {
-          <p class="summary">
-            <!-- prettier-ignore -->
-            @for (part of techParts(planSummary()); track $index) {@if (part.tech) {<b class="tech">{{ part.text }}</b>} @else {{{ part.text }}}}
-          </p>
-        }
         @if (error()) {
           <p class="field-error">{{ error() }}</p>
         }
@@ -320,100 +240,6 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
         font-size: 0.75rem;
         opacity: 0.55;
       }
-      .addons {
-        margin-top: 1.5rem;
-      }
-      .addons-head {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 0.6rem;
-      }
-      .dice {
-        background: none;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: inherit;
-        font-size: 0.8rem;
-        padding: 0.2rem 0.6rem;
-        border-radius: 999px;
-      }
-      .toggle.locked {
-        cursor: default;
-      }
-      /* The last data store is locked on. It stays bright, because it is on. */
-      .toggle:disabled {
-        opacity: 1;
-        cursor: not-allowed;
-      }
-      .toggle span:not(.switch):not(.included) {
-        white-space: nowrap;
-      }
-      .included {
-        margin-left: auto;
-        font-size: 0.7rem;
-        opacity: 0.7;
-      }
-      .addons-label {
-        display: block;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        opacity: 0.6;
-      }
-      .toggles {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-        gap: 0.5rem;
-      }
-      .toggle {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.6rem 0.75rem;
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.03);
-        color: inherit;
-        font-size: 0.85rem;
-        text-align: left;
-        cursor: pointer;
-      }
-      .toggle.on {
-        border-color: #818cf8;
-        background: rgba(99, 102, 241, 0.12);
-      }
-      .switch {
-        margin-left: auto;
-        width: 30px;
-        height: 18px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.2);
-        position: relative;
-        flex-shrink: 0;
-      }
-      .switch::after {
-        content: "";
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        background: #fff;
-        transition: transform 0.15s;
-      }
-      .toggle.on .switch {
-        background: #6366f1;
-      }
-      .toggle.on .switch::after {
-        transform: translateX(12px);
-      }
-      .summary {
-        margin: 1.25rem 0 0;
-        font-size: 0.9rem;
-        opacity: 0.85;
-      }
       .actions {
         display: flex;
         justify-content: center;
@@ -436,8 +262,7 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
         .picker {
           padding: 0.5rem 0 1rem;
         }
-        .cards,
-        .toggles {
+        .cards {
           grid-template-columns: 1fr;
         }
         .actions {
@@ -471,37 +296,8 @@ export class GuestCreate implements OnInit {
   protected readonly saving = signal(false)
   protected readonly savedPlan = signal<string[]>([])
   protected readonly error = signal<string | null>(null)
-  protected readonly withStorage = signal(false)
-  protected readonly withCache = signal(false)
-  protected readonly withSql = signal(false)
-  protected readonly withNoSql = signal(false)
-  // Always on, so a guest sees a page as well as JSON.
-  protected readonly withSpa = signal(true)
-
   protected readonly availableKinds = computed(() =>
     guestAvailableKinds(this.existingResources().map((r) => r.kind)),
-  )
-
-  protected readonly offerStorage = computed(() => {
-    if (this.selectedKind() !== "Api") return false
-    return !this.existingResources().some((r) => r.kind === "ObjectStorage")
-  })
-
-  protected readonly offerSql = computed(
-    () => this.selectedKind() === "Api" && !this.existingResources().some((r) => r.kind === "Sql"),
-  )
-
-  protected readonly offerNoSql = computed(
-    () =>
-      this.selectedKind() === "Api" && !this.existingResources().some((r) => r.kind === "NoSql"),
-  )
-
-  protected readonly showSqlToggle = computed(
-    () => this.selectedKind() === "Api" && this.existingResources().some((r) => r.kind === "Sql"),
-  )
-
-  protected readonly offerSpa = computed(
-    () => this.selectedKind() === "Api" && !this.existingResources().some((r) => r.kind === "Spa"),
   )
 
   protected readonly techParts = techParts
@@ -511,74 +307,16 @@ export class GuestCreate implements OnInit {
     computed(() => this.workspaceService.creatingGuest() !== this.workspace()),
   )
 
-  // Data stores already in the sandbox count toward the one-store rule.
-  private readonly hasExistingData = computed(() =>
-    this.existingResources().some((r) => ["Sql", "NoSql", "ObjectStorage"].includes(r.kind)),
-  )
-
-  // True when only one data store is on, so turning it off is blocked.
-  protected readonly lastData = computed(() => {
-    if (this.hasExistingData()) return false
-    const on = [this.withSql(), this.withNoSql(), this.withStorage()].filter(Boolean)
-    return on.length <= 1
-  })
-
-  // Written as a sentence: "You'll get an API, a Postgres database and a Redis cache."
-  protected readonly planSummary = computed(() => {
-    const kind = this.selectedKind()
-    let items: string[] = []
-    if (kind === "Api") {
-      items = [
-        "an API",
-        this.offerSpa() ? "a Single Page App" : "",
-        this.withSql() ? "a Postgres database" : "",
-        this.withNoSql() ? "a DynamoDB table" : "",
-        this.withStorage() ? "an S3 bucket" : "",
-        this.withCache() ? "a Redis cache" : "",
-      ].filter(Boolean)
-    } else if (kind === "WorkflowSpace") {
-      // Says what the guest will do, not how the servers sign in.
-      return "You'll get an order API on two servers, run by Temporal. Then you crash one mid-order."
-    }
-    if (items.length === 0) return ""
-    const list =
-      items.length === 1 ? items[0] : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`
-    return `You'll get ${list}.`
-  })
-
   ngOnInit(): void {
-    // Auto-select Api so the configure options are visible immediately.
+    // Starts selected, so Build it works on the first click.
     if (this.availableKinds().includes("Api")) {
       this.selectedKind.set("Api")
     }
-    this.shuffle()
-  }
-
-  // Picks a random mix, so each guest sees a different sandbox.
-  // At least one data store is always on. The cache is on about half the time.
-  protected shuffle(): void {
-    const offered = [
-      this.offerSql() ? this.withSql : null,
-      this.offerNoSql() ? this.withNoSql : null,
-      this.offerStorage() ? this.withStorage : null,
-    ].filter((sig) => sig !== null)
-    offered.forEach((sig) => sig.set(Math.random() < 0.5))
-    const anyOn = offered.some((sig) => sig())
-    if (!anyOn && offered.length && !this.hasExistingData()) {
-      offered[Math.floor(Math.random() * offered.length)].set(true)
-    }
-    this.withCache.set(Math.random() < 0.5)
   }
 
   protected buildCommitPlan(kind: ResourceKind): string[] {
-    const steps: string[] = []
-    if (this.withStorage() && kind === "Api") steps.push("Object storage")
-    if (this.withSql() && this.offerSql() && kind === "Api") steps.push("SQL database")
-    if (this.withNoSql() && kind === "Api") steps.push("NoSQL database")
-    if (this.withSpa() && kind === "Api" && this.offerSpa()) steps.push("Website")
-    if (kind === "WorkflowSpace") steps.push("Workflow space")
-    steps.push("API")
-    return steps
+    if (kind === "WorkflowSpace") return ["Workflow space", "API"]
+    return ["Object storage", "SQL database", "NoSQL database", "Website", "API"]
   }
 
   protected async submit(): Promise<void> {
@@ -594,27 +332,31 @@ export class GuestCreate implements OnInit {
       const ready = await firstValueFrom(this.sandboxReady$.pipe(filter(Boolean)), {
         defaultValue: false,
       })
-      if (!ready) return
+      if (!ready) {
+        this.commitPlanChange.emit([])
+        return
+      }
       // All requested resources (add-ons plus the API/SPA itself) are created
       // in one request and one atomic Git commit server-side - no more
       // sequential round trips per add-on, and no risk of a partially created
       // workspace if this request is interrupted.
       await firstValueFrom(
         this.workspaceService.createGuestResourceBatch(this.workspace(), kind, {
-          // Add-ons belong to the App with real data demo only. The picker keeps its toggles when switching cards.
-          withCache: this.withCache() && kind === "Api",
-          withSql: this.withSql() && kind === "Api",
-          withNoSql: this.withNoSql() && kind === "Api",
-          withStorage: this.withStorage() && kind === "Api",
-          withSpa: this.withSpa() && kind === "Api" && this.offerSpa(),
+          // The workflow demo takes no add-ons. The API ignores these for it.
+          withCache: kind === "Api",
+          withSql: kind === "Api",
+          withNoSql: kind === "Api",
+          withStorage: kind === "Api",
+          withSpa: kind === "Api",
         }),
       )
       this.created.emit()
     } catch (e) {
+      // A successful build's plan stays open. The page clears it once the files load.
+      this.commitPlanChange.emit([])
       this.error.set(httpErrorMessage(e, "Unexpected error creating resource"))
     } finally {
       this.saving.set(false)
-      this.commitPlanChange.emit([])
     }
   }
 }

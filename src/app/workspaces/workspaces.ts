@@ -15,7 +15,6 @@ import { WorkspaceService } from "../core/services/workspace.service"
 import { httpErrorMessage } from "../core/http-error"
 import { RoleService } from "../core/services/role.service"
 import { Workspace } from "../core/models/workspace.model"
-import { SandboxMap } from "../sandbox-map/sandbox-map"
 
 const GUEST_MAX = 5
 
@@ -109,11 +108,11 @@ function pickGuestName(
 
 @Component({
   selector: "app-workspaces",
-  imports: [RouterLink, FormsModule, SandboxMap],
+  imports: [RouterLink, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
-      @if (!roleService.isContributor() && !pickingGuestName() && !savingGuestWorkspace()) {
+      @if (!roleService.isContributor() && !savingGuestWorkspace()) {
         <div class="sandbox-cta">
           <p class="sandbox-hero">
             You declare what you want.<span>The platform puts it in the air.</span>
@@ -123,12 +122,15 @@ function pickGuestName(
             <a class="how-btn" routerLink="/how-it-works">How it works</a>
           } @else {
             <div class="cta-actions">
-              <button class="sandbox-btn" (click)="startGuestNamePicker()">
+              <button class="sandbox-btn" (click)="launchGuestWorkspace()">
                 🧪 Try the Sandbox
               </button>
               <a class="how-btn" routerLink="/how-it-works">How it works</a>
             </div>
             <p class="sandbox-tagline">Real infrastructure. Powered by Kubernetes and AWS.</p>
+            @if (createGuestError()) {
+              <p class="field-error">{{ createGuestError() }}</p>
+            }
             @if (guestCount() > 0) {
               <span class="muted" style="font-size:0.7rem"
                 >{{ slotsRemaining() }}/{{ guestMax }} slots available</span
@@ -138,19 +140,19 @@ function pickGuestName(
         </div>
       }
 
-      <div class="page-header">
-        <div>
-          <h1>Workspaces</h1>
-        </div>
-        <div style="display:flex;gap:0.5rem;align-items:center">
-          @if (roleService.isContributor()) {
+      @if (roleService.isContributor()) {
+        <div class="page-header">
+          <div>
+            <h1>Workspaces</h1>
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
             <a class="how-link" routerLink="/how-it-works">How it works</a>
-          }
-          @if (roleService.isContributor() && !creatingWorkspace() && !savingGuestWorkspace()) {
-            <button (click)="creatingWorkspace.set(true)">+ New Workspace</button>
-          }
+            @if (!creatingWorkspace() && !savingGuestWorkspace()) {
+              <button (click)="creatingWorkspace.set(true)">+ New Workspace</button>
+            }
+          </div>
         </div>
-      </div>
+      }
 
       @if (creatingWorkspace()) {
         <form class="create-panel" (ngSubmit)="submitNewWorkspace()">
@@ -179,33 +181,6 @@ function pickGuestName(
         </form>
       }
 
-      @if (pickingGuestName()) {
-        <div class="create-panel guest-picker">
-          <p class="picker-label">Pick your sandbox name:</p>
-          <div class="name-badge-wrap">
-            <div class="name-badge">{{ guestNameSuggestion() }}</div>
-            @if (!savingGuestWorkspace()) {
-              <button type="button" class="reroll-btn" (click)="rerollGuestName()">
-                🎲 try another
-              </button>
-            }
-          </div>
-          @if (createGuestError()) {
-            <p class="field-error">{{ createGuestError() }}</p>
-          }
-          <div class="form-actions" style="justify-content:center">
-            <button
-              type="button"
-              [disabled]="savingGuestWorkspace()"
-              (click)="launchGuestWorkspace()"
-            >
-              {{ savingGuestWorkspace() ? "Creating Demo Workspace…" : "Launch!" }}
-            </button>
-            <button type="button" class="secondary" (click)="cancelGuestPicker()">Cancel</button>
-          </div>
-        </div>
-      }
-
       @if (loading()) {
         <p class="muted">Loading...</p>
       } @else if (error()) {
@@ -214,7 +189,7 @@ function pickGuestName(
         <p class="muted">No workspaces found.</p>
       } @else {
         @if (guestWorkspaces().length > 0) {
-          <p class="section-label">🧪 Active sandboxes</p>
+          <p class="section-label">Active sandboxes</p>
           <div class="card-grid">
             @for (workspace of guestWorkspaces(); track workspace.name) {
               <a
@@ -243,8 +218,6 @@ function pickGuestName(
           </div>
         }
       }
-
-      <app-sandbox-map />
     </div>
   `,
   styles: [
@@ -256,7 +229,7 @@ function pickGuestName(
         gap: 0.75rem;
       }
       .workspace-tile {
-        padding: 0.85rem 1.25rem;
+        padding: 0.75rem 1.25rem;
       }
 
       .guest-tile {
@@ -308,44 +281,6 @@ function pickGuestName(
         color: inherit;
         font-weight: inherit;
       }
-      .guest-picker {
-        border: 1px dashed #7c3aed;
-        background: rgba(139, 92, 246, 0.06);
-      }
-      .picker-label {
-        margin: 0 0 0.75rem;
-        font-size: 0.9rem;
-        opacity: 0.8;
-      }
-      .name-badge-wrap {
-        text-align: center;
-        margin-bottom: 1.25rem;
-      }
-      .name-badge {
-        display: inline-block;
-        font-size: 1.5rem;
-        font-weight: 700;
-        padding: 0.5rem 1.5rem;
-        border: 2px solid #7c3aed;
-        border-radius: 8px;
-        background: rgba(124, 58, 237, 0.12);
-        letter-spacing: 0.02em;
-        margin-bottom: 0.5rem;
-      }
-      .reroll-btn {
-        display: block;
-        margin: 0 auto;
-        background: none;
-        border: none;
-        color: #a78bfa;
-        font-size: 0.85rem;
-        cursor: pointer;
-        text-decoration: underline;
-        padding: 0;
-      }
-      .reroll-btn:hover {
-        color: #c4b5fd;
-      }
       .icon-btn {
         padding: 0.2rem 0.4rem;
         font-size: 1rem;
@@ -358,8 +293,8 @@ function pickGuestName(
         flex-direction: column;
         align-items: center;
         gap: 1rem;
-        padding: 2rem 0 1.75rem;
-        margin-bottom: 0.25rem;
+        padding: 1.25rem 0;
+        margin-bottom: 1rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         text-align: center;
       }
@@ -495,8 +430,6 @@ export class Workspaces implements OnInit, OnDestroy {
   protected readonly createWorkspaceError = signal<string | null>(null)
 
   // Guest workspace creation
-  protected readonly pickingGuestName = signal(false)
-  protected readonly guestNameSuggestion = signal("")
   protected readonly savingGuestWorkspace = signal(false)
   protected readonly createGuestError = signal<string | null>(null)
 
@@ -505,7 +438,12 @@ export class Workspaces implements OnInit, OnDestroy {
   private tickInterval?: ReturnType<typeof setInterval>
 
   protected readonly guestMax = GUEST_MAX
-  protected readonly guestCount = computed(() => this.workspaces().filter((w) => w.isGuest).length)
+  // An expired sandbox frees its slot seconds later, so it no longer counts.
+  protected readonly guestCount = computed(
+    () =>
+      this.workspaces().filter((w) => w.isGuest && !(w.expiresAt && this.isExpired(w.expiresAt)))
+        .length,
+  )
   protected readonly slotsRemaining = computed(() => this.guestMax - this.guestCount())
   protected readonly sandboxFullMessage = computed(() => {
     return `All ${this.guestMax} sandbox slots are in use - try again in a few minutes`
@@ -520,13 +458,9 @@ export class Workspaces implements OnInit, OnDestroy {
     } finally {
       this.loading.set(false)
     }
-    // Set by a sandbox create that failed after leaving this page. The picker reopens
-    // with a fresh name, checked against the list just loaded.
+    // Set by a sandbox create that failed after leaving this page.
     const guestError: unknown = history.state?.guestError
-    if (typeof guestError === "string") {
-      this.startGuestNamePicker()
-      this.createGuestError.set(guestError)
-    }
+    if (typeof guestError === "string") this.createGuestError.set(guestError)
   }
 
   ngOnDestroy() {
@@ -593,28 +527,9 @@ export class Workspaces implements OnInit, OnDestroy {
     return { full: new Set(names), word1s, word2s }
   }
 
-  startGuestNamePicker() {
-    const { full, word1s, word2s } = this.activeGuestWords()
-    this.guestNameSuggestion.set(pickGuestName(full, word1s, word2s))
-    this.createGuestError.set(null)
-    this.pickingGuestName.set(true)
-  }
-
-  rerollGuestName() {
-    const [w1, w2] = this.guestNameSuggestion().split("-")
-    const { full, word1s, word2s } = this.activeGuestWords()
-    word1s.add(w1)
-    word2s.add(w2)
-    this.guestNameSuggestion.set(pickGuestName(full, word1s, word2s))
-  }
-
-  cancelGuestPicker() {
-    this.pickingGuestName.set(false)
-    this.createGuestError.set(null)
-  }
-
   async launchGuestWorkspace() {
-    const suggestion = this.guestNameSuggestion()
+    const { full, word1s, word2s } = this.activeGuestWords()
+    const suggestion = pickGuestName(full, word1s, word2s)
     this.savingGuestWorkspace.set(true)
     this.createGuestError.set(null)
 
@@ -624,7 +539,6 @@ export class Workspaces implements OnInit, OnDestroy {
     // destination page tolerates the brief window before the workspace
     // actually exists server-side, so there's no reason to block navigation
     // on the create request's network round trip.
-    this.pickingGuestName.set(false)
     // fresh lets the destination page render its picker straight away instead of
     // waiting on a resource list that cannot exist yet.
     this.workspaceService.creatingGuest.set(`guest-${suggestion}`)
@@ -639,7 +553,7 @@ export class Workspaces implements OnInit, OnDestroy {
       // The error rides along in navigation state for the new home page to show.
       const guestError =
         err instanceof HttpErrorResponse && err.status === 409
-          ? "That name was just taken - try another one!"
+          ? "That sandbox name was just taken. Please try again."
           : httpErrorMessage(err, "Failed to create sandbox workspace")
       await this.router.navigate(["/"], { state: { guestError } })
     } finally {

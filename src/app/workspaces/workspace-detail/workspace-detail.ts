@@ -60,7 +60,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
   Wordpress: "Managed WordPress site with MariaDB.",
   GraphApi: "API whose schema joins a federated graph.",
   FederatedGraph: "One GraphQL endpoint joining every subgraph.",
-  WorkflowSpace: "Steps that finish even when a server dies. Runs on Temporal.",
+  WorkflowSpace: "Steps that finish even when a worker dies. Runs on Temporal.",
 }
 
 @Component({
@@ -80,253 +80,271 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
   // allPreviewsReady: true once every Api/Spa with a host has confirmed /healthz
   template: `
     <div class="page">
-      @if (isGuest()) {
-        @if (isExpired()) {
-          <div class="guest-banner expiring">
-            ⏰
-            @if (guestGone()) {
-              This sandbox expired and was deleted. <a routerLink="/">Start a new one</a>
-            } @else {
-              This sandbox has expired and will be deleted shortly.
-            }
-          </div>
-        } @else {
+      @if (isGuest() && isExpired()) {
+        <div class="sandbox-ended">
+          <h2>This sandbox has ended</h2>
+          <p>Sandboxes last 10 minutes. Everything in this one has been removed or soon will be.</p>
+          <a class="start-new" routerLink="/">Start a new sandbox</a>
+        </div>
+      } @else {
+        @if (isGuest()) {
           <div class="guest-banner" [class.expiring]="isExpiringSoon()">
-            🧪 Sandbox workspace
+            Sandbox workspace
             @if (guestExpiresAt()) {
               - auto-deletes in
               <strong>{{ guestCountdown() }}</strong>
-              @if (isExpiringSoon()) {
-                &nbsp;⚠️
-              }
             }
           </div>
         }
-      }
 
-      <div class="page-header">
-        <div class="page-title-group">
-          <a class="breadcrumb" routerLink="/">Workspaces</a>
-          <span class="breadcrumb-sep">›</span>
-          <h1>{{ name() }}</h1>
-        </div>
-        <div class="page-header-actions">
-          @if (!loading()) {
-            <div class="view-toggle">
-              <button
-                [class.active]="viewMode() === 'cards'"
-                class="secondary"
-                (click)="viewMode.set('cards')"
-              >
-                Cards
-              </button>
-              @if (!pipelineActive()) {
+        <div class="page-header">
+          <div class="page-title-group">
+            <a class="breadcrumb" routerLink="/">Workspaces</a>
+            <span class="breadcrumb-sep">›</span>
+            <h1>{{ name() }}</h1>
+          </div>
+          <div class="page-header-actions">
+            @if (!loading()) {
+              <div class="view-toggle">
                 <button
-                  [class.active]="viewMode() === 'arch'"
+                  [class.active]="viewMode() === 'cards'"
                   class="secondary"
-                  (click)="viewMode.set('arch')"
+                  (click)="viewMode.set('cards')"
                 >
-                  Arch
+                  Cards
                 </button>
-              }
-            </div>
-          }
-          @if (!creating()) {
-            @if (roleService.isContributor()) {
-              @if (!loading() && resources().length === 0) {
-                @if (!confirmDelete()) {
-                  <button class="danger" (click)="confirmDelete.set(true)">Delete workspace</button>
-                } @else {
+                @if (!pipelineActive()) {
                   <button
+                    [class.active]="viewMode() === 'arch'"
                     class="secondary"
-                    (click)="confirmDelete.set(false); deleteWorkspaceError.set(null)"
+                    (click)="viewMode.set('arch')"
                   >
-                    Cancel
-                  </button>
-                  <button
-                    class="danger"
-                    [disabled]="deletingWorkspace()"
-                    (click)="doDeleteWorkspace()"
-                  >
-                    {{ deletingWorkspace() ? "Deleting…" : "Confirm delete" }}
-                  </button>
-                }
-                @if (deleteWorkspaceError()) {
-                  <span class="field-error" style="align-self:center">{{
-                    deleteWorkspaceError()
-                  }}</span>
-                }
-              }
-              <button (click)="startCreate()">+ New Resource</button>
-            } @else if (isGuest() && !isExpired() && guestHasAvailableKinds()) {
-              <button (click)="creating.set(true)">+ Add Resource</button>
-            }
-          }
-        </div>
-      </div>
-
-      @if ((creating() || guestNeedsPick()) && !(isGuest() && isExpired())) {
-        @if (isGuest()) {
-          <app-guest-create
-            style="display:block;margin-bottom:1.5rem"
-            [workspace]="name()"
-            [existingResources]="resources()"
-            [allowCancel]="resources().length > 0"
-            (created)="onCreated()"
-            (cancelled)="creating.set(false)"
-            (commitPlanChange)="commitPlan.set($event)"
-          />
-        } @else {
-          <div class="create-panel">
-            @if (!selectedKind()) {
-              <h3 class="create-heading">Choose a resource type</h3>
-              <div class="kind-grid">
-                @for (k of platformKinds; track k) {
-                  <button class="kind-card" type="button" (click)="selectedKind.set(k)">
-                    <app-kind-icon class="kind-icon" [kind]="k" />
-                    <span class="kind-name">{{ labels[k] }}</span>
-                    <span class="kind-desc">{{ kindDesc[k] }}</span>
+                    Arch
                   </button>
                 }
               </div>
-              <div class="form-actions">
-                <button type="button" class="secondary" (click)="cancelCreate()">Cancel</button>
-              </div>
-            } @else {
-              <app-create-resource
-                [workspace]="name()"
-                [kind]="selectedKind()!"
-                (created)="onCreated()"
-                (cancelled)="cancelCreate()"
-              />
             }
-          </div>
-        }
-      }
-
-      <!-- Ready: the live link and demo lead, above the cards, so phones see them first.
-           Done: the rollout steps move to the bottom as a receipt.
-           CSS order moves them without remounting. -->
-      <div class="story">
-        <div class="cards">
-          @if (loading()) {
-            <p class="muted">Loading...</p>
-          } @else if (loadError()) {
-            <p class="field-error">
-              Still waiting on your workspace - this is taking longer than usual.
-              <button type="button" (click)="retryLoadResources()">Retry</button>
-            </p>
-          } @else {
-            @if (viewMode() === "arch" && !pipelineActive()) {
-              <app-workspace-arch [resources]="resources()" [statusMap]="statusMap()" />
-            }
-            <!-- Always rendered so resource-card health polling drives allPreviewsReady. -->
-            <div [hidden]="viewMode() === 'arch'">
-              <div class="card-grid">
-                @for (resource of sortedResources(); track resource.name) {
-                  <app-resource-card
-                    [resource]="resource"
-                    [workspace]="name()"
-                    [status]="statusMap()[statusKey(resource.kind, resource.name)] ?? null"
-                    [expanded]="expandedResource() === resource.name"
-                    [canEdit]="roleService.isContributor()"
-                    [canEditConnections]="isGuest() && resource.kind === 'Api'"
-                    [dependencyReady]="resource.kind !== 'Spa' || spaApiReady()"
-                    (toggled)="
-                      expandedResource.set(
-                        expandedResource() === resource.name ? null : resource.name
-                      )
-                    "
-                    (deleted)="handleDelete($event)"
-                    (saved)="expandedResource.set(null); loadResources()"
-                    (createKind)="startCreateForKind($event)"
-                    (previewReady)="handlePreviewReady($event)"
-                  />
-                } @empty {
-                  @if (!creating()) {
-                    <p class="muted">
-                      No resources yet.{{ isGuest() ? " Add one above to watch it spin up!" : "" }}
-                    </p>
+            @if (!creating()) {
+              @if (roleService.isContributor()) {
+                @if (!loading() && resources().length === 0) {
+                  @if (!confirmDelete()) {
+                    <button class="danger" (click)="confirmDelete.set(true)">
+                      Delete workspace
+                    </button>
+                  } @else {
+                    <button
+                      class="secondary"
+                      (click)="confirmDelete.set(false); deleteWorkspaceError.set(null)"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      class="danger"
+                      [disabled]="deletingWorkspace()"
+                      (click)="doDeleteWorkspace()"
+                    >
+                      {{ deletingWorkspace() ? "Deleting…" : "Confirm delete" }}
+                    </button>
+                  }
+                  @if (deleteWorkspaceError()) {
+                    <span class="field-error" style="align-self:center">{{
+                      deleteWorkspaceError()
+                    }}</span>
                   }
                 }
-              </div>
+                <button (click)="startCreate()">+ New Resource</button>
+              } @else if (isGuest() && guestHasAvailableKinds()) {
+                <button (click)="creating.set(true)">+ Add Resource</button>
+              }
+            }
+          </div>
+        </div>
+
+        @if (creating() || guestNeedsPick()) {
+          @if (isGuest()) {
+            <app-guest-create
+              style="display:block;margin-bottom:1.5rem"
+              [workspace]="name()"
+              [existingResources]="resources()"
+              [allowCancel]="resources().length > 0"
+              (created)="onCreated()"
+              (cancelled)="creating.set(false)"
+              (commitPlanChange)="commitPlan.set($event)"
+            />
+          } @else {
+            <div class="create-panel">
+              @if (!selectedKind()) {
+                <h3 class="create-heading">Choose a resource type</h3>
+                <div class="kind-grid">
+                  @for (k of platformKinds; track k) {
+                    <button class="kind-card" type="button" (click)="selectedKind.set(k)">
+                      <app-kind-icon class="kind-icon" [kind]="k" />
+                      <span class="kind-name">{{ labels[k] }}</span>
+                      <span class="kind-desc">{{ kindDesc[k] }}</span>
+                    </button>
+                  }
+                </div>
+                <div class="form-actions">
+                  <button type="button" class="secondary" (click)="cancelCreate()">Cancel</button>
+                </div>
+              } @else {
+                <app-create-resource
+                  [workspace]="name()"
+                  [kind]="selectedKind()!"
+                  (created)="onCreated()"
+                  (cancelled)="cancelCreate()"
+                />
+              }
             </div>
           }
-        </div>
-        @if (liveApp(); as app) {
-          <a
-            class="live-cta"
-            [href]="'https://' + app.host"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span class="live-text">
-              <span class="live-title">Your app is live</span>
-              <span class="live-sub">{{ app.sub }}</span>
-            </span>
-            <span class="live-btn" [title]="app.host">Open your app ↗</span>
-          </a>
         }
-        <!-- The WorkflowSpace demo's payoff is the crash panel below, so its button starts it. -->
-        @if (workflowDemo() && !tryWorkflow()?.everPlaced()) {
-          <div class="live-cta">
-            <span class="live-text">
-              <span class="live-title">Your durable workflow is live</span>
-              <span class="live-sub"
-                >Two servers are running your order API. Crash one mid-order.</span
-              >
-            </span>
-            <button type="button" class="live-btn" (click)="tryWorkflow()?.placeOrder()">
-              Start the demo ↓
-            </button>
+
+        <!-- Ready: the live link and demo lead, above the cards, so phones see them first.
+           Done: the rollout steps move to the bottom as a receipt.
+           CSS order moves them without remounting. -->
+        <div class="story">
+          <div class="cards">
+            @if (loading()) {
+              <p class="muted">Loading...</p>
+            } @else if (loadError()) {
+              <p class="field-error">
+                Still waiting on your workspace - this is taking longer than usual.
+                <button type="button" (click)="retryLoadResources()">Retry</button>
+              </p>
+            } @else {
+              @if (viewMode() === "arch" && !pipelineActive()) {
+                <app-workspace-arch [resources]="resources()" [statusMap]="statusMap()" />
+              }
+              <!-- Always rendered so resource-card health polling drives allPreviewsReady. -->
+              <div [hidden]="viewMode() === 'arch'">
+                <div class="card-grid">
+                  @for (resource of sortedResources(); track resource.name) {
+                    <app-resource-card
+                      [resource]="resource"
+                      [workspace]="name()"
+                      [status]="statusMap()[statusKey(resource.kind, resource.name)] ?? null"
+                      [expanded]="expandedResource() === resource.name"
+                      [canEdit]="roleService.isContributor()"
+                      [canEditConnections]="isGuest() && resource.kind === 'Api'"
+                      [dependencyReady]="resource.kind !== 'Spa' || spaApiReady()"
+                      (toggled)="
+                        expandedResource.set(
+                          expandedResource() === resource.name ? null : resource.name
+                        )
+                      "
+                      (deleted)="handleDelete($event)"
+                      (saved)="expandedResource.set(null); loadResources()"
+                      (createKind)="startCreateForKind($event)"
+                      (previewReady)="handlePreviewReady($event)"
+                    />
+                  } @empty {
+                    @if (!creating()) {
+                      <p class="muted">
+                        No resources yet.{{
+                          isGuest() ? " Add one above to watch it spin up!" : ""
+                        }}
+                      </p>
+                    }
+                  }
+                </div>
+              </div>
+            }
           </div>
-        }
-        <!-- Outside the loading gate, so it stays mounted across resource refreshes.
+          @if (liveApp(); as app) {
+            <a
+              class="live-cta"
+              [href]="'https://' + app.host"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span class="live-text">
+                <span class="live-title">Your app is live</span>
+                <span class="live-sub">{{ app.sub }}</span>
+              </span>
+              <span class="live-btn" [title]="app.host">Open your app ↗</span>
+            </a>
+          }
+          <!-- The WorkflowSpace demo's payoff is the crash panel below, so its button starts it. -->
+          @if (workflowDemo() && !tryWorkflow()?.everPlaced()) {
+            <div class="live-cta">
+              <span class="live-text">
+                <span class="live-title">Your durable workflow is live</span>
+                <span class="live-sub"
+                  >Two workers are running your order API. Crash one mid-order.</span
+                >
+              </span>
+              <button type="button" class="live-btn" (click)="tryWorkflow()?.placeOrder()">
+                Start the demo ↓
+              </button>
+            </div>
+          }
+          <!-- Outside the loading gate, so it stays mounted across resource refreshes.
            Once done it collapses to each step's time. Arch view hides it then, because the
            diagram shows live health itself. -->
-        <!-- An empty sandbox showing the picker has no run to show. Phase times the server
+          <!-- An empty sandbox showing the picker has no run to show. Phase times the server
              still holds from a failed attempt would otherwise draw a stuck rollout. -->
-        <div
-          [hidden]="
-            (viewMode() === 'arch' && !pipelineActive()) ||
-            (guestNeedsPick() && commitPlan().length === 0)
-          "
-          [style.order]="pipelineActive() ? 3 : 5"
-        >
-          <app-provisioning-pipeline
+          <div
+            [hidden]="
+              (viewMode() === 'arch' && !pipelineActive()) ||
+              (guestNeedsPick() && commitPlan().length === 0)
+            "
+            [style.order]="pipelineActive() ? 3 : 5"
+          >
+            <app-provisioning-pipeline
+              [workspace]="name()"
+              [initialPhaseTimes]="guestPhaseTimes()"
+              [initialDoneTime]="guestDoneAt()"
+              [minPhaseTime]="guestMinPhaseTime()"
+              [resources]="resources()"
+              [statusMap]="statusMap()"
+              [podStatusMap]="podStatusMap()"
+              [allPreviewsReady]="allPreviewsReady()"
+              [commitPlan]="commitPlan()"
+              [settled]="!pipelineActive()"
+            />
+          </div>
+          <!-- The demo appears once the sandbox is ready, and is then the thing to do. -->
+          @if (workflowDemo(); as demo) {
+            <app-try-workflow
+              [host]="demo.host"
+              [apiName]="demo.apiName"
+              [podStatusMap]="podStatusMap()"
+            />
+          }
+          <app-platform-made
             [workspace]="name()"
-            [initialPhaseTimes]="guestPhaseTimes()"
-            [initialDoneTime]="guestDoneAt()"
-            [minPhaseTime]="guestMinPhaseTime()"
             [resources]="resources()"
             [statusMap]="statusMap()"
-            [podStatusMap]="podStatusMap()"
-            [allPreviewsReady]="allPreviewsReady()"
-            [commitPlan]="commitPlan()"
+            [isGuest]="isGuest()"
+            [cleanupIn]="isGuest() ? guestCountdown() : ''"
             [settled]="!pipelineActive()"
           />
         </div>
-        <!-- The demo appears once the sandbox is ready, and is then the thing to do. -->
-        @if (workflowDemo(); as demo) {
-          <app-try-workflow
-            [host]="demo.host"
-            [apiName]="demo.apiName"
-            [podStatusMap]="podStatusMap()"
-          />
-        }
-        <app-platform-made
-          [workspace]="name()"
-          [resources]="resources()"
-          [statusMap]="statusMap()"
-          [isGuest]="isGuest()"
-          [cleanupIn]="isGuest() ? guestCountdown() : ''"
-          [settled]="!pipelineActive()"
-        />
-      </div>
+      }
     </div>
   `,
   styles: [
     `
+      .sandbox-ended {
+        max-width: 480px;
+        margin: 4rem auto;
+        text-align: center;
+      }
+      .sandbox-ended h2 {
+        margin: 0 0 0.5rem;
+      }
+      .sandbox-ended p {
+        margin: 0 0 1.5rem;
+        color: var(--color-text-muted);
+      }
+      .start-new {
+        display: inline-block;
+        padding: 0.7rem 1.5rem;
+        font-weight: 700;
+        border: 2px solid #818cf8;
+        border-radius: var(--radius-sm);
+        color: #e2e8f0;
+      }
       .guest-banner {
         background: #1a1a2e;
         border: 1px solid #3b82f6;
@@ -777,13 +795,20 @@ export class WorkspaceDetail implements OnInit, OnDestroy {
   async onCreated() {
     this.awaitingResources.set(true)
     this.cancelCreate()
-    await this.loadResources(true)
+    // The rollout reads an empty sandbox with no plan as a failed commit, and resets its clock.
+    // So the plan stays open until the files show up.
+    await this.loadResources(true).catch(() => {})
+    if (this.resources().length > 0) this.commitPlan.set([])
     // GitHub Contents API can return a stale directory listing right after
     // sequential commits (e.g. Sql + Api). Reload once after a short delay
     // to catch any propagation lag.
     setTimeout(async () => {
-      await this.loadResources(true)
-      this.awaitingResources.set(false)
+      try {
+        await this.loadResources(true)
+      } finally {
+        this.commitPlan.set([])
+        this.awaitingResources.set(false)
+      }
     }, 1500)
   }
 

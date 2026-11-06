@@ -7,7 +7,7 @@ describe("waitLine", () => {
   })
 
   it("nudges whoever is slow, then starts with their own jokes", () => {
-    expect(waitLine("Entra", 12_000)).toBe("Entra's taking its time. We're asking nicely.")
+    expect(waitLine("Entra", 12_000)).toBe("Entra is double-checking the paperwork.")
     expect(waitLine("AWS", 21_000)).toContain("AWS")
   })
 })

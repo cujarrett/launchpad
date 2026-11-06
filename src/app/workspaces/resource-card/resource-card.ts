@@ -277,7 +277,7 @@ export class ResourceCard {
     const s = this.status()
     if (!s) return "ArgoCD is syncing your changes to the cluster…"
     if (s.ready && !this.dependencyReady()) return "Waiting for companion API to be ready…"
-    if (s.ready) return "Up and running! 🚀"
+    if (s.ready) return "Up and running"
     if (!s.synced) return s.message || "Something went wrong"
     return "Crossplane is wiring your resources together…"
   })
