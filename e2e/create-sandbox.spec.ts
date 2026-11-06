@@ -1,30 +1,24 @@
 import { test, expect } from "@playwright/test"
 
-// End-to-end smoke test for the guest sandbox creation flow: launch a
-// workspace, add an Api with every add-on (SQL, NoSQL, object storage,
-// cache, SPA), and confirm the resource cards render without needing a
-// manual refresh. Requires launchpad-api port-forwarded to localhost:8080
-// (see playwright.config.ts) - this hits the real backend and creates a
-// real, short-lived guest sandbox.
-test("creating a fully-loaded sandbox renders cards without a refresh", async ({ page }) => {
+// End-to-end smoke test for the guest sandbox flow: Try the Sandbox, build the
+// app demo, and confirm every resource card renders without a manual refresh.
+// Hits the real backend and creates a real, short-lived guest sandbox.
+// Needs either `npm run start:prod-api` running or launchpad-api port-forwarded
+// to localhost:8080 (see playwright.config.ts).
+test("building the app demo renders every card without a refresh", async ({ page }) => {
   await page.goto("/")
 
-  await page.getByText(/Try the Sandbox/i).click()
-  await page.getByRole("button", { name: /^Launch!?$/i }).click()
+  await page.getByRole("button", { name: /Try the Sandbox/i }).click()
 
   await page.waitForURL(/\/workspaces\/guest-/, { timeout: 10_000 })
 
-  await expect(page.getByText(/what do you want to build/i)).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText(/what do you want to try/i)).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole("button", { name: /App with real data/i })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  )
 
-  await page.locator(".kind-card", { hasText: /API/i }).first().click()
-
-  const addOns = ["SQL database", "NoSQL database", "object storage", "Add cache", "create a SPA"]
-  for (const label of addOns) {
-    const option = page.locator(".option-card", { hasText: new RegExp(label, "i") }).first()
-    if (await option.count()) await option.click()
-  }
-
-  await page.getByRole("button", { name: /^Create$/i }).click()
+  await page.getByRole("button", { name: /^Build it$/i }).click()
 
   // The regression this guards against: resources arrive server-side but the
   // page never renders them, leaving "No resources yet" until a hard refresh.
@@ -48,4 +42,6 @@ test("creating a fully-loaded sandbox renders cards without a refresh", async ({
   }
 
   await expect(page.getByText(/no resources yet/i)).not.toBeVisible()
+  // The picker coming back would invite a second build of everything.
+  await expect(page.getByRole("button", { name: /^Build it$/i })).not.toBeVisible()
 })
