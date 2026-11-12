@@ -1,3 +1,7 @@
+# launchpad
+
+Self-service UI for the homelab platform, live at `launchpad.mattjarrett.dev`. It is an Angular app that talks only to [launchpad-api](https://github.com/cujarrett/launchpad-api). [HOW_IT_WORKS.md](./HOW_IT_WORKS.md) has the design.
+
 ## Rules
 
 - **Never run `git commit`, `git push`, or any git command that writes to or modifies repository history or remotes.** If a task requires committing or pushing, stop and tell the user to run the git command manually.
