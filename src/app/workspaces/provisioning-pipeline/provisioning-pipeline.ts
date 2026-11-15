@@ -758,7 +758,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
 
   // Done if SSE confirms all ready, OR if we already know doneTime (restored from
   // localStorage/server on refresh) - avoids the "wrong active stage" flash while SSE catches up.
-  protected readonly isDone = computed(() => this.phaseIdx() === 5 || this.doneTime() !== null)
+  readonly isDone = computed(() => this.phaseIdx() === 5 || this.doneTime() !== null)
 
   protected readonly doneSections = computed(() =>
     this.fullDoneRows().filter((r) => r.kind === "section"),
@@ -791,7 +791,7 @@ export class ProvisioningPipeline implements OnInit, OnDestroy {
     })
   })
 
-  protected readonly totalDuration = computed(() => {
+  readonly totalDuration = computed(() => {
     if (!this.hasRealTiming()) return null
     const times = this.phaseTimes()
     const starts = Object.values(times).filter((v): v is number => v !== undefined)

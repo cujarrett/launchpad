@@ -258,7 +258,9 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
               rel="noopener noreferrer"
             >
               <span class="live-text">
-                <span class="live-title">Your app is live</span>
+                <span class="live-title"
+                  >Your app is live{{ liveIn() ? " in " + liveIn() : "" }}</span
+                >
                 <span class="live-sub">{{ app.sub }}</span>
               </span>
               <span class="live-btn" [title]="app.host">Open your app ↗</span>
@@ -268,7 +270,9 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
           @if (workflowDemo() && !tryWorkflow()?.everPlaced()) {
             <div class="live-cta">
               <span class="live-text">
-                <span class="live-title">Your durable workflow is live</span>
+                <span class="live-title"
+                  >Your durable workflow is live{{ liveIn() ? " in " + liveIn() : "" }}</span
+                >
                 <span class="live-sub"
                   >Two workers are running your order API. Crash one mid-order.</span
                 >
@@ -489,6 +493,12 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
 export class WorkspaceDetail implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute)
   protected readonly tryWorkflow = viewChild(TryWorkflow)
+  private readonly pipeline = viewChild(ProvisioningPipeline)
+  // Click to ready, the same clock as the Rollout panel. The time is the payoff, so the banner leads with it.
+  protected readonly liveIn = computed(() => {
+    const p = this.pipeline()
+    return p?.isDone() ? p.totalDuration() : null
+  })
   private readonly router = inject(Router)
   private readonly workspaceService = inject(WorkspaceService)
   private readonly sseService = inject(SseService)

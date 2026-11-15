@@ -262,8 +262,34 @@ const DEMO_CARDS: Partial<Record<ResourceKind, { title: string; desc: string; in
         .picker {
           padding: 0.5rem 0 1rem;
         }
+        h3 {
+          font-size: 1.2rem;
+        }
+        .lede {
+          margin-bottom: 1rem;
+        }
+        /* Compact rows, so both demos and the Build button fit on one phone screen. */
         .cards {
           grid-template-columns: 1fr;
+          gap: 0.6rem;
+        }
+        .card {
+          display: grid;
+          grid-template-columns: auto 1fr;
+          align-items: center;
+          column-gap: 0.85rem;
+          row-gap: 0.15rem;
+          padding: 0.85rem 2.4rem 0.85rem 0.85rem;
+          text-align: left;
+        }
+        .disc {
+          grid-row: span 2;
+          width: 2.25rem;
+          height: 2.25rem;
+          font-size: 1.1rem;
+        }
+        .card-includes {
+          display: none;
         }
         .actions {
           flex-direction: column;
