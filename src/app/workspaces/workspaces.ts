@@ -15,6 +15,7 @@ import { WorkspaceService } from "../core/services/workspace.service"
 import { httpErrorMessage } from "../core/http-error"
 import { RoleService } from "../core/services/role.service"
 import { Workspace } from "../core/models/workspace.model"
+import { SandboxMap } from "../sandbox-map/sandbox-map"
 
 const GUEST_MAX = 5
 
@@ -108,7 +109,7 @@ function pickGuestName(
 
 @Component({
   selector: "app-workspaces",
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, SandboxMap],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -219,9 +220,19 @@ function pickGuestName(
         }
       }
     </div>
+    <app-sandbox-map />
   `,
   styles: [
     `
+      /* A column lets the map sit at the bottom of the page, just above the footer. */
+      :host {
+        display: flex;
+        flex-direction: column;
+      }
+      .page {
+        width: 100%;
+      }
+
       /* Three across and tighter tiles keep the whole list, footer included, on
          one laptop screen. Names are short, so the tiles never need the width. */
       .card-grid {
