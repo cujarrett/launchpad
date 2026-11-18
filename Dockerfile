@@ -2,7 +2,7 @@
 FROM node:26-alpine@sha256:7ed4edf2b680417bf06d3f465de09bb113f877ff265b15f72a27a4c6fb76fb04 AS build
 WORKDIR /app
 
-COPY package*.json ./
+COPY package*.json .npmrc ./
 RUN npm ci
 
 COPY . .
