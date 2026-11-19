@@ -61,8 +61,8 @@ const KIND_FILL: Record<string, string> = {
       <nav class="topo-tabs" role="tablist" aria-label="Flow">
         @for (s of scenarios; track s.key; let i = $index) {
           <button type="button" role="tab" [attr.aria-selected]="si() === i" (click)="pick(i)">
-            <span class="k">{{ "0" + (i + 1) }}</span
-            >{{ s.name }}
+            <span class="k">{{ "0" + (i + 1) }}</span>
+            <span>{{ s.name }}</span>
           </button>
         }
         <ul class="topo-legend">
