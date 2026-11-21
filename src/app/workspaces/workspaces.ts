@@ -211,12 +211,17 @@ function pickGuestName(
         @if (myWorkspaces().length > 0) {
           <p class="section-label">Matt's Workspaces</p>
           <div class="card-grid">
-            @for (workspace of myWorkspaces(); track workspace.name) {
+            @for (workspace of shownWorkspaces(); track workspace.name) {
               <a class="workspace-tile" [routerLink]="['/workspaces', workspace.name]">
                 {{ workspace.name }}
               </a>
             }
           </div>
+          @if (myWorkspaces().length > workspaceLimit) {
+            <button type="button" class="show-more" (click)="showAllWorkspaces.update((v) => !v)">
+              {{ showAllWorkspaces() ? "Show less" : "Show more" }}
+            </button>
+          }
         }
       }
     </div>
@@ -265,6 +270,20 @@ function pickGuestName(
          finishes, so an expired tile reads as on its way out rather than broken. */
       .guest-tile.expired {
         opacity: 0.5;
+      }
+      .show-more {
+        display: block;
+        margin: 0.75rem auto 0;
+        padding: 0.4rem 1rem;
+        background: none;
+        border: 1px solid var(--color-border);
+        color: var(--color-text-muted);
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+      .show-more:hover {
+        color: var(--color-text);
+        border-color: var(--color-text-muted);
       }
       .section-label {
         font-size: 0.7rem;
@@ -422,6 +441,15 @@ export class Workspaces implements OnInit, OnDestroy {
 
   protected readonly workspaces = signal<Workspace[]>([])
   protected readonly myWorkspaces = computed(() => this.workspaces().filter((w) => !w.isGuest))
+  // Desktop: three rows of three fits a 14" laptop screen.
+  // Phone: one column, so four keeps the list short.
+  protected readonly workspaceLimit = window.matchMedia("(max-width: 767px)").matches ? 4 : 9
+  protected readonly showAllWorkspaces = signal(false)
+  protected readonly shownWorkspaces = computed(() =>
+    this.showAllWorkspaces()
+      ? this.myWorkspaces()
+      : this.myWorkspaces().slice(0, this.workspaceLimit),
+  )
   protected readonly guestWorkspaces = computed(() =>
     this.workspaces()
       .filter((w) => w.isGuest)

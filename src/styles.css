@@ -1153,6 +1153,12 @@ details.advanced-fields .form-fields {
 .arch-wrap {
   width: 100%;
   overflow-x: auto;
+  /* A dotted canvas marks the diagram as a picture, apart from the cards below. */
+  padding: 0.75rem 0;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background-image: radial-gradient(var(--color-border) 1px, transparent 1px);
+  background-size: 16px 16px;
 }
 
 /* Fade the edges so a diagram wider than the screen reads as scrollable
@@ -1201,12 +1207,11 @@ details.advanced-fields .form-fields {
 .arch-node {
   position: absolute;
   width: 176px;
-  height: 84px;
-  border: 1px solid var(--color-border);
-  border-left: 3px solid var(--node-color, var(--color-border));
-  border-radius: var(--radius-md);
-  padding: 0.5rem 0.65rem;
-  background: var(--color-surface-alt);
+  height: 64px;
+  border: 1px solid color-mix(in srgb, var(--node-color, var(--color-border)) 60%, transparent);
+  border-radius: 999px;
+  padding: 0.45rem 1.1rem;
+  background: color-mix(in srgb, var(--node-color, var(--color-border)) 10%, var(--color-bg));
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1437,6 +1442,26 @@ details.advanced-fields .form-fields {
   border-radius: 1px;
   background: var(--color-accent);
   opacity: 0.7;
+}
+.arch-legend-outside {
+  width: 14px;
+  height: 10px;
+  border: 1px dashed var(--color-text-muted);
+  border-radius: 999px;
+}
+
+/* The box around what this workspace owns. Dashed nodes outside it are dependencies. */
+.arch-boundary {
+  fill: color-mix(in srgb, var(--color-accent) 4%, transparent);
+  stroke: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  stroke-width: 1;
+}
+.arch-boundary-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  fill: var(--color-text-muted);
 }
 
 /* A product name in running text, such as Temporal or S3. Set by techParts. */

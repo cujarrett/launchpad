@@ -21,12 +21,15 @@ import { KindIcon } from "../../core/kind-icon/kind-icon"
 
 // Fixed geometry - layout is computed from data, never measured from the DOM.
 const NODE_W = 176
-const NODE_H = 84
+const NODE_H = 64
 const ROW_GAP = 32
 const MIN_COL_GAP = 46
 const MAX_COL_GAP = 170
 const PAD_X = 12
-const PAD_TOP = 16
+// Room above the workspace boundary for its label.
+const PAD_TOP = 34
+// Space between the workspace boundary and the nodes inside it.
+const BOUND_PAD = 14
 const PAD_BOTTOM = 16
 // Room to the right of a column for its same-column edges to loop through.
 const SAME_COL_BEND = 22
@@ -48,6 +51,9 @@ interface DiagramNode {
   // MariaDB) inherit their parent resource's status. Null = no status (users).
   statusName: string | null
   isUser?: boolean
+  // Outside this workspace: another workspace's Api, or a third-party host.
+  // This page has no status for it.
+  isExternal?: boolean
 }
 
 interface DiagramEdge {
@@ -78,6 +84,8 @@ interface PlacedEdge {
 interface Layout {
   width: number
   height: number
+  // Box around the nodes this workspace owns. Null when it owns none.
+  boundary: { x: number; y: number; w: number; h: number } | null
   nodes: PlacedNode[]
   edges: PlacedEdge[]
 }
@@ -112,6 +120,19 @@ const colIndexOf = (columns: DiagramColumn[], id: string) =>
                 [attr.height]="l.height"
                 aria-hidden="true"
               >
+                @if (l.boundary; as b) {
+                  <rect
+                    class="arch-boundary"
+                    [attr.x]="b.x"
+                    [attr.y]="b.y"
+                    [attr.width]="b.w"
+                    [attr.height]="b.h"
+                    rx="14"
+                  />
+                  <text class="arch-boundary-label" [attr.x]="b.x + 10" [attr.y]="b.y - 8">
+                    {{ workspace() }} workspace
+                  </text>
+                }
                 <defs>
                   <marker
                     id="arch-arrow-ok"
@@ -174,7 +195,7 @@ const colIndexOf = (columns: DiagramColumn[], id: string) =>
                 @let ok = status !== null && status.synced && status.ready;
                 <div
                   class="arch-node"
-                  [class.arch-node--user]="node.isUser"
+                  [class.arch-node--user]="node.isUser || node.isExternal"
                   [class.arch-node--ok]="ok"
                   [class.arch-node--warn]="status !== null && !ok"
                   [class.arch-node--dim]="isNodeDimmed(node.id)"
@@ -203,10 +224,9 @@ const colIndexOf = (columns: DiagramColumn[], id: string) =>
                   </div>
                   <div class="arch-node-name">{{ node.label }}</div>
                   <div class="arch-node-bottom">
-                    @if (status !== null) {
-                      <span class="arch-node-pill" [class.arch-node-pill--ok]="ok">
-                        {{ ok ? "Ready" : status.message || "Not ready" }}
-                      </span>
+                    <!-- The cards below already say Ready, so the diagram names only trouble. -->
+                    @if (status !== null && !ok) {
+                      <span class="arch-node-pill">{{ status.message || "Not ready" }}</span>
                     }
                     @if (node.host) {
                       <span class="arch-node-host">{{ node.host }}</span>
@@ -236,6 +256,9 @@ const colIndexOf = (columns: DiagramColumn[], id: string) =>
           <span class="arch-legend-item"
             ><span class="arch-legend-flow"></span> Live data flow</span
           >
+          <span class="arch-legend-item"
+            ><span class="arch-legend-outside"></span> Outside this workspace</span
+          >
         </div>
       }
     </div>
@@ -243,6 +266,8 @@ const colIndexOf = (columns: DiagramColumn[], id: string) =>
 })
 export class WorkspaceArch {
   readonly resources = input.required<Resource[]>()
+  // The workspace name is its namespace. Resources from the API carry no namespace.
+  readonly workspace = input("")
   readonly statusMap = input<Partial<Record<string, ResourceStatus>>>({})
 
   @ViewChild("archWrap", { static: true }) private wrapRef!: ElementRef<HTMLElement>
@@ -294,7 +319,14 @@ export class WorkspaceArch {
     const apis = byKind("Api", "GraphApi").map(toNode)
     // Topics before subscriptions so publish→deliver→consume reads top-down.
     const messaging = [...byKind("Topic"), ...byKind("Subscription")].map(toNode)
-    const data = byKind("Sql", "NoSql", "ObjectStorage", "Cache", "WorkflowSpace").map(toNode)
+    const data = byKind(
+      "Sql",
+      "NoSql",
+      "ObjectStorage",
+      "Cache",
+      "WorkflowSpace",
+      "ManagedSecret",
+    ).map(toNode)
 
     const edges: DiagramEdge[] = []
     const nodeIds = new Set([...frontend, ...apis, ...messaging, ...data].map((n) => n.id))
@@ -362,28 +394,89 @@ export class WorkspaceArch {
       }
     }
 
-    // SPA → API: one edge per declared proxy path; otherwise a lone SPA+API
+    // Dependencies outside the workspace sit in a last column, past the boundary.
+    const deps: DiagramNode[] = []
+    const ownNs = this.workspace()
+    const isOtherNs = (ns?: string) => !!ns && ns !== ownNs
+    const externalNode = (app: string, ns: string) => {
+      const id = `${ns}/${app}`
+      if (!nodeIds.has(id)) {
+        deps.push({
+          id,
+          label: app,
+          kindLabel: `API · ${ns}`,
+          icon: "",
+          iconKind: "Api",
+          color: RESOURCE_KIND_COLORS["Api"],
+          statusName: null,
+          isExternal: true,
+        })
+        nodeIds.add(id)
+      }
+      return id
+    }
+    // Cluster-internal hosts are platform plumbing, so only internet hosts show.
+    const isThirdParty = (host?: string) =>
+      !!host && !host.endsWith(".cluster.local") && !host.endsWith(".local.lab")
+    const thirdPartyNode = (host: string) => {
+      const id = `host/${host}`
+      if (!nodeIds.has(id)) {
+        deps.push({
+          id,
+          label: host,
+          kindLabel: "Third party",
+          icon: "globe",
+          color: "#8492a6",
+          statusName: null,
+          isExternal: true,
+        })
+        nodeIds.add(id)
+      }
+      return id
+    }
+
+    // SPA → API: unlabelled, since a page calling its backend needs no caption.
+    // One edge per declared proxy target; otherwise a lone SPA+API
     // pair is assumed to talk to each other (guest workspaces declare none).
     const apiResources = byKind("Api")
     for (const r of byKind("Spa")) {
-      const proxies = (r.spec["apiProxies"] as { path?: string; app?: string }[]) ?? []
+      const proxies =
+        (r.spec["apiProxies"] as {
+          path?: string
+          app?: string
+          namespace?: string
+          host?: string
+        }[]) ?? []
       let drew = false
       for (const p of proxies) {
+        if (isThirdParty(p.host)) {
+          addEdge(r.name, thirdPartyNode(p.host!), "https")
+          continue
+        }
+        if (p.app && isOtherNs(p.namespace)) {
+          addEdge(r.name, externalNode(p.app, p.namespace!), "")
+          drew = true
+          continue
+        }
         const target = apiResources.find((a) => a.name === p.app)
         if (target) {
-          addEdge(r.name, target.name, p.path ?? "/api")
+          addEdge(r.name, target.name, "")
           drew = true
         }
       }
-      if (!drew && apiResources.length === 1) addEdge(r.name, apiResources[0].name, "rest")
+      if (!drew && apiResources.length === 1) addEdge(r.name, apiResources[0].name, "")
     }
 
     // API → API: a call exists only when the caller declares it in consumes, so
     // that is the edge. A provides grant alone connects nothing.
     for (const r of apiResources) {
-      const consumes = (r.spec["consumes"] as { app?: string }[]) ?? []
+      const consumes =
+        (r.spec["consumes"] as { app?: string; namespace?: string; host?: string }[]) ?? []
       for (const c of consumes) {
-        if (c.app && c.app !== r.name) addEdge(r.name, c.app, "calls")
+        if (isThirdParty(c.host)) addEdge(r.name, thirdPartyNode(c.host!), "https")
+        if (c.app && isOtherNs(c.namespace))
+          addEdge(r.name, externalNode(c.app, c.namespace!), "calls")
+        else if (c.app && c.app !== r.name) addEdge(r.name, c.app, "calls")
       }
     }
 
@@ -404,6 +497,11 @@ export class WorkspaceArch {
       if (sub) addEdge(sub, r.name, "consume")
       const workflow = ref("workflowSpaceRef")
       if (workflow) addEdge(r.name, workflow, "workflows")
+      const secrets = r.spec["managedSecretRefs"] as { name?: string }[] | undefined
+      for (const s of secrets ?? []) {
+        // The value flows into the API, so the arrow points at it.
+        if (s.name) addEdge(s.name, r.name, "secret")
+      }
     }
 
     // Subscription ← Topic delivery.
@@ -419,6 +517,7 @@ export class WorkspaceArch {
       { nodes: apis },
       { nodes: messaging },
       { nodes: data },
+      { nodes: deps },
     ].filter((c) => c.nodes.length > 0)
 
     return { columns, edges }
@@ -506,7 +605,17 @@ export class WorkspaceArch {
       })
     })
 
-    return { width: totalW, height, nodes, edges: placedEdges }
+    const inside = nodes.filter((node) => !node.isUser && !node.isExternal)
+    let boundary: Layout["boundary"] = null
+    if (inside.length > 0) {
+      const minX = Math.min(...inside.map((node) => node.x)) - BOUND_PAD
+      const minY = Math.min(...inside.map((node) => node.y)) - BOUND_PAD
+      const maxX = Math.max(...inside.map((node) => node.x + NODE_W)) + BOUND_PAD
+      const maxY = Math.max(...inside.map((node) => node.y + NODE_H)) + BOUND_PAD
+      boundary = { x: minX, y: minY, w: maxX - minX, h: maxY - minY }
+    }
+
+    return { width: totalW, height, nodes, edges: placedEdges, boundary }
   })
 
   // ── Scale-to-fit: shrink the whole diagram down to MIN_SCALE before
@@ -541,6 +650,7 @@ export class WorkspaceArch {
     if (id === USER_NODE_ID) return true
     const layout = this.layout()
     const node = layout?.nodes.find((n) => n.id === id)
+    if (node?.isExternal) return true
     if (!node?.statusName) return false
     const s = this.statusMap()[node.statusName]
     return s?.synced === true && s?.ready === true

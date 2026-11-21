@@ -19,6 +19,7 @@ export type ResourceKind =
   | "GraphApi"
   | "FederatedGraph"
   | "WorkflowSpace"
+  | "ManagedSecret"
 
 export const RESOURCE_KIND_LABELS: Record<ResourceKind, string> = {
   Spa: "SPA",
@@ -33,6 +34,7 @@ export const RESOURCE_KIND_LABELS: Record<ResourceKind, string> = {
   GraphApi: "Graph API",
   FederatedGraph: "Federated Graph",
   WorkflowSpace: "Workflow Space",
+  ManagedSecret: "Managed Secret",
 }
 
 // MUI 2014 Material Design palette - 500 shades
@@ -49,6 +51,7 @@ export const RESOURCE_KIND_COLORS: Record<ResourceKind, string> = {
   GraphApi: "#673ab7", // deep-purple[500]
   FederatedGraph: "#8bc34a", // light-green[500]
   WorkflowSpace: "#2196f3", // blue[500]
+  ManagedSecret: "#795548", // brown[500]
 }
 
 // File names in public/icons. Lucide (ISC) for generic kinds, Simple Icons (CC0) for brands.
@@ -65,6 +68,7 @@ export const RESOURCE_KIND_ICONS: Record<ResourceKind, string> = {
   GraphApi: "graphql",
   FederatedGraph: "network",
   WorkflowSpace: "workflow",
+  ManagedSecret: "key-round",
 }
 
 export interface Resource {

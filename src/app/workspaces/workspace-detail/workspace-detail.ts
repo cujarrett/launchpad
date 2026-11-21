@@ -61,6 +61,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
   GraphApi: "API whose schema joins a federated graph.",
   FederatedGraph: "One GraphQL endpoint joining every subgraph.",
   WorkflowSpace: "Steps that finish even when a worker dies. Runs on Temporal.",
+  ManagedSecret: "A secret value an API reads as a file. Never stored in the cluster.",
 }
 
 @Component({
@@ -104,7 +105,8 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
             <h1>{{ name() }}</h1>
           </div>
           <div class="page-header-actions">
-            @if (!loading()) {
+            <!-- Own workspaces show the diagram above the cards, so only guests toggle. -->
+            @if (!loading() && isGuest()) {
               <div class="view-toggle">
                 <button
                   [class.active]="viewMode() === 'cards'"
@@ -212,11 +214,15 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
                 <button type="button" (click)="retryLoadResources()">Retry</button>
               </p>
             } @else {
-              @if (viewMode() === "arch" && !pipelineActive()) {
-                <app-workspace-arch [resources]="resources()" [statusMap]="statusMap()" />
+              @if ((viewMode() === "arch" || !isGuest()) && !pipelineActive()) {
+                <app-workspace-arch
+                  [resources]="resources()"
+                  [statusMap]="statusMap()"
+                  [workspace]="name()"
+                />
               }
               <!-- Always rendered so resource-card health polling drives allPreviewsReady. -->
-              <div [hidden]="viewMode() === 'arch'">
+              <div [hidden]="viewMode() === 'arch' && isGuest()">
                 <div class="card-grid">
                   @for (resource of sortedResources(); track resource.name) {
                     <app-resource-card
@@ -250,7 +256,8 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
               </div>
             }
           </div>
-          @if (liveApp(); as app) {
+          <!-- The sandbox story (live banner, rollout, what happened) is for guests only. -->
+          @if (isGuest() && liveApp(); as app) {
             <a
               class="live-cta"
               [href]="'https://' + app.host"
@@ -267,7 +274,7 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
             </a>
           }
           <!-- The WorkflowSpace demo's payoff is the crash panel below, so its button starts it. -->
-          @if (workflowDemo() && !tryWorkflow()?.everPlaced()) {
+          @if (isGuest() && workflowDemo() && !tryWorkflow()?.everPlaced()) {
             <div class="live-cta">
               <span class="live-text">
                 <span class="live-title"
@@ -290,7 +297,8 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
           <div
             [hidden]="
               (viewMode() === 'arch' && !pipelineActive()) ||
-              (guestNeedsPick() && commitPlan().length === 0)
+              (guestNeedsPick() && commitPlan().length === 0) ||
+              (!isGuest() && !pipelineActive())
             "
             [style.order]="pipelineActive() ? 3 : 5"
           >
@@ -308,21 +316,23 @@ const PLATFORM_KIND_DESC: Record<ResourceKind, string> = {
             />
           </div>
           <!-- The demo appears once the sandbox is ready, and is then the thing to do. -->
-          @if (workflowDemo(); as demo) {
+          @if (isGuest() && workflowDemo(); as demo) {
             <app-try-workflow
               [host]="demo.host"
               [apiName]="demo.apiName"
               [podStatusMap]="podStatusMap()"
             />
           }
-          <app-platform-made
-            [workspace]="name()"
-            [resources]="resources()"
-            [statusMap]="statusMap()"
-            [isGuest]="isGuest()"
-            [cleanupIn]="isGuest() ? guestCountdown() : ''"
-            [settled]="!pipelineActive()"
-          />
+          @if (isGuest()) {
+            <app-platform-made
+              [workspace]="name()"
+              [resources]="resources()"
+              [statusMap]="statusMap()"
+              [isGuest]="true"
+              [cleanupIn]="guestCountdown()"
+              [settled]="!pipelineActive()"
+            />
+          }
         </div>
       }
     </div>
