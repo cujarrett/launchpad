@@ -44,10 +44,15 @@ const readyStatus = (kind: string, name: string): ResourceStatus => ({
   ready: true,
 })
 
-function mount(resources: Resource[], statusMap: Record<string, ResourceStatus> = {}) {
+function mount(
+  resources: Resource[],
+  statusMap: Record<string, ResourceStatus> = {},
+  workspace = resources[0]?.namespace ?? "",
+) {
   const fixture = TestBed.createComponent(WorkspaceArch)
   fixture.componentRef.setInput("resources", resources)
   fixture.componentRef.setInput("statusMap", statusMap)
+  fixture.componentRef.setInput("workspace", workspace)
   fixture.detectChanges()
   return fixture
 }
@@ -90,7 +95,7 @@ describe("WorkspaceArch", () => {
     expect(nodeNames).toContain("magic-pretzel-api-cache")
   })
 
-  it("draws https, rest, and service-binding edges for a guest workspace", async () => {
+  it("draws https, page-to-backend, and service-binding edges for a guest workspace", async () => {
     const fixture = mount(guestResources)
     await fixture.whenStable()
     fixture.detectChanges()
@@ -98,7 +103,7 @@ describe("WorkspaceArch", () => {
     const el: HTMLElement = fixture.nativeElement
     const labels = [...el.querySelectorAll(".arch-edge-label")].map((n) => n.textContent?.trim())
     expect(labels).toContain("https") // users → spa
-    expect(labels).toContain("rest") // spa → api (no apiProxy on guest SPAs)
+    expect(labels).toContain("") // spa → api, unlabelled (no apiProxy on guest SPAs)
     expect(labels).toContain("sql")
     expect(labels).toContain("nosql")
     expect(labels).toContain("objects")
@@ -240,9 +245,44 @@ describe("WorkspaceArch", () => {
 
     const el: HTMLElement = fixture.nativeElement
     const labels = [...el.querySelectorAll(".arch-edge-label")].map((n) => n.textContent?.trim())
-    expect(labels).toContain("/authorized/")
-    expect(labels).toContain("/unauthorized/")
-    expect(labels).toContain("calls")
+    // users → spa, spa → bar-api, spa → baz-api, bar-api → qux-api
+    expect(labels).toEqual(["https", "", "", "calls"])
+  })
+
+  it("draws other workspaces and third-party hosts outside the workspace boundary", async () => {
+    const fixture = mount([
+      {
+        name: "foo-spa",
+        kind: "Spa",
+        namespace: "foo",
+        spec: {
+          host: "foo.example.com",
+          apiProxies: [{ path: "/stats/", app: "bar-api", namespace: "bar" }],
+        },
+      },
+      {
+        name: "foo-api",
+        kind: "Api",
+        namespace: "foo",
+        spec: {
+          consumes: [
+            { host: "api.example.com" },
+            { host: "prometheus.monitoring.svc.cluster.local" },
+          ],
+        },
+      },
+    ])
+    await fixture.whenStable()
+    fixture.detectChanges()
+
+    const el: HTMLElement = fixture.nativeElement
+    const kinds = [...el.querySelectorAll(".arch-node-kind")].map((n) => n.textContent?.trim())
+    expect(kinds).toContain("API · bar")
+    expect(kinds).toContain("Third party")
+    const names = [...el.querySelectorAll(".arch-node-name")].map((n) => n.textContent?.trim())
+    expect(names).toContain("api.example.com")
+    expect(names).not.toContain("prometheus.monitoring.svc.cluster.local")
+    expect(el.querySelector(".arch-boundary-label")?.textContent?.trim()).toBe("foo workspace")
   })
 
   it("shows the empty state when there are no resources", () => {
