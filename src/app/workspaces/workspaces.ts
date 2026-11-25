@@ -475,6 +475,7 @@ export class Workspaces implements OnInit, OnDestroy {
   // Tick signal drives countdown re-renders without zone dependency.
   private readonly tick = signal(0)
   private tickInterval?: ReturnType<typeof setInterval>
+  private refreshInterval?: ReturnType<typeof setInterval>
 
   protected readonly guestMax = GUEST_MAX
   // An expired sandbox frees its slot seconds later, so it no longer counts.
@@ -500,10 +501,27 @@ export class Workspaces implements OnInit, OnDestroy {
     // Set by a sandbox create that failed after leaving this page.
     const guestError: unknown = history.state?.guestError
     if (typeof guestError === "string") this.createGuestError.set(guestError)
+
+    // Sandboxes started in other tabs or by other visitors show up without a reload.
+    this.refreshInterval = setInterval(() => this.refresh(), 30_000)
+    document.addEventListener("visibilitychange", this.onVisible)
   }
 
   ngOnDestroy() {
     clearInterval(this.tickInterval)
+    clearInterval(this.refreshInterval)
+    document.removeEventListener("visibilitychange", this.onVisible)
+  }
+
+  private readonly onVisible = () => {
+    if (document.visibilityState === "visible") this.refresh()
+  }
+
+  // A failed refresh keeps the list already on screen.
+  private async refresh() {
+    try {
+      this.workspaces.set(await firstValueFrom(this.workspaceService.getWorkspaces()))
+    } catch {}
   }
 
   protected countdown(expiresAt: string): string {
